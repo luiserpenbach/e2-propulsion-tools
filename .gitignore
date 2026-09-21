@@ -1,0 +1,17 @@
+# OS / sync
+desktop.ini
+Thumbs.db
+
+# IDE
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+
+# Generated analysis outputs (re-run H1B_Analysis_Main.py)
+press_analysis/results/*

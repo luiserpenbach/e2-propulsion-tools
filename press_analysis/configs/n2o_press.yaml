@@ -1,0 +1,78 @@
+# =============================================================================
+# H-1B PROPELLANT TANK & PRESSURIZATION SYSTEM — CONFIGURATION (single source of truth)
+# All values SI unless suffix says otherwise. Suffixed keys are converted on load.
+# =============================================================================
+
+mission:
+  burn_time_s: 40.0          # full-thrust duration the liquid load is sized for
+  mdot_total_kg_s: 1.0       # total engine mass flow
+  of_ratio: 4.0              # oxidizer/fuel mass ratio -> mdot_ox = 0.8, mdot_fu = 0.2 kg/s
+
+propellants:
+  oxidizer:
+    name: N2O
+    coolprop: NitrousOxide
+  fuel:
+    name: Ethanol
+    coolprop: Ethanol
+
+# --- Tank geometry & sizing rules -------------------------------------------
+tanks:
+  diameter_inner_m: 0.300        # fixed, inner diameter
+  dome: hemispherical            # fixed; tank = cylinder + 2 hemispheres (capsule)
+  ullage_min_frac: 0.10          # minimum ullage at worst-case (warmest) fill
+  cyl_length_round_up_mm: 5.0    # round computed cylinder length up to this grid
+  min_cyl_length_mm: 0.0         # allow pure sphere if volume permits
+  residual_ox_kg: 0.40           # unusable liquid (dip-tube / film / outlet)
+  residual_fu_kg: 0.10
+  oxidizer_evap_makeup: true     # iterate total N2O load: delivered + residual
+                                 # + end-of-burn ullage vapor (not engine-available)
+  # Sizing density convention: saturated/ambient-pressure liquid at temp_max_C
+  # (lowest plausible density = largest liquid volume; occurs at unpressurized fill).
+  wall:
+    material: AISI-304           # informational
+    thickness_m: 0.004           # used only for wall thermal-mass node
+    density_kg_m3: 7900.0
+    cp_J_kgK: 500.0
+
+# --- Operating envelope -------------------------------------------------------
+operating:
+  pressure_set_bar: 100.0        # single regulator, both tanks, constant
+  temp_min_C: 5.0                # propellant temperature envelope (no thermal control)
+  temp_max_C: 25.0
+  temp_ambient_C: 20.0           # environment around tanks during burn
+
+# --- Pressurant system --------------------------------------------------------
+pressurant:
+  fluid: Nitrogen
+  bottle_pressure_bar: 300.0     # initial storage pressure
+  bottle_temp_C: 20.0            # initial storage temperature
+  regulator_min_inlet_bar: 120.0 # minimum bottle pressure for regulation at 100 bar
+  bottle_blowdown: adiabatic     # 'adiabatic' (conservative for residuals) | 'isothermal'
+  margin_factor: 1.30            # applied to required bottle volume / loaded mass
+  # Order-of-magnitude N2 dissolution (supercharging) as extra bottle draw.
+  # Not a flash calculation — a dedicated allowance separate from margin_factor.
+  dissolution_n2_mass_frac_ox: 0.010
+  dissolution_n2_mass_frac_fu: 0.005
+
+# --- Model settings -----------------------------------------------------------
+model:
+  dt_s: 0.05                     # integration step (Heun / staggered schemes)
+  prepress: isothermal           # bottle pre-press draw (isothermal | adiabatic)
+  makeup_headroom: 1.05          # factor on end-of-burn N2O vapor in the load
+  bottle_volume_guess_m3: 0.065  # first-pass shared-bottle volume
+  ox_load_guess_kg: 38.5         # optional warm start for makeup (else delivered+residual)
+  fixed_point_iters: 4           # per-step iterations, N2O two-phase solver
+  evap_model: equilibrium        # 'equilibrium' (interface always saturated;
+                                 # max evaporation/cooling -> conservative) |
+                                 # 'frozen' (no interfacial mass transfer; bracket)
+  heat_transfer:
+    mode: auto                   # 'auto' = natural-convection correlations | 'fixed'
+    h_gas_wall_W_m2K: 15.0       # used only if mode == fixed
+    h_gas_liquid_W_m2K: 10.0     # used only if mode == fixed
+    h_external_W_m2K: 5.0        # ambient air -> tank wall (always used)
+
+# --- Analysis cases -----------------------------------------------------------
+cases:
+  - {name: cold, prop_temp_C: 5.0}    # expected pressurant-mass worst case (low N2O Psat)
+  - {name: hot,  prop_temp_C: 25.0}   # tank-volume worst case (low liquid density)
