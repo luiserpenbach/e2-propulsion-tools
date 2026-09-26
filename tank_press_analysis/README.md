@@ -17,9 +17,10 @@ The main script performs four steps:
 
 `
 press_analysis/
-|-- H1B_Analysis_Main.py   # Main entry point: sizing, coupling, bottle sizing, reports
+|-- flight_config_sizing.py   # Main entry point: sizing, coupling, bottle sizing, reports
 |-- ethanol_press.py       # Single-phase liquid tank pressurization model (fuel)
 |-- n2o_press.py           # Two-phase N2O tank pressurization model (oxidizer)
+|-- mixing_crosscheck.py   # Standalone PR/Dalton ullage mixing cross-check (n2o_press)
 |-- configs/
 |   -- n2o_press.yaml     # Mission, tank, operating, and model configuration
 |-- results/               # Generated outputs (not source)
@@ -38,11 +39,12 @@ un_standalone for use outside the main analysis.
 - [CoolProp](https://coolprop.org/) - real-fluid thermodynamic properties
 - PyYAML
 - Plotly - HTML report generation
+- NumPy - used by `mixing_crosscheck.py`
 
 Install dependencies:
 
 `ash
-pip install CoolProp pyyaml plotly
+pip install CoolProp pyyaml plotly numpy
 `
 
 ## Quick start
@@ -50,14 +52,14 @@ pip install CoolProp pyyaml plotly
 From the press_analysis directory:
 
 `ash
-python H1B_Analysis_Main.py configs/n2o_press.yaml --outdir results
+python flight_config_sizing.py configs/n2o_press.yaml --outdir results
 `
 
 Arguments:
 
 | Argument | Default | Description |
 |----------|---------|-------------|
-| config | h1b_tank_config.yaml | Path to YAML configuration (use configs/n2o_press.yaml in this repo) |
+| config | configs/n2o_press.yaml | Path to YAML configuration |
 | --outdir | . | Output directory for report and results YAML |
 
 A full run takes on the order of **2-3 minutes** on a typical laptop (CoolProp property lookups dominate runtime).
@@ -110,9 +112,9 @@ Two-phase, two-node model with equilibrium evaporation at the liquid surface:
 - Liquid: energy balance with evaporative cooling and ambient/wetted-wall heat transfer
 - Per-step fixed-point iteration couples ullage temperature, liquid temperature, and N2 demand
 
-Documented limitations (conservative for sizing): no N2 dissolution (supercharging), instantaneous interface equilibrium, bulk-mixed liquid, N2 transport properties used for ullage convection when N2O properties are unavailable in CoolProp.
+Documented limitations (conservative for sizing): no N2 dissolution (supercharging), instantaneous interface equilibrium, bulk-mixed liquid, N2 transport properties used for ullage convection when N2O properties are unavailable in CoolProp. See **mixing cross-check** below for quantifying Dalton vs mixture-EOS error on ullage density and dissolved N2.
 
-### Shared bottle (H1B_Analysis_Main.py)
+### Shared bottle (flight_config_sizing.py)
 
 Rigid vessel with adiabatic (or isothermal) discharge. Pre-pressurization draw is isothermal; burn-time draw uses d(m u)/dt = -mdot * h_bottle. Bottle volume is sized by bisection so end pressure stays above the regulator minimum inlet pressure for the full demand profile.
 
@@ -136,7 +138,26 @@ result = np2.run_standalone(cfg, t_burn=40.0, dt=0.05)
 # additionally: evaporated_n2o_kg
 `
 
-For coupled simulation with a shared bottle and geometry sizing, use H1B_Analysis_Main.py.
+For coupled simulation with a shared bottle and geometry sizing, use flight_config_sizing.py.
+
+## Mixing cross-check (`mixing_crosscheck.py`)
+
+Standalone sanity check for the **Dalton (additive partial-pressure)** ullage rule in `n2o_press.py`. At fixed tank set pressure and liquid temperature, it compares:
+
+- **(a)** Dalton with CoolProp pure-fluid densities (what the transient model uses)
+- **(b)** Dalton with Peng–Robinson pure-fluid densities
+- **(c)** PR mixture at the real-gas Dalton composition (mixing correction only)
+- **(d)** PR full vapor–liquid equilibrium (mixing + dissolved N2 in the liquid)
+
+`k12` for N2–N2O is swept over a plausible range. Console output only (no config file).
+
+From the `press_analysis` directory:
+
+```bash
+python mixing_crosscheck.py --p-bar 100 --t-c 0 10 20 30
+```
+
+Optional: `--k12 -0.02 0.0 0.03 0.06` to override interaction-parameter sweep.
 
 ## Reference results (default config)
 

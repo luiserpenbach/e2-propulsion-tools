@@ -1,0 +1,50 @@
+# Orifice cases. Units: °C, bar, mm, g/s.
+# model: liquid | gas | two_phase
+#
+# Cd is an input on the geometric area.
+#   sharp-edged plate     ~0.61
+#   short drilled orifice ~0.65–0.80
+#   rounded inlet         ~0.80–0.99
+# Confirm it with a cold-flow test.
+#
+# Optional mdot_target_g_s reports the diameter that delivers that flow.
+# Mass flow scales with area. Optional saturated_liquid: true uses the
+# vapor pressure at T_C instead of P_up_bar (liquid and two_phase only).
+
+cases:
+  - name: ethanol_liquid
+    model: liquid
+    fluid: Ethanol
+    backend: HEOS
+    T_C: 20.0
+    P_up_bar: 100.0
+    P_down_bar: 1.0
+    d_mm: 1.0
+    Cd: 0.90
+    mdot_target_g_s: 50.0
+
+  - name: nitrogen_pressurant
+    model: gas
+    fluid: Nitrogen
+    backend: HEOS
+    T_C: 25.0
+    P_up_bar: 100.0
+    P_down_bar: 1.0
+    d_mm: 4.4
+    Cd: 0.61
+    # Normal cubic metre. DIN 1343 is 0 °C and 1.01325 bar.
+    # ISO 13443 standard reference conditions are 15 °C and 1.01325 bar.
+    T_norm_C: 0.0
+    P_norm_bar: 1.01325
+
+  - name: n2o_injector
+    model: two_phase
+    fluid: N2O
+    backend: HEOS
+    # 100 bar at 20 °C is subcooled. N2O vapor pressure at 20 °C is about 50.5 bar.
+    T_C: 20.0
+    P_up_bar: 100.0
+    P_down_bar: 40.0
+    d_mm: 0.6
+    L_mm: 2.0
+    Cd: 0.80

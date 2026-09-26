@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-h1b_analysis.py — H-1B tank sizing & pressurization system analysis (executor).
+flight_config_sizing.py — Flight-config tank sizing & pressurization analysis.
 
-Reads h1b_tank_config.yaml (single source of truth) and performs:
+Reads a YAML mission/config file (single source of truth) and performs:
 
   1. Tank geometry sizing (fixed D=300 mm, hemispherical domes):
      liquid load from burn time / mass flow / O/F, sized at worst-case
@@ -19,7 +19,7 @@ Reads h1b_tank_config.yaml (single source of truth) and performs:
 
   4. Plotly HTML report + results YAML.
 
-Usage:  python h1b_analysis.py [config.yaml] [--outdir DIR]
+Usage:  python flight_config_sizing.py [config.yaml] [--outdir DIR]
 """
 
 from __future__ import annotations
@@ -466,7 +466,7 @@ def _vap_end_for_makeup(r: dict) -> float:
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("config", nargs="?", default="h1b_tank_config.yaml")
+    ap.add_argument("config", nargs="?", default="configs/n2o_press.yaml")
     ap.add_argument("--outdir", default=".")
     args = ap.parse_args(argv)
     cfg = load_config(args.config)

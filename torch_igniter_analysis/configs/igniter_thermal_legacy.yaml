@@ -1,0 +1,25 @@
+# Earlier thermal-script point: 50 g/s, Dc = 24.9 mm, Lcyl = 27.1 mm, eta = 0.92.
+# Kept so that case can be re-run. The shared example is igniter_example.yaml.
+# Lcyl is the input here, so L* is reported from the resulting volume.
+
+name: igniter_thermal_legacy
+ox: N2O
+fuel: C2H5OH
+of_nominal: 2.2
+of_points: [1.6, 2.0, 2.2]
+
+mdot_kg_s: 0.050
+eta_cstar: 0.92
+pa_bar: 1.01325
+pc_guess_bar: 40.0
+eps: 1.5
+
+dt_mm: 4.4
+dc_mm: 24.9
+theta_conv_deg: 45.0
+theta_div_deg: 15.0
+lcyl_mm: 27.1
+
+wall_t0_K: 293.0
+wall_thickness_mm: 2.0
+rc_curv_over_dt: 1.0
