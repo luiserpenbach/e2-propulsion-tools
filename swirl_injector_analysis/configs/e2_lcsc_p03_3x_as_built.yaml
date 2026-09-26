@@ -1,0 +1,65 @@
+# Analysis of the existing LCSC P03 element (modular injector head, 3 elements).
+# The sizing section below reproduces the original P03 design inputs; the as_built block
+# replaces the sized geometry with the P03 specification, so the operating envelope is
+# evaluated for the real hardware.
+
+name: E2_P03_as_built
+elements: 3
+
+operating_point:              # nominal point, whole injector head
+  chamber_pressure_bar: 25.0
+  mdot_total_kg_s: 1.0
+  of_ratio: 4.0
+
+fuel:
+  fluid: Ethanol              # CoolProp fluid name
+  temperature_K: 300
+  pressure_drop_bar: 15.0
+  # density_kg_m3: 790        # optional overrides, e.g. for an ethanol-water blend
+  # viscosity_Pa_s: 1.1e-3
+
+oxidizer:
+  fluid: N2O
+  temperature_K: 500          # at the metering holes (after regen). Use quality: 0 for saturated liquid feed.
+  pressure_drop_bar: 15.0     # hole inlet to chamber
+
+swirl:
+  method: nardi               # original P03 procedure
+  spray_half_angle_deg: 60
+  n_inlets: 3
+
+gas_annulus:
+  exit_velocity_m_s: 100
+  post_thickness_mm: 0.5
+  recess: critical
+  recess_angle_source: design
+
+ox_holes:
+  n_holes: 6
+  model: hem
+  discharge_coefficient: 0.75
+
+calibration:
+  swirl_cd_factor: 1.0        # measured / predicted swirl C_D. Update from C0x data.
+  # spray_half_angle_measured_deg: 54
+
+as_built:                     # P03 design specification, mm
+  n_inlets: 3
+  d_inlet: 0.98
+  d_out: 4.52
+  l_out: 2.26
+  d_swirl_chamber: 14.92
+  l_swirl_chamber: 14.92
+  post_thickness: 0.5
+  d_gas_out: 12.0
+  recess: 2.3
+  n_ox_holes: 6
+  d_ox_hole: 2.04
+
+throttle_points:
+  - {fraction: 1.00, chamber_pressure_bar: 25.0}
+  - {fraction: 0.75, chamber_pressure_bar: 19.0}
+  - {fraction: 0.50, chamber_pressure_bar: 13.0}
+  # heat-sink chamber tests without preheating: saturated liquid or saturated vapour at the holes
+  - {fraction: 1.00, chamber_pressure_bar: 25.0, ox_quality: 0.0}
+  - {fraction: 1.00, chamber_pressure_bar: 25.0, ox_quality: 1.0}

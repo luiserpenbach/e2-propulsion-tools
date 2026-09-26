@@ -13,5 +13,13 @@ venv/
 .env
 .env.*
 
-# Generated analysis outputs (re-run H1B_Analysis_Main.py)
-press_analysis/results/*
+# Generated analysis outputs (re-run the sizing script in each tool)
+injector_sizing/results/*
+orifice_lib/results/*
+tank_press_analysis/results/*
+torch_igniter_analysis/results/*
+swirl_injector_analysis/test_log.csv
+!injector_sizing/results/.gitkeep
+!orifice_lib/results/.gitkeep
+!tank_press_analysis/results/.gitkeep
+!torch_igniter_analysis/results/.gitkeep

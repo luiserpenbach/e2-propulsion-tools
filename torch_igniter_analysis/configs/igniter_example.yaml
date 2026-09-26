@@ -1,0 +1,25 @@
+# IGN-DOC-001 section 3 torch igniter.
+# Chamber pressure is solved from the throat, the mass flow and eta_cstar.
+# Set lstar_m or lcyl_mm, not both. Convergent length follows the cone angle.
+
+name: igniter_example
+ox: N2O
+fuel: C2H5OH
+of_nominal: 2.2
+of_points: [1.6, 2.0, 2.2]
+
+mdot_kg_s: 0.015
+eta_cstar: 0.80
+pa_bar: 1.01325
+pc_guess_bar: 30.0
+eps: 1.5
+
+dt_mm: 4.4
+dc_mm: 12.0
+theta_conv_deg: 45.0
+theta_div_deg: 15.0
+lstar_m: 1.2
+
+wall_t0_K: 293.0
+wall_thickness_mm: 2.0
+rc_curv_over_dt: 1.0

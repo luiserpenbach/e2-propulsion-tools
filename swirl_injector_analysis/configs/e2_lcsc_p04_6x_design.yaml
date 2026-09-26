@@ -1,0 +1,66 @@
+# New sizing of an LCSC element for the E2 monolithic head (6 elements), regen-heated N2O.
+# Units: bar, K, kg/s, mm, deg, m/s. Flows in operating_point are for the whole head.
+
+name: E2_LCSC_6el
+elements: 6
+
+operating_point:
+  chamber_pressure_bar: 25.0
+  mdot_total_kg_s: 1.0
+  of_ratio: 4.0
+
+fuel:
+  fluid: Ethanol              # CoolProp fluid name
+  temperature_K: 300
+  pressure_drop_bar: 15.0
+  # density_kg_m3: 790        # optional overrides, e.g. for an ethanol-water blend
+  # viscosity_Pa_s: 1.1e-3
+
+oxidizer:
+  fluid: N2O
+  temperature_K: 500          # at the metering holes (after regen)
+  # quality: 0.0              # use instead of temperature_K for a saturated feed
+  pressure_drop_bar: 15.0     # hole inlet to chamber
+
+swirl:
+  method: bazarov             # bazarov: viscous model (recommended) | nardi: thesis procedure
+  spray_half_angle_deg: 60    # target half-angle of the swirl element alone (J = 0)
+  n_inlets: 3
+  swirl_chamber_to_outlet_diameter: 3.3
+  swirl_chamber_length_to_outlet_diameter: 3.3
+  outlet_length_to_diameter: 0.5
+  inlet_length_to_diameter: 3.0
+  inlet_entry_loss: 0.5       # entry loss coefficient of the tangential inlets
+
+gas_annulus:
+  exit_velocity_m_s: 100
+  post_thickness_mm: 0.5
+  recess: critical            # critical: recess angle = 2 x spray half-angle | ratio: recess = recess_ratio x d_out
+  # recess_ratio: 0.5
+  recess_angle_source: predicted   # predicted | design; a measured angle in calibration overrides both
+
+ox_holes:
+  n_holes: 5
+  model: hem                  # hem: homogeneous equilibrium (real fluid, choking) | spi: incompressible
+  discharge_coefficient: 0.75
+
+manufacturing:
+  min_hole_diameter_mm: 0.5
+  round_to_mm: 0.01
+
+calibration:
+  swirl_cd_factor: 1.0        # measured / predicted swirl C_D (thesis SLA parts: ~0.78). Update from test data.
+  # spray_half_angle_measured_deg: 54
+
+limits:
+  min_stiffness: 0.15
+  min_J: 0.5
+
+throttle_points:              # chamber pressure defaults to fraction x nominal if omitted
+  - {fraction: 1.00}
+  - {fraction: 0.75, chamber_pressure_bar: 19.0}
+  - {fraction: 0.50, chamber_pressure_bar: 13.0}
+
+# as_built:                   # optional: replace sized geometry (mm) to analyse real hardware
+#   d_gas_out: 9.0
+#   d_ox_hole: 1.58
