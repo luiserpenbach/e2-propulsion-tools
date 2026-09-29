@@ -1,16 +1,17 @@
 # =============================================================================
 # H2 lander - mission analysis inputs
 # -----------------------------------------------------------------------------
-# Single source of all inputs for mission_sizing.py and engine_performance.py.
-# Units are part of every key name. Values marked "est." are estimates to be
-# replaced by test data or by the output of the tool named in "source".
+# Mission-specific inputs for mission_sizing.py. The engine (design point and
+# throttle table), propellant temperatures and residuals come from the shared
+# baseline named below. Units are part of every key name. Values marked "est."
+# are estimates to be replaced by test data or by the output of the tool named
+# in "source".
 #
 # Interfaces
-#   engine_performance.py  reads  engine            -> writes engine_performance.yaml
-#   mission_sizing.py      reads  this file + engine_performance.yaml
+#   mission_sizing.py      reads  this file + the baseline + its engine table
 #                                                   -> writes mission_results.yaml
 #   tank / pressurization sizing  reads mission_results.yaml (section handover)
-#                                 and returns the values of tanks + pressurization
+#                                 and returns the values of pressurization
 # =============================================================================
 
 meta:
@@ -19,6 +20,9 @@ meta:
   revision: E
   date: 2026-09-27
   owner: Luis
+
+# Shared baseline (engine, propellant temperatures, residuals), relative to this file
+baseline: ../baseline/h2_baseline.yaml
 
 # -----------------------------------------------------------------------------
 # Analysis settings
@@ -32,23 +36,6 @@ analysis:
   #          is still to be decided
   #   null:  mission with the largest usable propellant load
   sizing_case: hover
-
-# -----------------------------------------------------------------------------
-# Engine: E2-derived, N2O / ethanol, fixed fuel flow, oxidizer throttled
-# -----------------------------------------------------------------------------
-engine:
-  oxidizer: N2O                  # CEA name
-  fuel: Ethanol                  # CEA name
-  rated_thrust_N: 2250.0         # sea level, 100 % throttle
-  throttle_min: 0.50             # fraction of rated thrust
-  fuel_flow_kg_s: 0.200          # held constant by the fuel cavitating venturi
-  chamber_pressure_rated_bar: 25.0   # at rated thrust; sets the throat area
-  expansion_ratio: 4.0
-  ambient_pressure_bar: 1.01325
-  eta_cstar: 0.955               # est., c* efficiency (replace with E2-C1 data)
-  eta_cf: 0.977                  # est., thrust coefficient efficiency
-  throttle_points: [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00]
-  performance_file: engine_performance.yaml   # written by engine_performance.py
 
 # -----------------------------------------------------------------------------
 # Vehicle and mass point
@@ -66,12 +53,10 @@ propellant_tanks:
   oxidizer:
     count: 2
     volume_each_L: 18.0
-    residual_kg: 0.8             # est., trapped in tanks, lines and engine
-    loading_temperature_C: 25.0  # warm end of the 5-25 C loading window
+    # residual and loading temperature (warm end of the window) from the baseline
   fuel:
     count: 1
     volume_each_L: 6.9
-    residual_kg: 0.2             # est.
     density_kg_m3: 789.0         # ethanol at 20 C
 
 # -----------------------------------------------------------------------------

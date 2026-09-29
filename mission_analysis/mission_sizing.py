@@ -11,19 +11,20 @@ Two missions are flown with the same vehicle and engine:
 
 Each mission is a one-dimensional vertical point mass flown along a prescribed
 feed-forward profile of trapezoidal velocity segments. The throttle follows
-from T = m (g + a_cmd). The propellant flows come from the engine throttle line
-in engine_performance.yaml (fuel fixed at 0.20 kg/s, oxidizer throttled, O/F
-and chamber pressure falling with thrust). From the burned propellant the
-script builds the budget per propellant (burned, 2 s hover reserve, control
+from T = m (g + a_cmd). The propellant flows come from the engine throttle table
+of the shared baseline, baseline/engine_table.yaml (fuel fixed by the venturi,
+oxidizer throttled, O/F and chamber pressure falling with thrust). From the
+burned propellant the script builds the budget per propellant (burned, 2 s hover reserve, control
 allowance, trapped residual, N2O vapour make-up), the mass point at a fixed
 liftoff thrust-to-weight, the ballast, the minimum tank volumes and the fill
 of the present tanks, and the control authority along the flight. The hover is
 the baseline mission; flying the hop with the same hardware is to be decided.
 
 Files
-  h2_mission_inputs.yaml    all inputs (engine, vehicle, tanks, pressurization,
-                            allowances, missions)
-  engine_performance.yaml   throttle line, written by engine_performance.py
+  h2_mission_inputs.yaml    mission inputs (vehicle, tanks, pressurization,
+                            allowances, missions) and the path of the baseline
+  baseline/h2_baseline.yaml engine, propellant temperatures, residuals
+  baseline/engine_table.yaml  throttle table (h2cea/run_engine_table.py)
   mission_results.yaml      results and the hand-over to the tank sizing
 
 Usage
@@ -40,11 +41,15 @@ from __future__ import annotations
 import argparse
 import copy
 import datetime as dt
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "baseline"))
+import e2_baseline  # noqa: E402
 
 G0 = 9.80665
 
@@ -53,48 +58,35 @@ G0 = 9.80665
 # Inputs
 # ============================================================================
 def load_inputs(path, overrides=()):
+    """Mission inputs (with --set overrides), the baseline and its engine table."""
     cfg = yaml.safe_load(Path(path).read_text())
     for item in overrides:                       # --set a.b.c=value
         key, val = item.split("=", 1)
+        if key.split(".")[0] == "engine":
+            raise SystemExit("The engine is defined in the baseline. Edit baseline/h2_baseline.yaml "
+                             "and regenerate the table:  " + e2_baseline.REGENERATE)
         node, parts = cfg, key.split(".")
         for p in parts[:-1]:
             node = node[p]
         node[parts[-1]] = yaml.safe_load(val)
-    perf_path = Path(path).parent / cfg["engine"]["performance_file"]
-    perf = yaml.safe_load(perf_path.read_text()) if perf_path.exists() else None
-    if not performance_is_current(perf, cfg["engine"]):
-        import engine_performance
-        print(f"{perf_path.name} is missing or does not match the engine inputs; regenerating it.")
-        perf = engine_performance.write_performance(cfg["engine"], perf_path, Path(path).name)
-    return cfg, perf
-
-
-def performance_is_current(perf, e):
-    """True if the throttle table was generated from these engine inputs."""
-    if not perf:
-        return False
-    basis = perf.get("basis", {})
-    keys = ("oxidizer", "fuel", "fuel_flow_kg_s", "rated_thrust_N", "chamber_pressure_rated_bar",
-            "expansion_ratio", "ambient_pressure_bar", "eta_cstar", "eta_cf")
-    if any(basis.get(k) != e[k] for k in keys):
-        return False
-    return [r["throttle"] for r in perf.get("table", [])] == [round(f, 4) for f in e["throttle_points"]]
+    bl = e2_baseline.load(e2_baseline.resolve(cfg["baseline"], path))
+    return cfg, bl, e2_baseline.engine_table(bl)
 
 
 class Engine:
-    """Throttle line from engine_performance.yaml, interpolated in throttle."""
+    """Throttle line from the baseline engine table, interpolated in throttle."""
 
-    def __init__(self, cfg_engine, perf):
-        t = perf["table"]
-        self.F_max = cfg_engine["rated_thrust_N"]
-        self.thr_min = cfg_engine["throttle_min"]
-        self.fuel_flow = cfg_engine["fuel_flow_kg_s"]
+    def __init__(self, bl_engine, table):
+        t = table["rows"]
+        self.F_max = bl_engine["rated_thrust_N"]
+        self.thr_min = bl_engine["throttle_min"]
+        self.fuel_flow = bl_engine["fuel_flow_kg_s"]
         self.thr = np.array([r["throttle"] for r in t])
         self.ox = np.array([r["ox_flow_kg_s"] for r in t])
         self.mr = np.array([r["mixture_ratio"] for r in t])
         self.pc = np.array([r["chamber_pressure_bar"] for r in t])
         self.isp_tab = np.array([r["isp_s"] for r in t])
-        self.perf_meta = perf.get("meta", {})
+        self.perf_meta = table.get("meta", {})
 
     def flows(self, thr):
         """(m_dot_ox, m_dot_fuel) in kg/s at throttle thr."""
@@ -126,15 +118,17 @@ class Vehicle:
     ref_m_vapour: float
 
     @classmethod
-    def from_cfg(cls, c):
+    def from_cfg(cls, c, bl):
         t, p, v = c["propellant_tanks"], c["pressurization"], c["vehicle"]
+        res = bl["residuals"]
         return cls(dry_mass=v["dry_mass_kg"], payload_min=v["ballast_min_kg"],
                    tw_liftoff=v["liftoff_thrust_to_weight"],
                    V_ox_tank=t["oxidizer"]["count"] * t["oxidizer"]["volume_each_L"],
                    V_fuel_tank=t["fuel"]["count"] * t["fuel"]["volume_each_L"],
                    ullage_load=t["initial_ullage_fraction"],
-                   T_load_C=t["oxidizer"]["loading_temperature_C"], rho_fuel=t["fuel"]["density_kg_m3"],
-                   residual_ox=t["oxidizer"]["residual_kg"], residual_fuel=t["fuel"]["residual_kg"],
+                   T_load_C=bl["propellants"]["oxidizer"]["temperature_max_C"],   # warm end of the window
+                   rho_fuel=t["fuel"]["density_kg_m3"],
+                   residual_ox=res["oxidizer_kg"], residual_fuel=res["fuel_kg"],
                    m_pressurant=p["pressurant_mass_kg"], m_n2o_vapour=p["n2o_vapour_makeup_kg"],
                    ref_V_prop=p["reference"]["propellant_volume_L"],
                    ref_V_ox=p["reference"]["oxidizer_volume_L"],
@@ -531,16 +525,16 @@ def main():
     ap.add_argument("--out", default="mission_results.yaml")
     a = ap.parse_args()
 
-    cfg, perf = load_inputs(a.inputs, a.set)
-    eng = Engine(cfg["engine"], perf)
-    veh = Vehicle.from_cfg(cfg)
+    cfg, bl, table = load_inputs(a.inputs, a.set)
+    eng = Engine(bl["engine"], table)
+    veh = Vehicle.from_cfg(cfg, bl)
     allw = Allowances(cfg["allowances"]["reserve_hover_s"], cfg["allowances"]["control_fraction"])
     names = ["hover", "hop"] if a.mission == "both" else [a.mission]
     missions = [MISSIONS[n](cfg["missions"][n]) for n in names]
 
     out = dict(meta=dict(generated_by="mission_sizing.py", date=str(dt.date.today()),
                          inputs=Path(a.inputs).name, overrides=a.set,
-                         engine_performance=perf.get("meta", {})))
+                         baseline=e2_baseline.describe(bl), engine_table=table.get("meta", {})))
     veh_present = copy.deepcopy(veh)             # --max-apex always uses the present tanks
     if a.size_tanks:
         size_tanks(eng, veh, missions, allw)

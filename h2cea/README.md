@@ -1,9 +1,12 @@
 # h2cea â€“ thrust chamber reference analyses (Handbook H2-PRP-HBK-001 Rev B)
 
 Thermochemistry, first-order sizing and the regenerative cooling analysis of the
-E2 chamber. All baseline inputs live in `h2cea/config.py`.
+E2 chamber. The engine design point, propellant states and feed pressures come from
+the shared baseline (`../baseline/h2_baseline.yaml`) through `h2cea/config.py`; the
+E2-REG-1 hardware and the regen settings are set in `config.py` itself.
 
-    pip install rocketcea CoolProp numpy scipy matplotlib pandas
+    pip install rocketcea CoolProp numpy scipy pyyaml matplotlib pandas
+    python run_engine_table.py     # a few seconds, engine throttle table -> ../baseline/engine_table.yaml
     python run_regen.py            # ~2 min, cooling analyses -> out/regen/
     python run_regen.py --viewer   # + 2D sections along the channel and the 3D viewer (~8 min)
     python run_boiling.py          # N2O boiling regime, all coolant-side models -> out/boiling/
@@ -15,6 +18,14 @@ The thermochemistry and sizing script of the handbook (`run_all.py`, figures 01â
 `notion_figs.py` are not in this repository. The library functions they used are still
 here: `cea_si.point()`, `operating_line.size_throat()` / `thrust_to_mox()`, `bartz.py`,
 `gasdyn.py`, `contour.py`.
+
+## run_engine_table.py
+
+Computes the delivered throttle line of the flight engine from the baseline
+(`operating_line.size_throat()` and `state()`, liquid N2O card at the nominal tank
+state) and writes `baseline/engine_table.yaml`. The mission, injector and tank tools read
+that table. Re-run it after changing the engine, propellant or tank pressure inputs of
+the baseline, and commit both files together.
 
 ## Library
 

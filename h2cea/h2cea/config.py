@@ -1,45 +1,52 @@
-"""Baseline inputs for the H2 lander thrust chamber analyses.
+"""Inputs for the H2 lander thrust chamber analyses.
 
-Every number here is traceable to a project document. Change them here, not in the
-analysis scripts.
+The engine design point, propellant states and feed pressures come from the
+shared baseline, baseline/h2_baseline.yaml at the repository root. Change them
+there. The E2-REG-1 hardware (contour, jacket) and the regen analysis settings
+below are specific to h2cea and are set here.
 
 Sources
 -------
-H2-PRP-DOC-001 Rev A (Propulsion System Architecture, 2026-09-24)
-H2-PRP-001 (2250 N max thrust at pc 25 bar), H2-PRP-036 (ox flow range)
+Baseline: see the `meta.sources` list in baseline/h2_baseline.yaml
 E2-TCA-DOC-001 Rev C and Thrust Chamber E2-REG-1-A (as-built contour table)
-LDR-PRP-TNK-003 Rev B (tank sizing: 100 bar set pressure)
 """
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "baseline"))
+import e2_baseline  # noqa: E402
+
+BASELINE = e2_baseline.load()
+_E, _P, _F = BASELINE["engine"], BASELINE["propellants"], BASELINE["feed"]
+
 G0 = 9.80665                 # m/s^2, standard gravity
-P_AMB = 1.01325              # bar, sea level
+P_AMB = _E["ambient_pressure_bar"]   # bar
 
-# ---- Engine design point (architecture decisions of 2026-09-24) ----------------
-F_MAX = 2250.0               # N, sea-level thrust at 100 % (H2-PRP-001)
-PC_MAX = 25.0                # bar, chamber pressure at 100 %
-EPS = 4.0                    # nozzle area ratio (baseline; E2-REG-1 as built is 3.0)
-MDOT_FUEL = 0.20             # kg/s, fixed by the fuel cavitating venturi
-THROTTLE_FLOOR = 0.50        # fraction of F_MAX
+# ---- Engine design point (baseline) ---------------------------------------------
+F_MAX = _E["rated_thrust_N"]                 # N, sea-level thrust at 100 %
+PC_MAX = _E["chamber_pressure_rated_bar"]    # bar, chamber pressure at 100 %
+EPS = _E["expansion_ratio"]                  # nozzle area ratio (E2-REG-1 as built is 3.0)
+MDOT_FUEL = _E["fuel_flow_kg_s"]             # kg/s, fixed by the fuel cavitating venturi
+THROTTLE_FLOOR = _E["throttle_min"]          # fraction of F_MAX
 
-# Efficiencies. The architecture sets the delivered sea-level Isp to 93 % of ideal.
-# The split between combustion and nozzle matters for the throat area and for the
-# throttled points, so it is made explicit here:
-ETA_CSTAR = 0.955            # c* efficiency (energy release, mixing)
-ETA_CF_VAC = 0.977           # applied to the ideal VACUUM thrust coefficient
-                             # (divergence, boundary layer, kinetics); the ambient
-                             # pressure term -pa*Ae is exact and carries no loss.
-# 0.955 x 0.977 on vacuum thrust gives 0.930 on sea-level Isp at the 100 % point.
+# Efficiencies. The split between combustion and nozzle matters for the throat area
+# and for the throttled points, so it is explicit:
+ETA_CSTAR = _E["eta_cstar"]                  # c* efficiency (energy release, mixing)
+ETA_CF_VAC = _E["eta_cf_vac"]                # applied to the ideal VACUUM thrust coefficient;
+                                             # the ambient pressure term -pa*Ae carries no loss
 
-# ---- Propellant states ----------------------------------------------------------
-T_OX_NOM = 293.15            # K, N2O temperature at start (architecture: 5-25 C)
-T_OX_RANGE = (278.15, 298.15)
-P_TANK = 100.0               # bar, regulated tank set pressure
-ETHANOL_WT = 100.0           # wt% ethanol in the fuel (state the grade!)
+# ---- Propellant states (baseline) -------------------------------------------------
+T_OX_NOM = _P["oxidizer"]["temperature_nominal_C"] + 273.15     # K, N2O at start
+T_OX_RANGE = (_P["oxidizer"]["temperature_min_C"] + 273.15,
+              _P["oxidizer"]["temperature_max_C"] + 273.15)
+P_TANK = _F["tank_pressure_bar"]             # bar, regulated tank set pressure
+ETHANOL_WT = _P["fuel"]["ethanol_wt_pct"]    # wt% ethanol in the fuel
 
-# ---- Feed pressure model at 100 % (architecture section 7.1) -------------------
-P_INJ_IN_NOM = 40.0          # bar, oxidiser injector inlet at nominal flow
-DP_JACKET_NOM = (20.0, 30.0) # bar, jacket pressure drop estimate at nominal flow
-P_VENTURI_IN = 93.0          # bar, venturi inlet after lines, main valve, throttle
-VENTURI_RECOVERY = 0.80      # max outlet/inlet pressure ratio that keeps cavitation
+# ---- Feed pressure model at 100 % (baseline) ----------------------------------------
+P_INJ_IN_NOM = _F["ox_injector_inlet_bar"]   # bar, oxidiser injector inlet at nominal flow
+DP_JACKET_NOM = tuple(_F["jacket_pressure_drop_bar"])   # bar, jacket pressure drop estimate
+P_VENTURI_IN = _F["venturi_inlet_bar"]       # bar, venturi inlet after lines, main valve, throttle
+VENTURI_RECOVERY = _F["venturi_pressure_recovery"]   # max outlet/inlet pressure ratio
 
 # ---- Reference contour: E2-REG-1 as built --------------------------------------
 # The as-built table lists "D_c 48.5 mm", but only R_c = 48.5 mm closes the listed

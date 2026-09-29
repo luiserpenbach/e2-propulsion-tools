@@ -79,6 +79,9 @@ import yaml
 import CoolProp.CoolProp as CP
 from scipy.optimize import brentq, minimize_scalar
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "baseline"))
+import e2_baseline  # noqa: E402
+
 BAR = 1e5
 MM = 1e-3
 
@@ -127,6 +130,8 @@ def deep_merge(base: dict, new: dict) -> dict:
 def load_config(path: str) -> dict:
     with open(path, "r", encoding="utf-8") as f:
         cfg = deep_merge(DEFAULTS, yaml.safe_load(f) or {})
+    if cfg.get("baseline"):
+        apply_baseline(cfg, path)
     missing = []
     for sec, key in [("operating_point", "chamber_pressure_bar"), ("operating_point", "mdot_total_kg_s"),
                      ("operating_point", "of_ratio"), ("fuel", "pressure_drop_bar"),
@@ -142,6 +147,27 @@ def load_config(path: str) -> dict:
         raise ValueError(f"Unknown as_built keys: {sorted(unknown)}. "
                          f"Allowed: {GEOMETRY_KEYS_MM + GEOMETRY_KEYS_INT}")
     return cfg
+
+
+def apply_baseline(cfg: dict, path: str) -> None:
+    """Operating point and throttle points from the engine table of the shared
+    baseline. The rated row gives the nominal point; each throttle point's
+    `fraction` is a fraction of rated THRUST and takes chamber pressure, O/F
+    and total flow from the table (fuel flow fixed, oxidizer throttled).
+    Values set in the config win; differences from the baseline are reported."""
+    bl = e2_baseline.load(e2_baseline.resolve(cfg["baseline"], path))
+    table = e2_baseline.engine_table(bl)
+    rated = e2_baseline.table_point(table, 1.0)
+    e2_baseline.fill(cfg, {"operating_point.chamber_pressure_bar": rated["chamber_pressure_bar"],
+                           "operating_point.mdot_total_kg_s": rated["total_flow_kg_s"],
+                           "operating_point.of_ratio": rated["mixture_ratio"]},
+                     label=os.path.basename(path))
+    for pt in cfg["throttle_points"]:
+        row = e2_baseline.table_point(table, pt.get("fraction", 1.0))
+        pt.setdefault("chamber_pressure_bar", row["chamber_pressure_bar"])
+        pt.setdefault("of_ratio", row["mixture_ratio"])
+        pt.setdefault("mdot_total_kg_s", row["total_flow_kg_s"])
+    cfg["baseline_info"] = e2_baseline.describe(bl)
 
 
 # ----------------------------------------------------------------------------
@@ -415,10 +441,13 @@ def axial_film_velocity(mdot: float, rho: float, r_n: float, t: float) -> float:
 # ----------------------------------------------------------------------------
 # Element sizing
 # ----------------------------------------------------------------------------
-def per_element_flows(cfg: dict, fraction: float = 1.0, of: float | None = None) -> tuple[float, float]:
+def per_element_flows(cfg: dict, fraction: float = 1.0, of: float | None = None,
+                      m_total: float | None = None) -> tuple[float, float]:
+    """(ox, fuel) flow per element. The head total is m_total if given, else
+    fraction x the nominal total flow."""
     op = cfg["operating_point"]
     of = op["of_ratio"] if of is None else of
-    m_tot = op["mdot_total_kg_s"] * fraction / cfg["elements"]
+    m_tot = (op["mdot_total_kg_s"] * fraction if m_total is None else m_total) / cfg["elements"]
     return m_tot * of / (1 + of), m_tot / (1 + of)  # ox, fuel
 
 
@@ -554,7 +583,7 @@ def analyse_point(cfg: dict, g: dict, point: dict) -> dict:
         T_ox, q_ox = point["ox_temperature_K"], None
     else:
         T_ox, q_ox = oc["temperature_K"], (oc["quality"] if oc["temperature_K"] is None else None)
-    m_ox, m_f = per_element_flows(cfg, frac, of)
+    m_ox, m_f = per_element_flows(cfg, frac, of, point.get("mdot_total_kg_s"))
     warn = []
 
     # fuel side (properties at an estimated feed pressure, one refinement)
@@ -774,7 +803,14 @@ def build_report(cfg, g_sized, g_used, info, points, ref) -> str:
              "Thesis cold-flow data: SMD falls steeply up to J ~ 0.5 and levels out from J ~ 1.")
     L.append("- The viscous swirl model over-predicted the thesis SLA injector flow by ~25 %; set "
              "calibration.swirl_cd_factor from measured data.")
-    L.append("- Chamber pressure at part thrust defaults to fraction x nominal unless given per point.")
+    if cfg.get("baseline_info"):
+        b = cfg["baseline_info"]
+        L.append(f"- Operating point and throttle points from the engine table of {b['file']} "
+                 f"(revision {b['revision']}): fraction = fraction of rated thrust, fuel flow fixed, "
+                 "oxidizer throttled.")
+    else:
+        L.append("- Throttle points scale both flows at the nominal O/F; chamber pressure at part "
+                 "thrust defaults to fraction x nominal unless given per point.")
     return "\n".join(L) + "\n"
 
 

@@ -37,7 +37,8 @@ Edits in the app are not written back to the YAML files; copy the suggested cali
 
 ## Config essentials
 
-- `operating_point`: chamber pressure, total mass flow and O/F of the whole head; `elements` splits it.
+- `baseline`: path of the shared baseline (`../../baseline/h2_baseline.yaml`). With it, the operating point comes from the rated row of the engine table, and each throttle point's `fraction` is a fraction of rated thrust: chamber pressure, O/F and total flow come from the table (fuel flow fixed, oxidizer throttled). The P04 design config uses it.
+- `operating_point`: chamber pressure, total mass flow and O/F of the whole head; `elements` splits it. Required without `baseline`; with it, a value here overrides the baseline and the tool prints a NOTE.
 - `oxidizer.temperature_K` or `oxidizer.quality` defines the state at the metering holes. Throttle points can override it with `ox_temperature_K` or `ox_quality` (e.g. heat-sink tests without preheating).
 - `as_built`: any geometry value in mm replaces the sized value before the analysis. Use it to evaluate real hardware or CAD rounding.
 - `calibration.swirl_cd_factor`: measured / predicted swirl flow coefficient. `calibration.spray_half_angle_measured_deg`: measured J = 0 half-angle, used for the recess and the recess regime.
@@ -54,7 +55,6 @@ Edits in the app are not written back to the YAML files; copy the suggested cali
 - The viscous model predicts C_D = 0.073 for the thesis LCSC geometry (water, 20 g/s); the thesis measured about 0.057 on SLA parts. It also predicts about 61° half-angle where 50–55° was measured. Calibrate before trusting absolute values.
 - Film thickness is not validated; J is therefore reported as a range over four film models.
 - Part-thrust chamber pressure defaults to fraction × nominal unless given per point.
-- Throttle points scale fuel and oxidizer flow together at the nominal O/F. The E2 engine holds the fuel flow fixed (cavitating venturi) and throttles only the oxidizer, so part-thrust fuel Δp and stiffness from this tool are not the engine's.
-- The operating point in the configs (1.0 kg/s, O/F 4) is not the h2cea rated point (1.074 kg/s, O/F 4.37 at 2250 N, 25 bar with 0.20 kg/s fuel).
+- Without `baseline`, throttle points scale fuel and oxidizer flow together at the nominal O/F. That is how the P03 as-built config is run (its original 1.0 kg/s, O/F 4 test point); it is not how the E2 engine throttles.
 - Background and test data: Notion, E2 Engine › Injector Head › Master Thesis Summary – Coaxial Swirl Injectors (vom Schemm, 2024).
 

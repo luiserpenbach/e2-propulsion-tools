@@ -159,10 +159,13 @@ with tab_design:
         "ox_holes": {"n_holes": int(n_h), "discharge_coefficient": cd_h},
         "calibration": {"swirl_cd_factor": cdf},
     })
-    # throttle points defined by absolute chamber pressure in the base file are rescaled to the new pc
+    # throttle points defined by absolute chamber pressure (and, from the baseline engine table,
+    # absolute total flow) in the base file are rescaled to the new pc and flow
     pc0 = base["operating_point"]["chamber_pressure_bar"]
+    md0 = base["operating_point"]["mdot_total_kg_s"]
     cfg["throttle_points"] = [
-        {**p, "chamber_pressure_bar": p.get("chamber_pressure_bar", pc0 * p.get("fraction", 1.0)) * pc / pc0}
+        {**p, "chamber_pressure_bar": p.get("chamber_pressure_bar", pc0 * p.get("fraction", 1.0)) * pc / pc0,
+         **({"mdot_total_kg_s": p["mdot_total_kg_s"] * mdot / md0} if "mdot_total_kg_s" in p else {})}
         for p in base["throttle_points"] if "ox_quality" not in p and "ox_temperature_K" not in p
     ] or [{"fraction": 1.0}]
 
@@ -275,7 +278,8 @@ with tab_test:
             po_m = st.number_input("Ox manifold pressure [bar]", 0.5, 300.0,
                                    float(cfg_t["operating_point"]["chamber_pressure_bar"] + cfg_t["oxidizer"]["pressure_drop_bar"]))
             ox_val = st.number_input("Ox temperature [K] or quality [-]", 0.0, 900.0,
-                                     float(cfg_t["oxidizer"]["temperature_K"] or 0.0) if ox_mode_t == "Temperature" else 0.0)
+                                     float(cfg_t["oxidizer"]["temperature_K"] or 0.0) if ox_mode_t == "Temperature" else 0.0,
+                                     key=f"ox_val_{ox_mode_t}")   # separate widget per mode, so the default applies
         notes = st.text_input("Notes")
         submitted = st.form_submit_button("Evaluate", type="primary")
 
