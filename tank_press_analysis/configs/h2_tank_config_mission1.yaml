@@ -9,12 +9,12 @@
 
 baseline: ../../baseline/h2_baseline.yaml
 
-# Constant-flow equivalent of the hover mission, copied by hand from
-# mission_analysis/mission_results.yaml (handover). Not yet automatic.
+# Propellant to deliver: the handover of the mission tool (usable N2O and ethanol
+# of the sizing case, at the mission's mean flow). Run mission_sizing.py first.
+# For a stand-alone study, replace from_mission_results by burn_time_s,
+# mdot_total_kg_s and of_ratio (see configs/n2o_press.yaml).
 mission:
-  burn_time_s: 14.5          # full-thrust duration the liquid load is sized for
-  mdot_total_kg_s: 1.1       # total engine mass flow
-  of_ratio: 4.0              # oxidizer/fuel mass ratio -> mdot_ox = 0.88, mdot_fu = 0.22 kg/s
+  from_mission_results: ../../mission_analysis/mission_results.yaml
 
 # --- Tank geometry & sizing rules -------------------------------------------
 tanks:
@@ -56,8 +56,8 @@ model:
   prepress: isothermal           # bottle pre-press draw (isothermal | adiabatic)
   makeup_headroom: 1.05          # factor on end-of-burn N2O vapor in the load
   bottle_volume_guess_m3: 0.065  # first-pass shared-bottle volume
-  ox_load_guess_kg: 16.2         # optional warm start for makeup (else delivered+residual);
-                                 # set near the converged load, the outer loop has 5 passes
+  # ox_load_guess_kg:            # optional warm start for makeup (else delivered+residual);
+                                 # not used here because the load follows the mission
   fixed_point_iters: 4           # per-step iterations, N2O two-phase solver
   evap_model: equilibrium        # 'equilibrium' (interface always saturated;
                                  # max evaporation/cooling -> conservative) |

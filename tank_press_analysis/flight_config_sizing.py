@@ -68,7 +68,39 @@ def load_config(path: str | Path) -> dict:
             {"name": "cold", "prop_temp_C": cfg["operating"]["temp_min_C"]},
             {"name": "hot", "prop_temp_C": cfg["operating"]["temp_max_C"]}])
         cfg["_baseline"] = e2_baseline.describe(bl)
+    if (cfg.get("mission") or {}).get("from_mission_results"):
+        _mission_from_handover(cfg, path)
     return cfg
+
+
+def _mission_from_handover(cfg: dict, cfg_path) -> None:
+    """Fill the `mission` block from the handover section of the mission
+    tool's results: usable N2O and ethanol, delivered at the mission's mean
+    flow over the equivalent constant-flow duration."""
+    mi = cfg["mission"]
+    manual = [k for k in ("burn_time_s", "mdot_total_kg_s", "of_ratio") if k in mi]
+    if manual:
+        raise SystemExit(f"{Path(cfg_path).name}: mission.from_mission_results replaces "
+                         f"{', '.join(manual)}; remove them or remove from_mission_results.")
+    src = Path(mi["from_mission_results"])
+    if not src.is_absolute():
+        src = (Path(cfg_path).resolve().parent / src).resolve()
+    if not src.exists():
+        raise SystemExit(f"{src} not found. Run the mission tool first:  "
+                         f"cd mission_analysis && python mission_sizing.py")
+    res = yaml.safe_load(src.read_text(encoding="utf-8"))
+    ho = res["handover"]
+    m_ox, m_fu, t = ho["usable_n2o_kg"], ho["usable_ethanol_kg"], ho["duration_mean_flow_s"]
+    mi.update(burn_time_s=t, mdot_total_kg_s=(m_ox + m_fu) / t, of_ratio=m_ox / m_fu)
+    meta = res.get("meta", {})
+    cfg["_mission_handover"] = {
+        "file": src.name, "mission_date": meta.get("date"), "sizing_case": ho["sizing_case"],
+        "usable_n2o_kg": m_ox, "usable_ethanol_kg": m_fu, "duration_s": t,
+        "mission_overrides": meta.get("overrides") or []}
+    print(f"Mission from {src.name} ({ho['sizing_case']}): N2O {m_ox:.2f} kg, ethanol {m_fu:.2f} kg "
+          f"over {t:.2f} s")
+    if meta.get("overrides"):
+        print(f"NOTE: those mission results were run with --set {meta['overrides']}")
 
 
 # =============================================================================
@@ -513,7 +545,8 @@ def main(argv=None):
     print("=== 1) Coupled makeup + bottle-volume iteration ===")
     sizing, cases, bottle_req = None, {}, {}
     converged = False
-    for it in range(5):
+    n_outer = int(mo.get("outer_iterations", 10))
+    for it in range(n_outer):
         sizing = size_tanks(cfg, m_ox_load=m_load)
         cases = {}
         for c in cfg["cases"]:
@@ -559,9 +592,10 @@ def main(argv=None):
         v_bottle = v_new
 
     if not converged:
-        print(f"  WARNING: load / bottle iteration not converged after 5 passes "
+        print(f"  WARNING: load / bottle iteration not converged after {n_outer} passes "
               f"(load {m_load:.2f} kg, need {m_need:.2f} kg). Check "
-              f"model.ox_load_guess_kg and model.bottle_volume_guess_m3.")
+              f"model.ox_load_guess_kg, model.bottle_volume_guess_m3 or raise "
+              f"model.outer_iterations.")
     if makeup_on:
         m_load = max(m_load, m_need)
         sizing = size_tanks(cfg, m_ox_load=m_load)
@@ -649,9 +683,24 @@ def main(argv=None):
         "cases": {n: {k: v for k, v in r.items() if k != "timeseries"}
                   for n, r in cases.items()},
         "bottle": bottle,
+        # Input to mission_analysis (pressurization.from_tank_results). The
+        # mission tool scales mass and vapour to its own tank volumes.
+        "handback": {
+            "pressurant_mass_kg": bottle["m_loaded_kg"],
+            "pressurant_margin_factor": pr["margin_factor"],
+            "n2o_vapour_makeup_kg": (sizing["m_ox_kg"] - sizing["m_ox_delivered_kg"]
+                                     - sizing["residual_ox_kg"]),
+            "oxidizer_volume_L": sizing["ox"]["volume_L"],
+            "propellant_volume_L": sizing["ox"]["volume_L"] + sizing["fu"]["volume_L"],
+            "sized_for": cfg.get("_mission_handover"),
+        },
     }
     res_path = outdir / f"{cfg_name}_results.yaml"
     res_path.write_text(yaml.safe_dump(results, sort_keys=False))
+    hb = results["handback"]
+    print(f"  handback: {hb['pressurant_mass_kg']:.2f} kg N2 (x{hb['pressurant_margin_factor']:.2f}), "
+          f"{hb['n2o_vapour_makeup_kg']:.2f} kg N2O vapour, tanks {hb['propellant_volume_L']:.1f} L "
+          f"(N2O {hb['oxidizer_volume_L']:.1f} L)")
     rep = build_report(cfg, sizing, cases, bottle, outdir, cfg_name)
     print(f"\nReport: {rep}\nResults: {res_path}")
     return results

@@ -45,10 +45,12 @@ baseline/h2_baseline.yaml ──> h2cea/run_engine_table.py ──> baseline/h2_
       ├─> tank_press_analysis (opt-in)                           │
       └─> mission_analysis/mission_sizing.py <───────────────────┘
                  │
-                 └─> mission_results.yaml ──(handover, manual)──> tank config `mission` block
+                 └─> mission_results.yaml (handover) ──> tank_press_analysis (from_mission_results)
                                                                         │
-                           pressurant mass, vapour make-up (manual) <───┘
-                           back into h2_mission_inputs.yaml
+                   pressurization.from_tank_results <── handback ───────┘
+                   in h2_mission_inputs.yaml
+
+Run order for the H2 sizing: mission_sizing.py -> flight_config_sizing.py -> mission_sizing.py.
 ```
 
 ## Requirements

@@ -60,5 +60,4 @@ Every baseline file has its own table (`<name>_engine_table.yaml`), so a study c
 
 ## Not in the baseline
 
-- The tank tool's `mission` block (burn time, flow, O/F) is a hand copy of the mission handover.
 - Values used by one tool only stay in that tool's config: pressurant bottle, regulator and ullage rules (tanks); vehicle, present tank volumes, pressurization (mission); oxidizer state at the holes and pressure drops (injector).
