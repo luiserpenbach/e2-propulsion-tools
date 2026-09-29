@@ -9,9 +9,13 @@ or boiling nitrous oxide and supercritical nitrous oxide.
 
 Coolant-side heat transfer by regime
     liquid, vapour, supercritical   Gnielinski with bulk properties
-    two-phase (0 < x < 1)           Gnielinski, liquid-only (whole flow as liquid);
-                                    no nucleate or convective boiling credit, which
-                                    is conservative for the wall temperature
+    two-phase (0 < x < 1)           tp_model="liquid_only" (default): Gnielinski,
+                                    whole flow as liquid, no boiling credit.
+                                    This is NOT conservative for N2O: the
+                                    regime-switching model (tp_model="regime",
+                                    see twophase.py) gives a much lower coolant-side
+                                    coefficient and a hotter wall. Use "regime" for
+                                    the N2O design case.
 The critical heat flux is checked with Hall-Mudawar (2000), outlet form, wherever
 the pressure is subcritical; onset of nucleate boiling is flagged when the
 coolant-side wall exceeds the local saturation temperature.
@@ -19,6 +23,7 @@ coolant-side wall exceeds the local saturation temperature.
 Pressure: Darcy-Weisbach (Haaland friction factor, homogeneous density, McAdams
 two-phase viscosity) plus the acceleration term G^2 (1/rho_out - 1/rho_in).
 """
+import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -130,6 +135,7 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
     geo = channels(r, jacket)
     n_act = jacket.n - len(jacket.blocked)
     G_all = mdot / (n_act * geo["A_one"])
+    n_unconverged = 0
 
     names = ["M", "X", "Taw", "hg0", "sigma", "hg", "q", "Twg", "Twc", "Tb", "p", "h", "rho", "v",
              "Re", "Pr", "f", "hc", "eta_fin", "hce", "kw", "Tsat", "xq", "chf", "chf_ratio",
@@ -181,6 +187,8 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
             Twg = Twg_new if done else 0.5 * (Twg + Twg_new)
             if done and (not use_tp or it > 3):
                 break
+        else:
+            n_unconverged += 1
         # Hall-Mudawar is a subcooled / low-quality correlation; beyond x ~ 0.05 the
         # limit is dryout, which it does not describe, so it is not evaluated there.
         chf = chf_hall_mudawar(G, D, sat, st.x) if sat is not None and st.x <= X_CHF_MAX else np.nan
@@ -233,6 +241,9 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
     dh = A["h"][i_out] - h_in
     it = int(np.nanargmax(A["Twg"]))
     ic = int(np.nanargmax(A["Twc"]))
+    if n_unconverged:
+        warnings.warn(f"regen.march ({case}): wall temperature iteration not converged at "
+                      f"{n_unconverged} of {N} stations", RuntimeWarning, stacklevel=2)
     sc = dict(case=case, coolant=cool.name, mdot=mdot, pc_bar=pc_bar, MR=pt.mr, Tc=Tc,
               Q=Q, energy_balance_err=abs(mdot * dh - Q) / Q,
               p_in_bar=p_in_bar, p_out_bar=A["p"][i_out] / 1e5,
@@ -277,6 +288,8 @@ def march_to_outlet_pressure(wall, pt, pc_bar, jacket, coolant, mdot, p_out_bar,
         if abs(e1) < tol_bar:
             return r1
         p0, p1, e0 = p1, p1 - e1 * (p1 - p0) / (e1 - e0), e1
+    warnings.warn(f"march_to_outlet_pressure ({kw.get('case', '')}): outlet pressure off by "
+                  f"{e1:.3f} bar after 20 iterations", RuntimeWarning, stacklevel=2)
     return r1
 
 

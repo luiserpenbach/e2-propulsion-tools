@@ -256,8 +256,9 @@ def hem_mass_flux(fluid: str, inlet: OxInlet, p_down: float) -> tuple[float, boo
     lo, hi = grid[max(i - 1, 0)], grid[min(i + 1, len(grid) - 1)]
     res = minimize_scalar(lambda p: -f(p), bounds=(lo, hi), method="bounded",
                           options={"xatol": 1e-4 * p0})
-    G = max(-res.fun, vals[i])
-    return float(G), True, float(res.x)
+    if math.isfinite(res.fun) and -res.fun > vals[i]:
+        return float(-res.fun), True, float(res.x)
+    return float(vals[i]), True, float(grid[i])
 
 
 def spi_mass_flux(inlet: OxInlet, p_down: float) -> float:
@@ -892,7 +893,7 @@ def self_check() -> bool:
 def main(argv=None):
     ap = argparse.ArgumentParser(description="LCSC injector element sizing and analysis")
     ap.add_argument("config", nargs="?", help="YAML input file")
-    ap.add_argument("-o", "--out", help="output folder (default: next to config)")
+    ap.add_argument("-o", "--out", help="output folder (default: results/ next to this script)")
     ap.add_argument("--check", action="store_true", help="run built-in validation cases")
     a = ap.parse_args(argv)
     if a.check:
@@ -900,7 +901,7 @@ def main(argv=None):
     if not a.config:
         ap.error("config file required (or --check)")
     cfg = load_config(a.config)
-    out = a.out or os.path.join(os.path.dirname(os.path.abspath(a.config)), "results")
+    out = a.out or os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
     run(cfg, out)
 
 

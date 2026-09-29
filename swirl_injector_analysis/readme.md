@@ -9,14 +9,13 @@ python lcsc_sizing.py configs/e2_lcsc_p03_3x_as_built.yaml   # analyse existing 
 python lcsc_sizing.py --check                                # validation cases
 ```
 
-Results go to a `results/` folder next to the config (or `-o <folder>`).
+Results go to `results/` in this folder (or `-o <folder>`), named after the `name` field in the config. `results/` is not in git.
 
 ## Optional app
 
 ```
 pip install streamlit pandas
 streamlit run app.py        # run from this folder
-
 ```
 
 - **Design**: pick a base config, change the main inputs, size the element and see geometry, operating envelope and warnings. The design-space section sweeps one parameter (spray angle, gas velocity, pressure drops, oxidizer temperature, element or inlet count) and plots geometry and J.
@@ -55,5 +54,7 @@ Edits in the app are not written back to the YAML files; copy the suggested cali
 - The viscous model predicts C_D = 0.073 for the thesis LCSC geometry (water, 20 g/s); the thesis measured about 0.057 on SLA parts. It also predicts about 61° half-angle where 50–55° was measured. Calibrate before trusting absolute values.
 - Film thickness is not validated; J is therefore reported as a range over four film models.
 - Part-thrust chamber pressure defaults to fraction × nominal unless given per point.
+- Throttle points scale fuel and oxidizer flow together at the nominal O/F. The E2 engine holds the fuel flow fixed (cavitating venturi) and throttles only the oxidizer, so part-thrust fuel Δp and stiffness from this tool are not the engine's.
+- The operating point in the configs (1.0 kg/s, O/F 4) is not the h2cea rated point (1.074 kg/s, O/F 4.37 at 2250 N, 25 bar with 0.20 kg/s fuel).
 - Background and test data: Notion, E2 Engine › Injector Head › Master Thesis Summary – Coaxial Swirl Injectors (vom Schemm, 2024).
 

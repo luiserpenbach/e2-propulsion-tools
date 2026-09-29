@@ -61,8 +61,24 @@ def load_inputs(path, overrides=()):
             node = node[p]
         node[parts[-1]] = yaml.safe_load(val)
     perf_path = Path(path).parent / cfg["engine"]["performance_file"]
-    perf = yaml.safe_load(perf_path.read_text())
+    perf = yaml.safe_load(perf_path.read_text()) if perf_path.exists() else None
+    if not performance_is_current(perf, cfg["engine"]):
+        import engine_performance
+        print(f"{perf_path.name} is missing or does not match the engine inputs; regenerating it.")
+        perf = engine_performance.write_performance(cfg["engine"], perf_path, Path(path).name)
     return cfg, perf
+
+
+def performance_is_current(perf, e):
+    """True if the throttle table was generated from these engine inputs."""
+    if not perf:
+        return False
+    basis = perf.get("basis", {})
+    keys = ("oxidizer", "fuel", "fuel_flow_kg_s", "rated_thrust_N", "chamber_pressure_rated_bar",
+            "expansion_ratio", "ambient_pressure_bar", "eta_cstar", "eta_cf")
+    if any(basis.get(k) != e[k] for k in keys):
+        return False
+    return [r["throttle"] for r in perf.get("table", [])] == [round(f, 4) for f in e["throttle_points"]]
 
 
 class Engine:
@@ -201,10 +217,15 @@ class HoverMission:
         c, lg = self.c, r["log"]
         h_win = c["count_altitude_m"] if c["count_altitude_m"] is not None else c["hover_altitude_m"]
         dtl = np.diff(lg["t"], append=lg["t"][-1])
-        t_counted = float(np.sum(dtl * (lg["h"] >= h_win)))
-        t_win = float(lg["t"][np.argmax(lg["h"] >= h_win)] - c["t_startup_s"])
+        above = lg["h"] >= h_win
+        t_counted = float(np.sum(dtl * above))
+        if not above.any():                      # never reaches the count altitude
+            return dict(hover_counted_s=0.0, hover_window_after_liftoff_s=None,
+                        ascent_time_ok=False, hover_time_ok=False)
+        t_win = float(lg["t"][np.argmax(above)] - c["t_startup_s"])
         return dict(hover_counted_s=round(t_counted, 2), hover_window_after_liftoff_s=round(t_win, 2),
-                    ascent_time_ok=bool(t_win <= c["ascent_time_limit_s"]))
+                    ascent_time_ok=bool(t_win <= c["ascent_time_limit_s"]),
+                    hover_time_ok=bool(t_counted >= c["hover_required_s"] - 1e-6))
 
 
 class HopMission:
@@ -475,7 +496,7 @@ def clean(x):
     return x
 
 
-def plot(res, path, title):
+def plot(res, path, title, thr_min=0.5):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -488,7 +509,7 @@ def plot(res, path, title):
         a.grid(alpha=0.3)
         for ph in res["r"]["phases"]:
             a.axvline(ph["start_s"], color="0.85", lw=0.8)
-    ax[2].axhline(0.5, color="#c0392b", ls="--", lw=1)
+    ax[2].axhline(thr_min, color="#c0392b", ls="--", lw=1)
     ax[2].axhline(1.0, color="#c0392b", ls="--", lw=1)
     ax[0].set_title(title)
     ax[-1].set_xlabel("Time from engine start, s")
@@ -520,6 +541,7 @@ def main():
     out = dict(meta=dict(generated_by="mission_sizing.py", date=str(dt.date.today()),
                          inputs=Path(a.inputs).name, overrides=a.set,
                          engine_performance=perf.get("meta", {})))
+    veh_present = copy.deepcopy(veh)             # --max-apex always uses the present tanks
     if a.size_tanks:
         size_tanks(eng, veh, missions, allw)
         out["sized_tanks"] = dict(n2o_volume_L=round(float(veh.V_ox_tank), 2),
@@ -536,7 +558,8 @@ def main():
         out["missions"][mis.name] = x
         print_mission(mis.name, x)
         if a.plot:
-            plot(res, Path(a.inputs).parent / f"mission_profile_{mis.name}.png", f"H2 lander, {mis.name} mission")
+            plot(res, Path(a.inputs).parent / f"mission_profile_{mis.name}.png", f"H2 lander, {mis.name} mission",
+                 eng.thr_min)
 
     # Hand-over: sizing case from the inputs, else the mission with the largest usable load
     sizing = (cfg.get("analysis") or {}).get("sizing_case")
@@ -552,7 +575,7 @@ def main():
         for row in out["tw_sweep"]:
             print("  ", clean(row))
     if a.max_apex and "hop" in cfg["missions"]:
-        c = max_apex(eng, veh, allw, cfg["missions"]["hop"])
+        c = max_apex(eng, veh_present, allw, cfg["missions"]["hop"])
         out["max_apex_present_tanks_m"] = round(c["apex_m"], 2)
         print(f"Highest hop with the present tanks: {c['apex_m']:.1f} m")
 

@@ -1,6 +1,6 @@
 # =============================================================================
-# H-1B PROPELLANT TANK & PRESSURIZATION SYSTEM — CONFIGURATION (single source of truth)
-# All values SI unless suffix says otherwise. Suffixed keys are converted on load.
+# PROPELLANT TANK & PRESSURIZATION SIZING — H2 LANDER, MISSION 1 (HOVER)
+# All values SI unless the key name carries a unit suffix (_bar, _C, _mm, _L).
 # =============================================================================
 
 mission:
@@ -61,7 +61,8 @@ model:
   prepress: isothermal           # bottle pre-press draw (isothermal | adiabatic)
   makeup_headroom: 1.05          # factor on end-of-burn N2O vapor in the load
   bottle_volume_guess_m3: 0.065  # first-pass shared-bottle volume
-  ox_load_guess_kg: 38.5         # optional warm start for makeup (else delivered+residual)
+  ox_load_guess_kg: 15.6         # optional warm start for makeup (else delivered+residual);
+                                 # set near the converged load, the outer loop has 5 passes
   fixed_point_iters: 4           # per-step iterations, N2O two-phase solver
   evap_model: equilibrium        # 'equilibrium' (interface always saturated;
                                  # max evaporation/cooling -> conservative) |

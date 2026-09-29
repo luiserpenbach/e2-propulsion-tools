@@ -2,7 +2,7 @@
 Optional Streamlit front end for lcsc_sizing.py
 
     pip install streamlit pandas
-    streamlit run app.py          (run from this folder so the light theme in .streamlit/ is used)
+    streamlit run app.py          (run from this folder)
 
 Design tab:  size an element from a base config and sweep one parameter across the design space.
 Testing tab: pick an as-built config, enter measured values, compare with the model and keep a
@@ -234,7 +234,7 @@ with tab_design:
 with tab_test:
     built = {k: v for k, v in good.items() if v.get("as_built")}
     if not built:
-        st.info("No config with an as_built block found. Add one (see e2_p03_as_built.yaml).")
+        st.info("No config with an as_built block found. Add one (see configs/e2_lcsc_p03_3x_as_built.yaml).")
         st.stop()
 
     name = st.selectbox("As-built configuration", list(built), key="test_cfg")
@@ -248,13 +248,18 @@ with tab_test:
         st.caption(f"Elements: {n_el_t} · swirl C_D factor {cfg_t['calibration']['swirl_cd_factor']} · "
                    f"ox hole C_D {cfg_t['ox_holes']['discharge_coefficient']} · hole model {cfg_t['ox_holes']['model']}")
 
+    # These two switch the defaults of the inputs below, so they sit outside the form
+    # (widgets inside a form do not rerun the page until the form is submitted).
+    m1, m2 = st.columns(2)
+    per_el = m1.checkbox("Flows are per element", value=False,
+                         help=f"Unchecked: enter totals for the head, divided by {n_el_t} elements.")
+    ox_mode_t = m2.radio("Ox state at holes", ["Temperature", "Saturated (quality)"], horizontal=True)
+
     with st.form("test_form"):
         a, b, c = st.columns(3)
         with a:
             test_id = st.text_input("Test ID", placeholder="e.g. C03-R2")
             date = st.date_input("Date", dt.date.today())
-            per_el = st.checkbox("Flows are per element", value=False,
-                                 help=f"Unchecked: enter totals for the head, divided by {n_el_t} elements.")
             pc_m = st.number_input("Chamber pressure [bar]", 0.5, 200.0, float(cfg_t["operating_point"]["chamber_pressure_bar"]))
         with b:
             st.markdown("**Fuel**")
@@ -269,7 +274,6 @@ with tab_test:
                                    1000 * L.per_element_flows(cfg_t)[0] * (1 if per_el else n_el_t))
             po_m = st.number_input("Ox manifold pressure [bar]", 0.5, 300.0,
                                    float(cfg_t["operating_point"]["chamber_pressure_bar"] + cfg_t["oxidizer"]["pressure_drop_bar"]))
-            ox_mode_t = st.radio("Ox state at holes", ["Temperature", "Saturated (quality)"], horizontal=True)
             ox_val = st.number_input("Ox temperature [K] or quality [-]", 0.0, 900.0,
                                      float(cfg_t["oxidizer"]["temperature_K"] or 0.0) if ox_mode_t == "Temperature" else 0.0)
         notes = st.text_input("Notes")

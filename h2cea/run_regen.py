@@ -12,6 +12,8 @@ Cases
     n2o        design case: full oxidiser flow through the jacket at 100/81/74/50 %,
                jacket inlet enthalpy = tank state (isenthalpic valves and venturi),
                jacket outlet pressure = oxidiser injector inlet (n2o.jacket_pressures)
+               NOTE: these use the liquid-only coolant model, which is optimistic
+               for boiling N2O. run_boiling.py gives the regime-switching case.
 """
 import argparse
 import json

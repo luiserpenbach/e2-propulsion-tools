@@ -70,7 +70,7 @@ python flight_config_sizing.py configs/orifice_cases.yaml --outdir results
 | Argument | Default | |
 |----------|---------|---|
 | config | `configs/orifice_cases.yaml` | YAML case list |
-| `--outdir` | `results` | HTML figures and `orifice_results.yaml` |
+| `--outdir` | `results/` in this folder | HTML figures and `<config>_results.yaml` (`<config>_<case>_results.yaml` with `--case`) |
 | `--case NAME` | all cases | run one case |
 | `--no-plot` | plots on | skip the HTML figures |
 

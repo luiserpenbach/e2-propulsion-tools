@@ -17,14 +17,17 @@ Reads a YAML mission/config file (single source of truth) and performs:
      recorded demand profile, requiring P_bottle(end) >= regulator minimum
      inlet pressure; one outer refinement pass; margin factor applied.
 
-  4. Plotly HTML report + results YAML.
+  4. Plotly HTML report + results YAML, named after the config file
+     (<config>_report.html, <config>_results.yaml).
 
 Usage:  python flight_config_sizing.py [config.yaml] [--outdir DIR]
+        (defaults: configs/h2_tank_config_mission1.yaml, results/)
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import math
 import sys
 from pathlib import Path
@@ -363,7 +366,7 @@ def run_case(cfg: dict, sizing: dict, t_prop_c: float,
 # =============================================================================
 
 def build_report(cfg: dict, sizing: dict, cases: dict, bottle: dict,
-                 outdir: Path) -> Path:
+                 outdir: Path, title: str = "tank_press") -> Path:
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -393,21 +396,21 @@ def build_report(cfg: dict, sizing: dict, cases: dict, bottle: dict,
                                  name="P_bottle [bar]"), 2, 2)
         fig.add_trace(go.Scatter(x=t, y=[v - C0 for v in ts["t_bottle"]],
                                  name="T_bottle [C]"), 2, 2)
-        fig.update_layout(title=f"H-1B pressurization — case '{name}' "
+        fig.update_layout(title=f"{title} — case '{name}' "
                                 f"(N2 total {r['n2_total_kg']:.2f} kg)",
                           height=750, template="plotly_white")
         fig.update_xaxes(title_text="time [s]")
         figs.append(fig)
 
-    html = ["<html><head><meta charset='utf-8'><title>H-1B pressurization "
+    html = [f"<html><head><meta charset='utf-8'><title>{title} pressurization "
             "report</title></head><body>",
-            "<h1>H-1B tank & pressurization sizing report</h1>",
+            f"<h1>{title}: tank & pressurization sizing report</h1>",
             _summary_html(cfg, sizing, cases, bottle)]
     for i, fig in enumerate(figs):
         html.append(fig.to_html(full_html=False,
                                 include_plotlyjs="cdn" if i == 0 else False))
     html.append("</body></html>")
-    out = outdir / "h1b_press_report.html"
+    out = outdir / f"{title}_report.html"
     out.write_text("\n".join(html))
     return out
 
@@ -465,11 +468,14 @@ def _vap_end_for_makeup(r: dict) -> float:
 
 
 def main(argv=None):
+    here = Path(__file__).resolve().parent
     ap = argparse.ArgumentParser()
-    ap.add_argument("config", nargs="?", default="configs/n2o_press.yaml")
-    ap.add_argument("--outdir", default=".")
+    ap.add_argument("config", nargs="?",
+                    default=str(here / "configs" / "h2_tank_config_mission1.yaml"))
+    ap.add_argument("--outdir", default=str(here / "results"))
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
+    cfg_name = Path(args.config).stem
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     pr, mo, tk = cfg["pressurant"], cfg["model"], cfg["tanks"]
@@ -485,6 +491,7 @@ def main(argv=None):
 
     print("=== 1) Coupled makeup + bottle-volume iteration ===")
     sizing, cases, bottle_req = None, {}, {}
+    converged = False
     for it in range(5):
         sizing = size_tanks(cfg, m_ox_load=m_load)
         cases = {}
@@ -503,7 +510,7 @@ def main(argv=None):
                 (m_ox_del * (1.0 - r["depleted_at_s"] / t_b)
                  if r["depleted_at_s"] else 0.0)
                 for r in cases.values())
-            m_need = max(m_need, m_load + missing + m_res_ox)
+            m_need = max(m_need, m_load + missing)   # m_load already holds the residual
 
         bottle_req = {}
         for name, r in cases.items():
@@ -524,11 +531,16 @@ def main(argv=None):
               f"vap_end {vap_max:.2f}) | V_b {v_bottle * 1000:.1f} L "
               f"(sized {v_new * 1000:.1f} L)", flush=True)
         if load_ok and vol_ok:
+            converged = True
             break
         if makeup_on and not load_ok:
             m_load = 0.5 * (m_load + m_need)   # under-relax: avoid load/vapor hunt
         v_bottle = v_new
 
+    if not converged:
+        print(f"  WARNING: load / bottle iteration not converged after 5 passes "
+              f"(load {m_load:.2f} kg, need {m_need:.2f} kg). Check "
+              f"model.ox_load_guess_kg and model.bottle_volume_guess_m3.")
     if makeup_on:
         m_load = max(m_load, m_need)
         sizing = size_tanks(cfg, m_ox_load=m_load)
@@ -596,6 +608,9 @@ def main(argv=None):
           f"{m_diss_rep:.2f} kg dissolution allowance)")
 
     results = {
+        "meta": {"config": Path(args.config).name,
+                 "date": str(datetime.date.today()),
+                 "converged": converged},
         "tank_sizing": {t: {k: v for k, v in sizing[t].items() if k != "geom"}
                         for t in ("ox", "fu")},
         "propellant_loads_kg": {
@@ -613,10 +628,10 @@ def main(argv=None):
                   for n, r in cases.items()},
         "bottle": bottle,
     }
-    (outdir / "h1b_press_results.yaml").write_text(
-        yaml.safe_dump(results, sort_keys=False))
-    rep = build_report(cfg, sizing, cases, bottle, outdir)
-    print(f"\nReport: {rep}\nResults: {outdir / 'h1b_press_results.yaml'}")
+    res_path = outdir / f"{cfg_name}_results.yaml"
+    res_path.write_text(yaml.safe_dump(results, sort_keys=False))
+    rep = build_report(cfg, sizing, cases, bottle, outdir, cfg_name)
+    print(f"\nReport: {rep}\nResults: {res_path}")
     return results
 
 

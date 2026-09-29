@@ -127,7 +127,7 @@ def main(argv: list[str] | None = None) -> dict:
     here = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(description="Orifice mass-flow sizing")
     parser.add_argument("config", nargs="?", default=str(here / "configs" / "orifice_cases.yaml"))
-    parser.add_argument("--outdir", default="results")
+    parser.add_argument("--outdir", default=str(here / "results"))
     parser.add_argument("--case", default=None, help="run only this case name")
     parser.add_argument("--no-plot", action="store_true")
     args = parser.parse_args(argv)
@@ -160,7 +160,8 @@ def main(argv: list[str] | None = None) -> dict:
                 print("  plotly is not installed; skipping the figure")
         results.append(data)
 
-    yaml_path = outdir / "orifice_results.yaml"
+    stem = config_path.stem + (f"_{args.case}" if args.case else "")
+    yaml_path = outdir / f"{stem}_results.yaml"
     yaml_path.write_text(yaml.safe_dump({"cases": results}, sort_keys=False), encoding="utf-8")
     print(f"  results: {yaml_path}")
     return {"cases": results}
