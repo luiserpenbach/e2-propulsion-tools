@@ -59,16 +59,39 @@ python flight_config_sizing.py <config.yaml> --outdir <folder>
 | `config` | `configs/h2_tank_config_mission1.yaml` | YAML configuration |
 | `--outdir` | `results/` next to the script | output folder |
 
-The H2 case takes about 40 s, the 40 s H-1B case 1-2 minutes (CoolProp lookups dominate).
+The H2 case takes 1-2 minutes, the 40 s H-1B case about 2 minutes (CoolProp lookups dominate). The H2 config reads the mission tool's results, so run `mission_analysis/mission_sizing.py` first (see [Mission handover](#mission-handover)).
 
 ### Outputs
 
 Both files are named after the config file, so runs of different configs do not overwrite each other:
 
 - **`<config>_report.html`** - summary tables plus per-case Plotly charts (temperatures, N2 flow, N2O partial pressures, bottle state).
-- **`<config>_results.yaml`** - config name, date and convergence flag, tank sizing, propellant loads, per-case pressurant statistics, and bottle sizing (required volume, margin, loaded mass).
+- **`<config>_results.yaml`** - config name, baseline, date and convergence flag, tank sizing, propellant loads, per-case pressurant statistics, bottle sizing (required volume, margin, loaded mass), and the `handback` section for the mission tool.
 
-If the outer load / bottle iteration does not converge in 5 passes, the console prints a WARNING and `meta.converged` is `false`. Set `model.ox_load_guess_kg` close to the converged oxidizer load and re-run.
+If the outer load / bottle iteration does not converge in `model.outer_iterations` passes (default 10), the console prints a WARNING and `meta.converged` is `false`. Set `model.ox_load_guess_kg` close to the converged oxidizer load, or raise `model.outer_iterations`, and re-run.
+
+## Mission handover
+
+The propellant to deliver can come from the mission tool instead of being typed in:
+
+```yaml
+mission:
+  from_mission_results: ../../mission_analysis/mission_results.yaml
+```
+
+The tool then takes the usable N2O and ethanol of the mission's sizing case (the `handover` section) and delivers them at the mission's mean flow over the equivalent constant-flow duration. `from_mission_results` replaces `burn_time_s`, `mdot_total_kg_s` and `of_ratio`; use one or the other. The H2 config uses the handover; the H-1B config keeps its own values, and any config can do the same for a stand-alone study.
+
+The results file returns a `handback` section: the loaded N2 (bottle charge including `margin_factor`), the N2O vapour make-up, and the tank volumes they were computed for. The mission tool reads it through `pressurization.from_tank_results` and scales both values to its own tank volumes.
+
+Run order, from the repository root:
+
+```bash
+cd mission_analysis && python mission_sizing.py            # 1. handover (first time: manual pressurization values)
+cd ../tank_press_analysis && python flight_config_sizing.py   # 2. tank sizing from the handover
+cd ../mission_analysis && python mission_sizing.py         # 3. mission with the tank handback
+```
+
+The liftoff mass is fixed by the liftoff thrust-to-weight, so the pressurant mass changes the ballast but not the propellant: one pass is enough. The mission tool prints a WARNING if the tank results were computed for other propellant loads (for example after a mission input changed); then repeat steps 2 and 3.
 
 ## Configuration
 
@@ -81,7 +104,7 @@ itself.
 
 | Section | Purpose |
 |---------|---------|
-| `mission` | Burn time, total mass flow, O/F ratio |
+| `mission` | Burn time, total mass flow, O/F ratio - or `from_mission_results` (see [Mission handover](#mission-handover)) |
 | `propellants` | CoolProp fluid names for oxidizer (N2O) and fuel (ethanol) |
 | `tanks` | Fixed diameter, ullage rules, residuals, wall thermal properties, oxidizer evaporation makeup toggle |
 | `operating` | Regulator set pressure, propellant temperature envelope, ambient temperature |
@@ -118,7 +141,8 @@ Rigid vessel with adiabatic (or isothermal) discharge. Pre-pressurization draw i
 ## Known limits
 
 - The tool always sizes **one** 300 mm capsule per propellant. It cannot evaluate a fixed tank volume or several tanks (e.g. the present H2 hardware, 2 x 18 L N2O + 6.9 L ethanol).
-- It uses a fixed O/F and total flow, not the engine throttle line or the mission propellant budget. The handover from `mission_analysis/mission_results.yaml` is manual.
+- It drains both tanks at constant flow (the mission's mean flow when it uses the handover), not along the mission's throttle profile.
+- The handback is for the capsule tanks this tool sizes; the mission tool scales it to the present tanks by volume (first order).
 - **The reported peak N2 flow can be a numerical start-up transient.** In the first few steps the N2O tank step oscillates (and negative steps are clipped), so the peak at t ≈ 0.1-0.2 s is not physical. Read the steady flow from the report plots; do not size the regulator on the reported peak.
 - The regulator minimum inlet and bottle pressure in the H2 config are the H-1B values, not derived from the H2 feed-pressure budget. The 100 bar tank pressure comes from the baseline.
 
@@ -167,9 +191,11 @@ Re-run after changing inputs; exact numbers depend on the CoolProp version.
 
 | Item | H2, `h2_tank_config_mission1.yaml` | H-1B, `n2o_press.yaml` |
 |------|------|------|
-| N2O tank | L_cyl 135 mm, 23.7 L, 16.2 kg loaded (12.8 delivered + 0.8 residual + 2.6 vapor) | L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
-| Ethanol tank | sphere, 14.1 L (70 % ullage), 3.4 kg | sphere, 14.1 L, 8.1 kg |
-| Bottle, worst case (cold) | 32.0 L required -> 41.7 L with 1.30 margin, 12.6 kg N2 at 300 bar | 65.7 L -> 85.4 L, 25.8 kg N2 |
+| N2O tank | L_cyl 105 mm, 21.6 L, 14.8 kg loaded (11.6 delivered + 0.8 residual + 2.4 vapor) | L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
+| Ethanol tank | sphere, 14.1 L, 3.6 kg | sphere, 14.1 L, 8.1 kg |
+| Bottle, worst case (cold) | 30.3 L required -> 39.4 L with 1.30 margin, 11.9 kg N2 at 300 bar | 65.7 L -> 85.4 L, 25.8 kg N2 |
+
+The H2 column is for the hover handover of the mission tool (11.6 kg N2O and 3.4 kg ethanol usable, delivered over 16.9 s).
 
 ## Development notes
 

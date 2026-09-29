@@ -118,21 +118,67 @@ class Vehicle:
     ref_m_vapour: float
 
     @classmethod
-    def from_cfg(cls, c, bl):
-        t, p, v = c["propellant_tanks"], c["pressurization"], c["vehicle"]
+    def from_cfg(cls, c, bl, press):
+        """press: pressurization values from pressurization() (reference volumes
+        they belong to); scaled to the tank volumes of this vehicle."""
+        t, v = c["propellant_tanks"], c["vehicle"]
         res = bl["residuals"]
-        return cls(dry_mass=v["dry_mass_kg"], payload_min=v["ballast_min_kg"],
-                   tw_liftoff=v["liftoff_thrust_to_weight"],
-                   V_ox_tank=t["oxidizer"]["count"] * t["oxidizer"]["volume_each_L"],
-                   V_fuel_tank=t["fuel"]["count"] * t["fuel"]["volume_each_L"],
-                   ullage_load=t["initial_ullage_fraction"],
-                   T_load_C=bl["propellants"]["oxidizer"]["temperature_max_C"],   # warm end of the window
-                   rho_fuel=t["fuel"]["density_kg_m3"],
-                   residual_ox=res["oxidizer_kg"], residual_fuel=res["fuel_kg"],
-                   m_pressurant=p["pressurant_mass_kg"], m_n2o_vapour=p["n2o_vapour_makeup_kg"],
-                   ref_V_prop=p["reference"]["propellant_volume_L"],
-                   ref_V_ox=p["reference"]["oxidizer_volume_L"],
-                   ref_m_pressurant=p["pressurant_mass_kg"], ref_m_vapour=p["n2o_vapour_makeup_kg"])
+        veh = cls(dry_mass=v["dry_mass_kg"], payload_min=v["ballast_min_kg"],
+                  tw_liftoff=v["liftoff_thrust_to_weight"],
+                  V_ox_tank=t["oxidizer"]["count"] * t["oxidizer"]["volume_each_L"],
+                  V_fuel_tank=t["fuel"]["count"] * t["fuel"]["volume_each_L"],
+                  ullage_load=t["initial_ullage_fraction"],
+                  T_load_C=bl["propellants"]["oxidizer"]["temperature_max_C"],   # warm end of the window
+                  rho_fuel=t["fuel"]["density_kg_m3"],
+                  residual_ox=res["oxidizer_kg"], residual_fuel=res["fuel_kg"],
+                  m_pressurant=0.0, m_n2o_vapour=0.0,
+                  ref_V_prop=press["propellant_volume_L"], ref_V_ox=press["oxidizer_volume_L"],
+                  ref_m_pressurant=press["pressurant_mass_kg"],
+                  ref_m_vapour=press["n2o_vapour_makeup_kg"])
+        resize(veh, veh.V_ox_tank, veh.V_fuel_tank)   # scale to the present tanks
+        return veh
+
+
+def pressurization(cfg, inputs_path):
+    """Pressurant mass and vapour make-up with the tank volumes they belong to:
+    the handback of the tank sizing if `from_tank_results` names an existing
+    file, else the manual values of the inputs."""
+    p = cfg["pressurization"]
+    manual = dict(pressurant_mass_kg=p["pressurant_mass_kg"],
+                  n2o_vapour_makeup_kg=p["n2o_vapour_makeup_kg"],
+                  propellant_volume_L=p["reference"]["propellant_volume_L"],
+                  oxidizer_volume_L=p["reference"]["oxidizer_volume_L"],
+                  source=f"manual: {p.get('source', 'inputs')}", sized_for=None)
+    ref = p.get("from_tank_results")
+    if not ref:
+        return manual
+    path = Path(ref) if Path(ref).is_absolute() else Path(inputs_path).resolve().parent / ref
+    if not path.exists():
+        print(f"WARNING: {path.name} not found; using the manual pressurization values. "
+              f"Run the tank tool, then this again.")
+        return manual
+    res = yaml.safe_load(path.read_text())
+    hb = res["handback"]
+    return dict(pressurant_mass_kg=hb["pressurant_mass_kg"],
+                n2o_vapour_makeup_kg=hb["n2o_vapour_makeup_kg"],
+                propellant_volume_L=hb["propellant_volume_L"],
+                oxidizer_volume_L=hb["oxidizer_volume_L"],
+                source=f"{path.name} ({(res.get('meta') or {}).get('date', '?')})",
+                sized_for=hb.get("sized_for"))
+
+
+def check_tank_results(press, handover, rtol=0.005):
+    """Warning text if the tank sizing was not run with this handover."""
+    if press["source"].startswith("manual"):
+        return None
+    sf = press["sized_for"]
+    if not sf:
+        return "the tank results were not sized from the mission handover (manual mission block)"
+    for k in ("usable_n2o_kg", "usable_ethanol_kg"):
+        if abs(sf[k] - handover[k]) > rtol * max(handover[k], 1e-9):
+            return (f"the tank sizing used {k} = {sf[k]:.3f} ({sf['sizing_case']}), this run hands over "
+                    f"{handover[k]:.3f} ({handover['sizing_case']}). Re-run the tank tool, then this again.")
+    return None
 
 
 @dataclass
@@ -527,14 +573,18 @@ def main():
 
     cfg, bl, table = load_inputs(a.inputs, a.set)
     eng = Engine(bl["engine"], table)
-    veh = Vehicle.from_cfg(cfg, bl)
+    press = pressurization(cfg, a.inputs)
+    veh = Vehicle.from_cfg(cfg, bl, press)
     allw = Allowances(cfg["allowances"]["reserve_hover_s"], cfg["allowances"]["control_fraction"])
     names = ["hover", "hop"] if a.mission == "both" else [a.mission]
     missions = [MISSIONS[n](cfg["missions"][n]) for n in names]
 
     out = dict(meta=dict(generated_by="mission_sizing.py", date=str(dt.date.today()),
                          inputs=Path(a.inputs).name, overrides=a.set,
-                         baseline=e2_baseline.describe(bl), engine_table=table.get("meta", {})))
+                         baseline=e2_baseline.describe(bl), engine_table=table.get("meta", {}),
+                         pressurization=press["source"]))
+    print(f"Pressurization: {press['source']} -> {veh.m_pressurant:.2f} kg N2, "
+          f"{veh.m_n2o_vapour:.2f} kg N2O vapour for the present tanks\n")
     veh_present = copy.deepcopy(veh)             # --max-apex always uses the present tanks
     if a.size_tanks:
         size_tanks(eng, veh, missions, allw)
@@ -562,7 +612,13 @@ def main():
                      + out["missions"][n]["handover"]["usable_ethanol_kg"])
     out["handover"] = dict(sizing_case=sizing,
                            check_cases=[n for n in out["missions"] if n != sizing],
-                           **out["missions"][sizing]["handover"])
+                           **out["missions"][sizing]["handover"],
+                           pressurant_used_kg=round(float(veh_present.m_pressurant), 2),
+                           n2o_vapour_used_kg=round(float(veh_present.m_n2o_vapour), 2))
+    stale = check_tank_results(press, out["handover"])
+    if stale:
+        print(f"WARNING: {stale}")
+    out["meta"]["tank_results_current"] = stale is None
     if a.sweep:
         out["tw_sweep"] = sweep(eng, veh, missions, allw)
         print("Liftoff T/W trade")

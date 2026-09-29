@@ -27,9 +27,11 @@ baseline/h2_baseline.yaml ──> h2cea/run_engine_table.py ──> baseline/h2_
           │                                                          │
           └───────────────> mission_sizing.py <── h2_mission_inputs.yaml
                                    │
-                                   └──> mission_results.yaml ──> tank / pressurization sizing
-                                                                  (returns pressurant mass and
-                                                                   vapour make-up to the inputs)
+                                   └──> mission_results.yaml (handover)
+                                                 │
+                        tank_press_analysis/flight_config_sizing.py (from_mission_results)
+                                                 │
+            pressurization.from_tank_results <── results/<config>_results.yaml (handback)
 ```
 
 ## Run
@@ -47,8 +49,26 @@ the engine table no longer matches the baseline.
 `--max-apex` always reports the highest hop with the present tanks, also together with
 `--size-tanks`.
 
+## Tank handover
+
+`mission_results.yaml` ends with a `handover` section (usable propellant of the sizing
+case, trapped masses, mean and rated flows). The H2 tank config reads it
+(`mission.from_mission_results`). The tank tool returns loaded N2 and N2O vapour
+make-up in the `handback` section of its results, which this tool reads through
+`pressurization.from_tank_results` and scales to the tank volumes in the inputs
+(also for `--size-tanks`). Run order: this tool, the tank tool, this tool again. See
+`tank_press_analysis/README.md`.
+
+- If the tank results file does not exist yet (fresh clone), the manual values in
+  `pressurization` are used and the tool prints a WARNING. Remove `from_tank_results`
+  to always use the manual values.
+- If the tank results were computed for different propellant loads than this run hands
+  over, the tool prints a WARNING and `meta.tank_results_current` is `false`: re-run the
+  tank tool and then this tool.
+- The pressurant mass only changes the ballast (the liftoff mass is fixed by the
+  thrust-to-weight), so one mission -> tank -> mission pass is enough.
+
 ## Known limits
 
-- The handover to the tank sizing is manual: nothing reads `mission_results.yaml`
-  automatically, and the pressurant mass and vapour make-up in the inputs must be
-  copied back by hand from the tank sizing.
+- The tank tool drains at the mission's mean flow and sizes its own capsule tanks; the
+  handback is scaled to the present tanks by volume, which is a first-order estimate.

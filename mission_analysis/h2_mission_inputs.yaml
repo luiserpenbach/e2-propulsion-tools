@@ -11,7 +11,8 @@
 #   mission_sizing.py      reads  this file + the baseline + its engine table
 #                                                   -> writes mission_results.yaml
 #   tank / pressurization sizing  reads mission_results.yaml (section handover)
-#                                 and returns the values of pressurization
+#                                 and returns pressurant mass and vapour make-up
+#                                 (section handback of its results), read below
 # =============================================================================
 
 meta:
@@ -63,11 +64,16 @@ propellant_tanks:
 # Pressurization (output of the tank and pressurization sizing)
 # -----------------------------------------------------------------------------
 pressurization:
+  # Handback of the tank sizing: loaded N2 and N2O vapour make-up, with the tank
+  # volumes they were computed for. Both are scaled to the tank volumes of this
+  # file (first order). Run order: mission_sizing.py -> tank tool -> mission_sizing.py.
+  from_tank_results: ../tank_press_analysis/results/h2_tank_config_mission1_results.yaml
+  # Manual values, used when from_tank_results is removed or its file does not
+  # exist yet (fresh clone). Same meaning and scaling as the handback.
   source: Tank and Pressurization Sizing Rev B (present tanks)
   pressurant_mass_kg: 14.9       # N2 loaded, incl. 10 % margin
   n2o_vapour_makeup_kg: 4.1      # N2O ending the flight as ullage vapour
-  # Reference point used by --size-tanks to scale both values with tank volume
-  reference:
+  reference:                     # tank volumes the two values above belong to
     propellant_volume_L: 42.9
     oxidizer_volume_L: 36.0
 
