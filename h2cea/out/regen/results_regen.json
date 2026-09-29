@@ -1,0 +1,697 @@
+{
+ "operating_points": {
+  "100": {
+   "mox": 0.874,
+   "MR": 4.37,
+   "pc_bar": 25.76823951916714,
+   "F_N": 2238.9001725372545,
+   "Tc_K": 3056.735988360897
+  },
+  "81": {
+   "mox": 0.715,
+   "MR": 3.5749999999999997,
+   "pc_bar": 21.507696411172297,
+   "F_N": 1829.43437263476,
+   "Tc_K": 2847.19513833023
+  },
+  "74": {
+   "mox": 0.658,
+   "MR": 3.29,
+   "pc_bar": 19.897255981125525,
+   "F_N": 1677.1357390386527,
+   "Tc_K": 2722.8670494307057
+  },
+  "50": {
+   "mox": 0.47,
+   "MR": 2.3499999999999996,
+   "pc_bar": 14.364365824506718,
+   "F_N": 1155.5863516609627,
+   "Tc_K": 2117.6181410293825
+  }
+ },
+ "water": {
+  "50": {
+   "case": "water 50 %",
+   "coolant": "water",
+   "mdot": 1.0,
+   "pc_bar": 14.364365824506718,
+   "MR": 2.35,
+   "Tc": 2117.6181410293825,
+   "Q": 109390.16576898986,
+   "energy_balance_err": 0.000814476845313293,
+   "p_in_bar": 30.0,
+   "p_out_bar": 26.096268704722515,
+   "dp_bar": 3.9037312952774856,
+   "T_in": 293.149997241156,
+   "T_out": 319.4686667005365,
+   "h_in": 86731.5115183736,
+   "h_out": 196210.7730444873,
+   "x_out": -0.4243078359719049,
+   "regime_out": "liquid",
+   "Twg_max": 708.0333122000322,
+   "x_Twg_max": 0.13533226684081126,
+   "Twc_max": 379.30135163430595,
+   "x_Twc_max": 0.13095271049030457,
+   "q_max": 9919845.73098869,
+   "v_min": 4.831297424382397,
+   "chf_ratio_max": 0.10973776951525142,
+   "margin_sat_min": 122.93385068210574,
+   "onb_any": false,
+   "two_phase_any": false,
+   "x_onb": NaN,
+   "x_sat": NaN,
+   "x_dry": NaN,
+   "frac_two_phase": 0.0,
+   "frac_vapour": 0.0,
+   "bartz_factor": 1.0,
+   "flow": "counter",
+   "n_stations": 600.0,
+   "checks": {
+    "Twg_max_K": {
+     "value": 708.0333122000322,
+     "limit": 1050.0,
+     "ok": true
+    },
+    "chf_ratio_max": {
+     "value": 0.10973776951525142,
+     "limit": 0.5,
+     "ok": true
+    },
+    "boiling_margin_K": {
+     "value": 122.93385068210574,
+     "limit": 0.0,
+     "ok": true
+    }
+   }
+  },
+  "100": {
+   "case": "water 100 %",
+   "coolant": "water",
+   "mdot": 1.0,
+   "pc_bar": 25.76823951916714,
+   "MR": 4.37,
+   "Tc": 3056.735988360897,
+   "Q": 218141.1129030072,
+   "energy_balance_err": 0.0008198855076883148,
+   "p_in_bar": 30.0,
+   "p_out_bar": 26.114726360029255,
+   "dp_bar": 3.8852736399707433,
+   "T_in": 293.149997241156,
+   "T_out": 345.509768011903,
+   "h_in": 86731.5115183736,
+   "h_out": 305051.475158481,
+   "x_out": -0.3649558150609507,
+   "regime_out": "liquid",
+   "Twg_max": 992.6047683019378,
+   "x_Twg_max": 0.1356493977874041,
+   "Twc_max": 443.6173632968904,
+   "x_Twc_max": 0.1334375545442867,
+   "q_max": 19414539.290420882,
+   "v_min": 4.8761918945973575,
+   "chf_ratio_max": 0.22192069794436903,
+   "margin_sat_min": 59.07815996208825,
+   "onb_any": false,
+   "two_phase_any": false,
+   "x_onb": NaN,
+   "x_sat": NaN,
+   "x_dry": NaN,
+   "frac_two_phase": 0.0,
+   "frac_vapour": 0.0,
+   "bartz_factor": 1.0,
+   "flow": "counter",
+   "n_stations": 600.0,
+   "checks": {
+    "Twg_max_K": {
+     "value": 992.6047683019378,
+     "limit": 1050.0,
+     "ok": true
+    },
+    "chf_ratio_max": {
+     "value": 0.22192069794436903,
+     "limit": 0.5,
+     "ok": true
+    },
+    "boiling_margin_K": {
+     "value": 59.07815996208825,
+     "limit": 0.0,
+     "ok": true
+    }
+   }
+  }
+ },
+ "verification_water_100": {
+  "energy_balance_err": 0.0008198855076883148,
+  "dTwg_max_K_halving": 0.004495004510545186,
+  "dQ_rel_halving": 2.9239882543429258e-06,
+  "ddp_rel_halving": 0.0003455653859664782
+ },
+ "water_sections": [
+  {
+   "case": "water 50 %",
+   "station": "throat",
+   "blocked": false,
+   "x_mm": 136.60165208029025,
+   "Twg_1D_C": 433.23435654447155,
+   "Ts_max_C": 453.21772696563005,
+   "Ts_over_channel_C": 436.9293248090446,
+   "Ts_over_rib_C": 453.21684706891926,
+   "Ts_centre_C": 436.71174749580825,
+   "q_mean_MWm2": 9.7827076712726,
+   "q_1D_MWm2": 9.875286518922337,
+   "T_closeout_max_C": 30.407544889939913
+  },
+  {
+   "case": "water 50 %",
+   "station": "throat",
+   "blocked": true,
+   "x_mm": 136.60165208029025,
+   "Twg_1D_C": 433.23435654447155,
+   "Ts_max_C": 772.8383896743086,
+   "Ts_over_channel_C": 451.4526606017374,
+   "Ts_over_rib_C": 454.2875574969395,
+   "Ts_centre_C": 772.8383896743086,
+   "q_mean_MWm2": 9.167014424415152,
+   "q_1D_MWm2": 9.875286518922337,
+   "T_closeout_max_C": 91.10362487179572
+  },
+  {
+   "case": "water 50 %",
+   "station": "cylinder",
+   "blocked": false,
+   "x_mm": 40.004724481145594,
+   "Twg_1D_C": 140.58898619386161,
+   "Ts_max_C": 142.45211392068347,
+   "Ts_over_channel_C": 140.96966361578654,
+   "Ts_over_rib_C": 142.45211392067796,
+   "Ts_centre_C": 140.96966361578728,
+   "q_mean_MWm2": 1.4817602123973248,
+   "q_1D_MWm2": 1.4821751141506394,
+   "T_closeout_max_C": 44.29484906580046
+  },
+  {
+   "case": "water 50 %",
+   "station": "cylinder",
+   "blocked": true,
+   "x_mm": 40.004724481145594,
+   "Twg_1D_C": 140.58898619386161,
+   "Ts_max_C": 711.1174594310465,
+   "Ts_over_channel_C": 141.3094818095994,
+   "Ts_over_rib_C": 142.460765911958,
+   "Ts_centre_C": 711.1174594310465,
+   "q_mean_MWm2": 1.3782774528493138,
+   "q_1D_MWm2": 1.4821751141506394,
+   "T_closeout_max_C": 90.44366566206901
+  },
+  {
+   "case": "water 100 %",
+   "station": "throat",
+   "blocked": false,
+   "x_mm": 136.60165208029025,
+   "Twg_1D_C": 717.9221851268622,
+   "Ts_max_C": 747.6154539490268,
+   "Ts_over_channel_C": 722.5244130156948,
+   "Ts_over_rib_C": 747.6141410367659,
+   "Ts_centre_C": 722.1917950726913,
+   "q_mean_MWm2": 19.180197850482234,
+   "q_1D_MWm2": 19.35593895757257,
+   "T_closeout_max_C": 40.199556391377655
+  },
+  {
+   "case": "water 100 %",
+   "station": "throat",
+   "blocked": true,
+   "x_mm": 136.60165208029025,
+   "Twg_1D_C": 717.9221851268622,
+   "Ts_max_C": 1242.29049903448,
+   "Ts_over_channel_C": 743.9854414785943,
+   "Ts_over_rib_C": 749.1655921609607,
+   "Ts_centre_C": 1242.29049903448,
+   "q_mean_MWm2": 17.941477352492534,
+   "q_1D_MWm2": 19.35593895757257,
+   "T_closeout_max_C": 150.09892316602918
+  },
+  {
+   "case": "water 100 %",
+   "station": "cylinder",
+   "blocked": false,
+   "x_mm": 40.004724481145594,
+   "Twg_1D_C": 233.75529432270116,
+   "Ts_max_C": 238.9541443022855,
+   "Ts_over_channel_C": 234.10993227813094,
+   "Ts_over_rib_C": 238.95414430228527,
+   "Ts_centre_C": 234.10993227812844,
+   "q_mean_MWm2": 2.959600491830976,
+   "q_1D_MWm2": 2.9608649668150573,
+   "T_closeout_max_C": 66.95403126832059
+  },
+  {
+   "case": "water 100 %",
+   "station": "cylinder",
+   "blocked": true,
+   "x_mm": 40.004724481145594,
+   "Twg_1D_C": 233.75529432270116,
+   "Ts_max_C": 1129.3683474524055,
+   "Ts_over_channel_C": 234.49895642030594,
+   "Ts_over_rib_C": 238.96211781825798,
+   "Ts_centre_C": 1129.3683474524055,
+   "q_mean_MWm2": 2.7403960266326193,
+   "q_1D_MWm2": 2.9608649668150573,
+   "T_closeout_max_C": 142.46042118402931
+  }
+ ],
+ "water_sensitivities": [
+  {
+   "case": "50 %",
+   "variant": "baseline",
+   "Twg_throat_C": 433.23435654447155,
+   "Twc_throat_C": 104.89688055011743,
+   "dp_bar": 3.9037312952774856,
+   "Q_kW": 109.39016576898986
+  },
+  {
+   "case": "50 %",
+   "variant": "bartz +20 %",
+   "Twg_throat_C": 480.6386393021488,
+   "Twc_throat_C": 115.54013814874708,
+   "dp_bar": 3.899366066673803,
+   "Q_kW": 127.70539672002988
+  },
+  {
+   "case": "50 %",
+   "variant": "bartz -20 %",
+   "Twg_throat_C": 379.3208281717449,
+   "Twc_throat_C": 92.93628091715647,
+   "dp_bar": 3.9090970311575477,
+   "Q_kW": 90.19130563278948
+  },
+  {
+   "case": "50 %",
+   "variant": "roughness 40 um",
+   "Twg_throat_C": 422.6076349977915,
+   "Twc_throat_C": 85.79513702046421,
+   "dp_bar": 6.253023961496256,
+   "Q_kW": 110.36393051311563
+  },
+  {
+   "case": "50 %",
+   "variant": "hot wall 0.6 mm",
+   "Twg_throat_C": 473.6525293865458,
+   "Twc_throat_C": 102.32076701212009,
+   "dp_bar": 3.8396181481681624,
+   "Q_kW": 107.19804641604308
+  },
+  {
+   "case": "100 %",
+   "variant": "baseline",
+   "Twg_throat_C": 717.9221851268622,
+   "Twc_throat_C": 169.94196538918027,
+   "dp_bar": 3.8852736399707433,
+   "Q_kW": 218.14111290300718
+  },
+  {
+   "case": "100 %",
+   "variant": "bartz +20 %",
+   "Twg_throat_C": 789.8720630532176,
+   "Twc_throat_C": 186.5477909059406,
+   "dp_bar": 3.883524252782059,
+   "Q_kW": 254.11534598011718
+  },
+  {
+   "case": "100 %",
+   "variant": "bartz -20 %",
+   "Twg_throat_C": 635.1345683513283,
+   "Twc_throat_C": 150.84190203111103,
+   "dp_bar": 3.889014596887729,
+   "Q_kW": 180.3614102475862
+  },
+  {
+   "case": "100 %",
+   "variant": "roughness 40 um",
+   "Twg_throat_C": 701.7156634887559,
+   "Twc_throat_C": 135.54221054484537,
+   "dp_bar": 6.262418596778428,
+   "Q_kW": 220.3063008916687
+  },
+  {
+   "case": "100 %",
+   "variant": "hot wall 0.6 mm",
+   "Twg_throat_C": 780.3875754553509,
+   "Twc_throat_C": 165.38843908764352,
+   "dp_bar": 3.8208833201669155,
+   "Q_kW": 213.301653388375
+  }
+ ],
+ "n2o": {
+  "100": {
+   "case": "n2o 100 %",
+   "coolant": "n2o",
+   "mdot": 0.874,
+   "pc_bar": 25.76823951916714,
+   "MR": 4.37,
+   "Tc": 3056.735988360897,
+   "Q": 218624.1477708285,
+   "energy_balance_err": 0.0008371960928356223,
+   "p_in_bar": 58.59003110960906,
+   "p_out_bar": 40.47184077112239,
+   "dp_bar": 18.118190338486666,
+   "T_in": 290.57561426239954,
+   "T_out": 324.8918187608014,
+   "h_in": 204721.64458440887,
+   "h_out": 455073.1080319395,
+   "x_out": 1.3042790019012815,
+   "regime_out": "vapour",
+   "Twg_max": 985.8679962678727,
+   "x_Twg_max": 0.13533226684081126,
+   "Twc_max": 446.0206358315628,
+   "x_Twc_max": 0.0,
+   "q_max": 19503895.53205316,
+   "v_min": 11.256406377654395,
+   "chf_ratio_max": 10.116364562394304,
+   "margin_sat_min": -104.46149747802588,
+   "onb_any": true,
+   "two_phase_any": true,
+   "x_onb": 0.18010190195449413,
+   "x_sat": 0.16013132705751137,
+   "x_dry": 0.061902803032305866,
+   "frac_two_phase": 0.5666666666666667,
+   "frac_vapour": 0.32666666666666666,
+   "bartz_factor": 1.0,
+   "flow": "counter",
+   "n_stations": 600.0,
+   "checks": {
+    "Twg_max_K": {
+     "value": 985.8679962678727,
+     "limit": 1050.0,
+     "ok": true
+    },
+    "Twc_max_K": {
+     "value": 446.0206358315628,
+     "limit": 573.0,
+     "ok": true
+    },
+    "v_min_ms": {
+     "value": 11.256406377654395,
+     "limit": 5.0,
+     "ok": true
+    },
+    "chf_ratio_max": {
+     "value": 10.116364562394304,
+     "limit": 0.5,
+     "ok": false
+    },
+    "saturated_boiling": {
+     "value": 0.5666666666666667,
+     "limit": 0.0,
+     "ok": false
+    }
+   }
+  },
+  "81": {
+   "case": "n2o 81 %",
+   "coolant": "n2o",
+   "mdot": 0.715,
+   "pc_bar": 21.507696411172297,
+   "MR": 3.575,
+   "Tc": 2847.19513833023,
+   "Q": 183922.77351490577,
+   "energy_balance_err": 0.0008428241170349744,
+   "p_in_bar": 49.326340172383816,
+   "p_out_bar": 33.392634817543204,
+   "dp_bar": 15.933705354840612,
+   "T_in": 289.81646805029385,
+   "T_out": 324.3408290088684,
+   "h_in": 204721.64458440887,
+   "h_out": 462173.0964223055,
+   "x_out": 1.2872751120703583,
+   "regime_out": "vapour",
+   "Twg_max": 921.4315764548903,
+   "x_Twg_max": 0.13533226684081126,
+   "Twc_max": 452.67835440907606,
+   "x_Twc_max": 0.0,
+   "q_max": 16523888.159123152,
+   "v_min": 9.29896603060021,
+   "chf_ratio_max": 6.597204806330698,
+   "margin_sat_min": -109.6923695940406,
+   "onb_any": true,
+   "two_phase_any": true,
+   "x_onb": 0.18010190195449413,
+   "x_sat": 0.17507957541240854,
+   "x_dry": 0.06253513680562767,
+   "frac_two_phase": 0.6433333333333333,
+   "frac_vapour": 0.33,
+   "bartz_factor": 1.0,
+   "flow": "counter",
+   "n_stations": 600.0,
+   "checks": {
+    "Twg_max_K": {
+     "value": 921.4315764548903,
+     "limit": 1050.0,
+     "ok": true
+    },
+    "Twc_max_K": {
+     "value": 452.67835440907606,
+     "limit": 573.0,
+     "ok": true
+    },
+    "v_min_ms": {
+     "value": 9.29896603060021,
+     "limit": 5.0,
+     "ok": true
+    },
+    "chf_ratio_max": {
+     "value": 6.597204806330698,
+     "limit": 0.5,
+     "ok": false
+    },
+    "saturated_boiling": {
+     "value": 0.6433333333333333,
+     "limit": 0.0,
+     "ok": false
+    }
+   }
+  },
+  "74": {
+   "case": "n2o 74 %",
+   "coolant": "n2o",
+   "mdot": 0.658,
+   "pc_bar": 19.897255981125525,
+   "MR": 3.29,
+   "Tc": 2722.8670494307057,
+   "Q": 168162.48336418177,
+   "energy_balance_err": 0.0008424746387865104,
+   "p_in_bar": 45.64533479150943,
+   "p_out_bar": 30.79882388699043,
+   "dp_bar": 14.846510904518995,
+   "T_in": 288.726214338492,
+   "T_out": 320.45143837224333,
+   "h_in": 204721.64458440887,
+   "h_out": 460503.03666892473,
+   "x_out": 1.2653122823822145,
+   "regime_out": "vapour",
+   "Twg_max": 887.3293458754165,
+   "x_Twg_max": 0.13533226684081126,
+   "Twc_max": 448.9116961601288,
+   "x_Twc_max": 0.0,
+   "q_max": 15139098.55981673,
+   "v_min": 9.024253121525126,
+   "chf_ratio_max": 5.674991244369303,
+   "margin_sat_min": NaN,
+   "onb_any": false,
+   "two_phase_any": true,
+   "x_onb": NaN,
+   "x_sat": 0.18010190195449413,
+   "x_dry": 0.06000338128391207,
+   "frac_two_phase": 0.6833333333333333,
+   "frac_vapour": 0.31666666666666665,
+   "bartz_factor": 1.0,
+   "flow": "counter",
+   "n_stations": 600.0,
+   "checks": {
+    "Twg_max_K": {
+     "value": 887.3293458754165,
+     "limit": 1050.0,
+     "ok": true
+    },
+    "Twc_max_K": {
+     "value": 448.9116961601288,
+     "limit": 573.0,
+     "ok": true
+    },
+    "v_min_ms": {
+     "value": 9.024253121525126,
+     "limit": 5.0,
+     "ok": true
+    },
+    "chf_ratio_max": {
+     "value": 5.674991244369303,
+     "limit": 0.5,
+     "ok": false
+    },
+    "saturated_boiling": {
+     "value": 0.6833333333333333,
+     "limit": 0.0,
+     "ok": false
+    }
+   }
+  },
+  "50": {
+   "case": "n2o 50 %",
+   "coolant": "n2o",
+   "mdot": 0.47,
+   "pc_bar": 14.364365824506718,
+   "MR": 2.35,
+   "Tc": 2117.6181410293825,
+   "Q": 107326.0774373405,
+   "energy_balance_err": 0.0008236744142009508,
+   "p_in_bar": 32.3424844095154,
+   "p_out_bar": 22.0968473476885,
+   "dp_bar": 10.245637061826903,
+   "T_in": 274.5328222096181,
+   "T_out": 286.8135314326364,
+   "h_in": 204721.64458440887,
+   "h_out": 433263.0896510093,
+   "x_out": 1.1248437440310481,
+   "regime_out": "vapour",
+   "Twg_max": 730.3541420021709,
+   "x_Twg_max": 0.13501540269729165,
+   "Twc_max": 419.65126491926617,
+   "x_Twc_max": 0.1297381979588742,
+   "q_max": 9702772.338437524,
+   "v_min": 13.480978405267612,
+   "chf_ratio_max": NaN,
+   "margin_sat_min": NaN,
+   "onb_any": false,
+   "two_phase_any": true,
+   "x_onb": NaN,
+   "x_sat": 0.18010190195449413,
+   "x_dry": 0.03492475946766679,
+   "frac_two_phase": 0.815,
+   "frac_vapour": 0.185,
+   "bartz_factor": 1.0,
+   "flow": "counter",
+   "n_stations": 600.0,
+   "checks": {
+    "Twg_max_K": {
+     "value": 730.3541420021709,
+     "limit": 1050.0,
+     "ok": true
+    },
+    "Twc_max_K": {
+     "value": 419.65126491926617,
+     "limit": 573.0,
+     "ok": true
+    },
+    "v_min_ms": {
+     "value": 13.480978405267612,
+     "limit": 5.0,
+     "ok": true
+    },
+    "saturated_boiling": {
+     "value": 0.815,
+     "limit": 0.0,
+     "ok": false
+    }
+   }
+  }
+ },
+ "n2o_note": "Two-phase: liquid-only Gnielinski (no boiling credit). Hall-Mudawar CHF only for x <= 0.05; dryout CHF in the saturated region is not evaluated. N2O transport by CO2 corresponding states.",
+ "venturi_max_outlet_bar": 74.4,
+ "structure_pressure": [
+  {
+   "case": "water on, before ignition (30 bar)",
+   "dp_bar": 30.0,
+   "p_coolant_bar": 30.0,
+   "hot_wall_cyl_MPa": 185.31627807589012,
+   "hot_wall_throat_MPa": 9.092740084529131,
+   "rib_cyl_MPa": 30.787608005179976,
+   "closeout_hoop_MPa": 149.25,
+   "closeout_bending_MPa": 47.91374569797232
+  },
+  {
+   "case": "water proof 1.5 x 30 bar",
+   "dp_bar": 45.0,
+   "p_coolant_bar": 45.0,
+   "hot_wall_cyl_MPa": 277.97441711383516,
+   "hot_wall_throat_MPa": 13.639110126793698,
+   "rib_cyl_MPa": 46.181412007769964,
+   "closeout_hoop_MPa": 223.875,
+   "closeout_bending_MPa": 71.87061854695848
+  },
+  {
+   "case": "N2O jacket MEOP 115 bar (primed)",
+   "dp_bar": 115.0,
+   "p_coolant_bar": 115.0,
+   "hot_wall_cyl_MPa": 710.3790659575787,
+   "hot_wall_throat_MPa": 34.85550365736167,
+   "rib_cyl_MPa": 118.01916401985658,
+   "closeout_hoop_MPa": 572.125,
+   "closeout_bending_MPa": 183.6693585088939
+  },
+  {
+   "case": "N2O jacket proof 172.5 bar",
+   "dp_bar": 172.5,
+   "p_coolant_bar": 172.5,
+   "hot_wall_cyl_MPa": 1065.5685989363683,
+   "hot_wall_throat_MPa": 52.283255486042506,
+   "rib_cyl_MPa": 177.02874602978486,
+   "closeout_hoop_MPa": 858.1875,
+   "closeout_bending_MPa": 275.5040377633408
+  }
+ ],
+ "structure_thermal": {
+  "water 50": {
+   "sigma_th_max_MPa": 587.3872088886549,
+   "x_mm": 135.33226684081126,
+   "dT_wall_K": 329.46188516026234,
+   "ratio_to_yield": 0.5894522553776206
+  },
+  "water 100": {
+   "sigma_th_max_MPa": 963.3333891833433,
+   "x_mm": 135.6493977874041,
+   "dT_wall_K": 549.2115692787642,
+   "ratio_to_yield": 1.1855632858577114
+  },
+  "n2o 100": {
+   "sigma_th_max_MPa": 977.6608677788619,
+   "x_mm": 135.96671988058867,
+   "dT_wall_K": 556.7583469722609,
+   "ratio_to_yield": 1.1885830699618596
+  },
+  "n2o 81": {
+   "sigma_th_max_MPa": 850.6596658895755,
+   "x_mm": 135.6493977874041,
+   "dT_wall_K": 483.1102896295714,
+   "ratio_to_yield": 0.9324020471556764
+  },
+  "n2o 74": {
+   "sigma_th_max_MPa": 792.7007506331414,
+   "x_mm": 135.6493977874041,
+   "dT_wall_K": 449.4344289509646,
+   "ratio_to_yield": 0.8256458303021533
+  },
+  "n2o 50": {
+   "sigma_th_max_MPa": 556.0877368580432,
+   "x_mm": 135.6493977874041,
+   "dT_wall_K": 312.7198456857615,
+   "ratio_to_yield": 0.5592814503784349
+  }
+ },
+ "sections_along": {
+  "water 50 %": {
+   "Ts_max_nom_C": 455.0387188427627,
+   "Ts_max_blk_C": 788.9035310048451
+  },
+  "water 100 %": {
+   "Ts_max_nom_C": 749.3869094800951,
+   "Ts_max_blk_C": 1265.7942072610676
+  },
+  "n2o 100 %": {
+   "Ts_max_nom_C": 743.3450336214178,
+   "Ts_max_blk_C": 1262.1175150789636
+  },
+  "n2o 50 %": {
+   "Ts_max_nom_C": 472.65233265965355,
+   "Ts_max_blk_C": 803.4039876834812
+  }
+ }
+}
