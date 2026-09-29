@@ -415,8 +415,9 @@ def step(cfg: N2OTankConfig, st: N2OTankState, dt: float,
          h_in: float) -> tuple[N2OTankState, float, dict]:
     """Advance one step. Outer fixed-point loop over (heat transfer, ullage
     temperature, wall); inner implicit Newton solve for the liquid node with
-    equilibrium evaporation / bulk condensation. Ullage energy Newton includes
-    m_N2(T_ull) so the committed state satisfies rho_N2(P_N2, T)*V = m_N2.
+    equilibrium evaporation / bulk condensation. The ullage energy Newton holds
+    the composition fixed; m_N2 = rho_N2(P_N2, T_ull)*V is refreshed after it,
+    and the outer fixed-point loop closes that lag.
     Returns (state, mdot_N2, diagnostics)."""
     fl, fg = cfg.fluid_liq, cfg.fluid_gas
     P = cfg.p_set_pa

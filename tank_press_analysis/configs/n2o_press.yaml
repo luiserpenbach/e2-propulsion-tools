@@ -1,6 +1,6 @@
 # =============================================================================
-# H-1B PROPELLANT TANK & PRESSURIZATION SYSTEM — CONFIGURATION (single source of truth)
-# All values SI unless suffix says otherwise. Suffixed keys are converted on load.
+# PROPELLANT TANK & PRESSURIZATION SIZING — H-1B REFERENCE CASE (40 s burn)
+# All values SI unless the key name carries a unit suffix (_bar, _C, _mm, _L).
 # =============================================================================
 
 mission:

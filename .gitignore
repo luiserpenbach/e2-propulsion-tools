@@ -4,6 +4,7 @@ Thumbs.db
 
 # IDE
 .idea/
+.vscode/
 
 # Python
 __pycache__/
@@ -12,14 +13,16 @@ __pycache__/
 venv/
 .env
 .env.*
+.pytest_cache/
 
-# Generated analysis outputs (re-run the sizing script in each tool)
-injector_sizing/results/*
-orifice_lib/results/*
-tank_press_analysis/results/*
-torch_igniter_analysis/results/*
+# Generated analysis outputs. Every tool writes to <tool>/results/; re-run the
+# tool to regenerate. (h2cea/out/ is an older committed snapshot, see h2cea/README.md.)
+*/results/*
+!*/results/.gitkeep
+*/configs/results/
+mission_analysis/engine_performance.yaml
+mission_analysis/mission_results.yaml
+mission_analysis/mission_profile_*.png
+
+# Injector test log written by the Streamlit app (local only)
 swirl_injector_analysis/test_log.csv
-!injector_sizing/results/.gitkeep
-!orifice_lib/results/.gitkeep
-!tank_press_analysis/results/.gitkeep
-!torch_igniter_analysis/results/.gitkeep

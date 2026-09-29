@@ -73,6 +73,11 @@ def regime_table(res):
 
 
 def main(models=TP.MODELS):
+    unknown = [m for m in models if m not in TP.MODELS]
+    if unknown:
+        raise SystemExit(f"unknown model(s) {unknown}; choose from {TP.MODELS}")
+    # the regime table is built from the liquid-only march, so it always runs
+    models = ("liquid_only",) + tuple(m for m in models if m != "liquid_only")
     t0 = time.time()
     contour = e2_reg1_asbuilt()
     wall = wall_stations(contour)

@@ -110,13 +110,13 @@ def build_cea() -> CEA_Obj:
 
 
 def calc_pc(cea: CEA_Obj, of: float, eta: float,
-            pc_init: float = PC_NOM, tol: float = 1e-4, maxiter: int = 40) -> float:
+            pc_init: float = None, tol: float = 1e-4, maxiter: int = 40) -> float:
     """
     Iteratively solve Pc [bar] for a fixed throat, mass flow and efficiency:
         Pc = mdot · c*(OF, Pc) · η / At
     c*(Pc) is weak, so convergence is fast (~5 iterations).
     """
-    pc = pc_init
+    pc = PC_NOM if pc_init is None else pc_init
     for _ in range(maxiter):
         cstar  = cea.get_Cstar(Pc=pc, MR=of)       # m/s
         pc_new = MDOT * cstar * eta / AT_M2 / 1e5  # bar
@@ -761,10 +761,10 @@ def main(argv=None) -> None:
         return
 
     dash_html, dash_img = write_figure(
-        build_figure(cea), "cea_combustion_analysis.html", "cea_combustion_analysis.svg"
+        build_figure(cea), f"{cfg.name}_combustion.html", f"{cfg.name}_combustion.svg"
     )
     contour_html, contour_img = write_figure(
-        build_contour_figure(cea), "chamber_contour.html", "chamber_contour.svg"
+        build_contour_figure(cea), f"{cfg.name}_contour.html", f"{cfg.name}_contour.svg"
     )
     print("\nOutputs written:")
     print(f"  {dash_html}")

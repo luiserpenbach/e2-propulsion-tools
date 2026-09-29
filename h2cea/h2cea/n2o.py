@@ -1,7 +1,7 @@
 """Nitrous oxide as coolant: states, jacket pressure model, first CHF estimate.
 
 These are first-order tools for the handbook (section 10). The coupled channel
-solution with regime switching lives in RESA.
+solution with regime switching is regen.march(..., tp_model="regime").
 """
 import numpy as np
 from CoolProp.CoolProp import PropsSI
@@ -62,7 +62,9 @@ def jacket_pressures(mox, pc_bar, mox_nom, pc_nom=C.PC_MAX,
     Oxidiser injector (gas-like fluid): p_in^2 - pc^2 scales with mox^2 (isothermal
     compressible orifice, injector inlet temperature held constant).
     Jacket: dp scales with mox^2 (fixed geometry, fixed mean density).
-    Both simplifications are stated in the handbook; RESA replaces them.
+    Both simplifications are stated in the handbook. run_regen.py uses only the
+    outlet (injector inlet) pressure from here; the jacket pressure drop comes from
+    regen.march_to_outlet_pressure().
     """
     r = mox / mox_nom
     p_out = np.sqrt(pc_bar ** 2 + (p_inj_nom ** 2 - pc_nom ** 2) * r * r)

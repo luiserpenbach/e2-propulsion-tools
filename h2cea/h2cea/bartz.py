@@ -2,8 +2,7 @@
 
 Bartz (1957) in SI units with frozen CEA transport properties at chamber
 stagnation conditions, and a prescribed gas-side wall temperature. This is the
-first-cut load that feeds the coolant enthalpy balance; the coupled wall solution
-belongs to RESA.
+first-cut load for hand checks; the coupled wall solution is regen.march().
 """
 import numpy as np
 

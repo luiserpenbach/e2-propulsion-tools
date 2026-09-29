@@ -23,7 +23,7 @@ THEORY SUMMARY
             × (At/A(x))^0.9 × (Dt/Rc)^0.1 × σ(x)
 
    Variable-property correction (Bartz σ):
-       σ = [0.5·(Tw/Tc)·(1+(γ−1)/2·M²)^(−1) + 0.5]^(−0.68)
+       σ = [0.5·(Tw/Tc)·(1+(γ−1)/2·M²) + 0.5]^(−0.68)
            × [1 + (γ−1)/2·M²]^(−0.12)
 
    Frozen Cp and chamber viscosity/Prandtl are used throughout — physically
@@ -43,11 +43,12 @@ THEORY SUMMARY
 
 5. ENERGY BUDGET
    ──────────────
-   The wall fraction uses the CEA equilibrium enthalpy drop:
+   The wall fraction uses the sensible gas power (frozen Cp, 298 K reference);
+   the CEA enthalpy drop P_noz is reported for reference only:
 
        P_noz  = Ṁ·(H_chamber − H_exit)
        P_wall = Bartz integral over the cold wall
-       η_wall = P_wall / P_noz
+       η_wall = P_wall / P_sens,   P_sens = Ṁ·Cp_frz·(Tc − 298)
 
    A constant frozen-Cp estimate, Ṁ·Cp·(Tc − 298), is printed beside it.
    Its kinetic / exhaust split is an algebraic identity of that estimate.
@@ -67,6 +68,7 @@ Dependencies:
 """
 
 import argparse
+from itertools import cycle
 import math
 import sys
 from dataclasses import dataclass
@@ -105,6 +107,7 @@ PC_GUESS  = 40.0         # bar — iteration start only
 
 # O/F design points — Pc is computed from fixed At + MDOT + ETA_CSTAR
 OF_POINTS = [1.6, 2.0, 2.2]
+OF_NOM    = 2.2
 
 # ── Baseline chamber geometry (from Section 3.2.3) ───────────────────────────
 DT_M    = 4.40e-3        # throat diameter [m]   — input
@@ -121,7 +124,7 @@ RC_CURV = DT_M           # throat radius of curvature [m]  (≈ 1×D_t)
 
 def apply_case(cfg) -> None:
     """Copy a YAML case onto the module globals the thermal model reads."""
-    global OX_NAME, FUEL_NAME, MDOT, ETA_CSTAR, EPS, PA_BAR, PC_GUESS, OF_POINTS
+    global OX_NAME, FUEL_NAME, MDOT, ETA_CSTAR, EPS, PA_BAR, PC_GUESS, OF_POINTS, OF_NOM
     global DT_M, AT_M2, DC_M, LCYL_M, LCONV_M, THETA_C, THETA_D, RT_M, RC_M, RC_CURV
     global WALL_T0, WALL_THICKNESS_M
     OX_NAME = cfg.ox
@@ -132,6 +135,7 @@ def apply_case(cfg) -> None:
     PA_BAR = cfg.pa_bar
     PC_GUESS = cfg.pc_guess_bar
     OF_POINTS = list(cfg.of_points)
+    OF_NOM = cfg.of_nominal
     DT_M = cfg.dt_mm * 1e-3
     AT_M2 = cfg.at_m2
     DC_M = cfg.dc_mm * 1e-3
@@ -315,10 +319,10 @@ def T_adiabatic_wall(Tc: float, gam: float, M: float, Pr: float) -> float:
 def bartz_sigma(Tw: float, Tc: float, gam: float, M: float) -> float:
     """
     Variable-property correction factor σ (Bartz 1957):
-        σ = [0.5·(Tw/Tc)·(1+(γ−1)/2·M²)^(−1) + 0.5]^(−0.68)
+        σ = [0.5·(Tw/Tc)·(1+(γ−1)/2·M²) + 0.5]^(−0.68)
             × [1 + (γ−1)/2·M²]^(−0.12)
     """
-    factor = 0.5 * (Tw / Tc) * (1.0 + (gam - 1) / 2 * M**2)**(-1) + 0.5
+    factor = 0.5 * (Tw / Tc) * (1.0 + (gam - 1) / 2 * M**2) + 0.5
     return factor**(-0.68) * (1.0 + (gam - 1) / 2 * M**2)**(-0.12)
 
 
@@ -408,13 +412,15 @@ def build_nozzle(n_pts: int = 400) -> dict:
 # 6.  HEAT FLUX DISTRIBUTION AND INTEGRATION
 # ─────────────────────────────────────────────────────────────────────────────
 
-def compute_heat_flux(gp: GasProps, nozzle: dict, Tw: float = WALL_T0) -> dict:
+def compute_heat_flux(gp: GasProps, nozzle: dict, Tw: float = None) -> dict:
     """
     Compute Bartz h_g, T_aw, q at every axial station and integrate P_wall.
 
     Uses frozen Cp and chamber μ/Pr throughout (correct for boundary-layer
     heat transfer at frozen composition).
     """
+    if Tw is None:
+        Tw = WALL_T0
     Pc_Pa = gp.pc_bar * 1e5
     gam   = gp.gam_c
     Tc    = gp.Tc
@@ -463,15 +469,15 @@ def energy_budget(gp: GasProps, P_wall: float) -> dict:
         P_KE   = Ṁ·Cp·(Tc − Te)
         P_exh  = Ṁ·Cp·(Te − 298)
 
-    The nozzle power used for the wall fraction is the CEA equilibrium
-    enthalpy drop from chamber to exit:
+    The wall fraction is referenced to the sensible gas power, because the
+    Bartz integral covers the whole chamber and nozzle wall, not only the
+    expansion from chamber to exit:
 
-        P_noz = Ṁ·(H_c − H_e)
-        η_wall = P_wall / P_noz
+        η_wall = P_wall / P_sens
+        P_jet  = P_sens − P_wall
 
-    P_wall is a cold-wall Bartz integral. It is not added on top of an
-    adiabatic CEA expansion; it is the part of P_noz estimated to leave
-    through the wall. Delivered vacuum effective exhaust speed uses
+    The CEA equilibrium enthalpy drop from chamber to exit,
+    P_noz = Ṁ·(H_c − H_e), is reported for reference only. Delivered vacuum effective exhaust speed uses
     η_c* · Isp_CEA · g0 (Cf taken as ideal, so pressure thrust is included).
     """
     T_ref = 298.0
@@ -483,8 +489,8 @@ def energy_budget(gp: GasProps, P_wall: float) -> dict:
     sens_closure = (P_KE + P_exh) / P_sens
 
     P_noz = MDOT * (gp.H_c - gp.H_e)
-    eta_wall = P_wall / P_noz
-    P_jet = P_noz - P_wall
+    eta_wall = P_wall / P_sens
+    P_jet = P_sens - P_wall
 
     ve_vac = ETA_CSTAR * gp.Isp_vac * G0
     P_ke_vac = 0.5 * MDOT * ve_vac ** 2
@@ -495,7 +501,7 @@ def energy_budget(gp: GasProps, P_wall: float) -> dict:
         P_wall=P_wall, P_jet_real=P_jet,
         eta_wall=eta_wall,
         isentropic_closure=sens_closure,
-        device_closure=(P_jet + P_wall) / P_noz,
+        device_closure=(P_jet + P_wall) / P_sens,
         v_exit=v_exit, ve_vac=ve_vac, P_ke_vac=P_ke_vac,
     )
 
@@ -505,7 +511,7 @@ def energy_budget(gp: GasProps, P_wall: float) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def heat_soak_surface_temp(q: float, mat: dict, t_arr: np.ndarray,
-                            T0: float = WALL_T0) -> np.ndarray:
+                            T0: float = None) -> np.ndarray:
     """
     Inner-wall surface temperature rise: semi-infinite slab under constant q.
 
@@ -513,21 +519,27 @@ def heat_soak_surface_temp(q: float, mat: dict, t_arr: np.ndarray,
 
     Valid while √(α·t) ≪ wall thickness  (i.e. t ≪ t_valid).
     """
+    if T0 is None:
+        T0 = WALL_T0
     return T0 + 2.0 * q * np.sqrt(t_arr / (math.pi * mat['k'] * mat['rho'] * mat['Cp']))
 
 
-def t_to_limit(q: float, mat: dict, T0: float = WALL_T0) -> float:
+def t_to_limit(q: float, mat: dict, T0: float = None) -> float:
     """Time [s] for inner wall to reach T_limit under constant heat flux q."""
+    if T0 is None:
+        T0 = WALL_T0
     dT    = mat['T_limit'] - T0
     coeff = 2.0 * q / math.sqrt(math.pi * mat['k'] * mat['rho'] * mat['Cp'])
     return (dT / coeff) ** 2
 
 
-def t_slab_valid(mat: dict, delta_m: float = WALL_THICKNESS_M) -> float:
+def t_slab_valid(mat: dict, delta_m: float = None) -> float:
     """
     Maximum time [s] for which the semi-infinite slab approximation holds.
     Criterion: penetration depth √(α·t) = wall thickness δ  →  t = δ²/α.
     """
+    if delta_m is None:
+        delta_m = WALL_THICKNESS_M
     alpha = mat['k'] / (mat['rho'] * mat['Cp'])
     return delta_m**2 / alpha
 
@@ -581,8 +593,9 @@ def print_report(results: list) -> None:
         print(f"    Split check          = {eb['isentropic_closure']*100:.4f}%")
         print(f"  ── CEA enthalpy drop, chamber to exit ──")
         print(f"    P_nozzle             = {eb['P_chem']/1e3:.2f} kW  (Ṁ·(Hc−He))")
-        print(f"    P_wall  (Bartz)      = {eb['P_wall']/1e3:.3f} kW   η_wall = {eb['eta_wall']*100:.2f}%")
-        print(f"    P_jet                = {eb['P_jet_real']/1e3:.2f} kW   (P_nozzle − P_wall)")
+        print(f"  ── Wall loss ──")
+        print(f"    P_wall  (Bartz)      = {eb['P_wall']/1e3:.3f} kW   η_wall = {eb['eta_wall']*100:.2f}%  (of P_sensible)")
+        print(f"    P_jet                = {eb['P_jet_real']/1e3:.2f} kW   (P_sensible − P_wall)")
         print(f"    v_e from frozen Cp   = {eb['v_exit']:.0f} m/s")
         print(f"    v_e,vac delivered    = {eb['ve_vac']:.0f} m/s"
               f"   (½ṁv² = {eb['P_ke_vac']/1e3:.2f} kW, includes pressure thrust)")
@@ -628,7 +641,7 @@ def build_figure(results: list, nozzle: dict) -> go.Figure:
     x_cyl = nozzle['x_cyl_end'] * 1e3
 
     # ── Panels 1–3: axial distributions ──────────────────────────────────────
-    for res, col, ls in zip(results, of_colors, ['solid', 'dash', 'dot']):
+    for res, col, ls in zip(results, cycle(of_colors), cycle(['solid', 'dash', 'dot'])):
         gp, hf = res['gp'], res['hf']
         lbl = f"O/F={gp.of}  Pc={gp.pc_bar:.1f} bar"
 
@@ -657,7 +670,7 @@ def build_figure(results: list, nozzle: dict) -> go.Figure:
                   annotation_font_color=C['red'], row=2, col=1)
 
     # ── Panel 4: energy budget ────────────────────────────────────────────────
-    # Correct stacked bar: P_jet_real + P_wall = P_chem (device closure).
+    # Stacked bar: P_jet_real + P_wall = P_sens (device closure).
     # P_KE and P_exh are isentropic sub-components of P_jet_real and are
     # shown as annotations — NOT stacked on top of P_wall.
     of_lbls     = [f"O/F={r['gp'].of}" for r in results]
@@ -678,7 +691,7 @@ def build_figure(results: list, nozzle: dict) -> go.Figure:
         textposition='inside', textfont=dict(color=C['text'], size=10)),  row=2, col=2)
 
     # Annotate isentropic sub-breakdown above each bar
-    p_chem_vals = [r['eb']['P_chem'] / 1e3 for r in results]
+    p_chem_vals = [r['eb']['P_sens'] / 1e3 for r in results]
     p_ke_pct    = [r['eb']['P_KE']   / r['eb']['P_sens'] * 100 for r in results]
     p_exh_pct   = [r['eb']['P_exh']  / r['eb']['P_sens'] * 100 for r in results]
     for i, (lbl, pc, ke_p, ex_p) in enumerate(zip(of_lbls, p_chem_vals, p_ke_pct, p_exh_pct)):
@@ -693,8 +706,8 @@ def build_figure(results: list, nozzle: dict) -> go.Figure:
     fig.update_layout(barmode='stack')
 
     # ── Panel 5: heat soak ────────────────────────────────────────────────────
-    # Use the nominal O/F (middle) throat heat flux
-    res_nom = results[1]
+    # Use the throat heat flux at the nominal O/F (closest point if not listed)
+    res_nom = min(results, key=lambda r: abs(r['gp'].of - OF_NOM))
     i_t     = int(np.argmax(res_nom['hf']['q']))
     q_thr   = res_nom['hf']['q'][i_t]
 
@@ -730,7 +743,7 @@ def build_figure(results: list, nozzle: dict) -> go.Figure:
 
     # ── Panel 6: q_throat vs T_w ──────────────────────────────────────────────
     Tw_range = np.linspace(WALL_T0, 1800, 200)
-    for res, col, ls in zip(results, of_colors, ['solid', 'dash', 'dot']):
+    for res, col, ls in zip(results, cycle(of_colors), cycle(['solid', 'dash', 'dot'])):
         gp, hf = res['gp'], res['hf']
         i_t    = int(np.argmax(hf['hg']))
         hg_t   = hf['hg'][i_t]
@@ -829,7 +842,7 @@ def main(argv=None):
         return
 
     html_path, image_path = write_figure(build_figure(results, nozzle),
-                                         "torch_thermal.html", "torch_thermal.png")
+                                         f"{cfg.name}_thermal.html", f"{cfg.name}_thermal.png")
     print(f"\nPlot written: {html_path}")
     if image_path:
         print(f"              {image_path}")

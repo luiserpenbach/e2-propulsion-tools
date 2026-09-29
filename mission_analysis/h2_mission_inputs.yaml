@@ -25,10 +25,12 @@ meta:
 # -----------------------------------------------------------------------------
 analysis:
   # Mission handed to the tank sizing as the sizing case; the other missions
-  # are reported as check cases. The hop is the sizing case so that the tanks
-  # can cover both missions (Mission Analysis sections 6-7); whether the hop is
-  # flown with the same hardware is still to be decided. Set to hover for a
-  # hover-only sizing. null = mission with the largest usable propellant load.
+  # are reported as check cases.
+  #   hover: size for the Tethered Hover milestone only (current setting)
+  #   hop:   size so that the tanks cover both missions (Mission Analysis
+  #          sections 6-7); whether the hop is flown with the same hardware
+  #          is still to be decided
+  #   null:  mission with the largest usable propellant load
   sizing_case: hover
 
 # -----------------------------------------------------------------------------
