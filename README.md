@@ -6,7 +6,7 @@ Each folder is an independent tool with its own README. Run the commands from th
 
 ## Shared baseline
 
-[baseline/](baseline/) holds every value that more than one tool uses: engine design point, propellant states, feed pressures and residuals (`h2_baseline.yaml`), and the engine throttle table computed from it (`engine_table.yaml`). Change those values there, not in the tool configs. See [baseline/README.md](baseline/README.md).
+[baseline/](baseline/) holds every value that more than one tool uses: engine design point, propellant states, feed pressures and residuals (`h2_baseline.yaml`), and the engine throttle table computed from it (`h2_baseline_engine_table.yaml`). Change those values there, not in the tool configs. See [baseline/README.md](baseline/README.md).
 
 After changing the engine, propellant or tank pressure inputs, regenerate the table:
 
@@ -33,16 +33,16 @@ cd h2cea && python run_engine_table.py
 - `h2cea/out/` is an older committed snapshot of the cooling results; re-run before quoting numbers.
 - For a design document, archive the results together with the config file, the baseline revision and the git commit.
 
-Configs that deliberately do not use the baseline: `tank_press_analysis/configs/n2o_press.yaml` (H-1B reference case) and `swirl_injector_analysis/configs/e2_lcsc_p03_3x_as_built.yaml` (P03 at its original 1.0 kg/s, O/F 4 test point).
+Using the baseline is opt-in for the tank and injector tools: only configs with a `baseline:` key read it (at present the H2 tank config). All other configs, including the injector P03 / P04 configs and the H-1B tank case, are independent of it. For what-if studies, copy the baseline to a new file instead of editing the shared one; see [baseline/README.md](baseline/README.md).
 
 ## Data flow
 
 ```
-baseline/h2_baseline.yaml ──> h2cea/run_engine_table.py ──> baseline/engine_table.yaml
+baseline/h2_baseline.yaml ──> h2cea/run_engine_table.py ──> baseline/h2_baseline_engine_table.yaml
       │                                                          │
       ├─> h2cea (config.py)                                      │
-      ├─> swirl_injector_analysis  <─────────────────────────────┤
-      ├─> tank_press_analysis                                    │
+      ├─> swirl_injector_analysis (opt-in) <─────────────────────┤
+      ├─> tank_press_analysis (opt-in)                           │
       └─> mission_analysis/mission_sizing.py <───────────────────┘
                  │
                  └─> mission_results.yaml ──(handover, manual)──> tank config `mission` block

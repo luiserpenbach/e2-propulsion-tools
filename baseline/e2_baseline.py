@@ -7,9 +7,15 @@ Tools add this folder to sys.path and import the module:
 
 The module name is unique in the repository, so it cannot clash with a tool's
 own modules.
+
+Private baselines: copy h2_baseline.yaml to a new name and point a run at it
+with the E2_BASELINE environment variable (h2cea) or the `baseline:` key of a
+tool config. Every baseline file has its own engine table,
+<baseline name>_engine_table.yaml, so a study never overwrites the shared one.
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -21,8 +27,9 @@ REGENERATE = "cd h2cea && python run_engine_table.py"
 
 
 def load(path=None) -> dict:
-    """The baseline as a dict; the file path is stored under '_path'."""
-    path = Path(path) if path else DEFAULT
+    """The baseline as a dict; the file path is stored under '_path'.
+    Without a path: $E2_BASELINE if set, else h2_baseline.yaml."""
+    path = Path(path or os.environ.get("E2_BASELINE") or DEFAULT)
     bl = yaml.safe_load(path.read_text(encoding="utf-8"))
     bl["_path"] = str(path.resolve())
     return bl
@@ -50,19 +57,23 @@ def table_inputs(bl: dict) -> dict:
 
 
 def table_path(bl: dict) -> Path:
-    return Path(bl["_path"]).parent / bl["engine"]["table_file"]
+    """<baseline name>_engine_table.yaml next to the baseline file."""
+    p = Path(bl["_path"])
+    return p.with_name(f"{p.stem}_engine_table.yaml")
 
 
 def engine_table(bl: dict) -> dict:
     """The throttle table, after checking that it matches the baseline."""
     path = table_path(bl)
     if not path.exists():
-        raise SystemExit(f"{path} is missing. Generate it with:  {REGENERATE}")
+        env = "" if Path(bl["_path"]) == DEFAULT else f"E2_BASELINE={bl['_path']} "
+        raise SystemExit(f"{path} is missing. Generate it with:  cd h2cea && {env}python run_engine_table.py")
     table = yaml.safe_load(path.read_text(encoding="utf-8"))
     if table.get("inputs") != table_inputs(bl):
+        env = "" if Path(bl["_path"]) == DEFAULT else f"E2_BASELINE={bl['_path']} "
         raise SystemExit(f"{path.name} does not match {Path(bl['_path']).name} "
                          f"(the engine, propellant or tank pressure inputs changed). "
-                         f"Regenerate it with:  {REGENERATE}")
+                         f"Regenerate it with:  cd h2cea && {env}python run_engine_table.py")
     return table
 
 

@@ -177,5 +177,4 @@ inputs:
     ambient_pressure_bar: 1.01325
     eta_cstar: 0.955
     eta_cf_vac: 0.977
-    table_file: engine_table.yaml
   tank_pressure_bar: 100.0

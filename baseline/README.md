@@ -1,25 +1,35 @@
 # Shared baseline
 
-The single source for every value that more than one tool uses: the engine design point, propellant states, feed pressures and residuals of the H2 lander / E2 flight engine.
+The agreed H2 lander / E2 flight engine numbers that more than one tool uses: engine design point, propellant states, feed pressures and residuals. It is there so that system-level results (mission, tank sizing, chamber) use the same engine. It is **not** required for analysis work: every tool can still be run from its own config, independent of this folder.
 
 | File | What it is |
 |------|------------|
-| `h2_baseline.yaml` | Hand-edited inputs. Change values here, not in the tool configs. |
-| `engine_table.yaml` | Engine throttle table (thrust, O/F, chamber pressure, flows, Isp per throttle point). Generated from `h2_baseline.yaml` by the h2cea engine model. Do not edit by hand. |
-| `e2_baseline.py` | Small loader the tools import: reads the baseline, checks the table is current, fills tool configs. |
+| `h2_baseline.yaml` | Hand-edited inputs. |
+| `h2_baseline_engine_table.yaml` | Engine throttle table (thrust, O/F, chamber pressure, flows, Isp per throttle point). Generated from `h2_baseline.yaml` by the h2cea engine model. Do not edit by hand. |
+| `e2_baseline.py` | Small loader the tools import when a config asks for the baseline. |
 
-## Who reads what
+## Who uses it
 
-| Tool | How | Takes from the baseline |
-|------|-----|--------------------------|
-| `h2cea` | `h2cea/h2cea/config.py` | engine, propellants, feed pressures |
-| `mission_analysis` | `baseline:` in `h2_mission_inputs.yaml` | engine table, throttle limits, residuals, loading temperature |
-| `swirl_injector_analysis` | `baseline:` in the config (P04 design) | operating point and throttle points from the engine table |
-| `tank_press_analysis` | `baseline:` in the config (H2) | tank pressure, temperature window and cold/hot cases, residuals, fluid names |
+| Tool | Uses the baseline | Independent analysis |
+|------|-------------------|----------------------|
+| `h2cea` | always, through `h2cea/h2cea/config.py` | run with a private copy (`E2_BASELINE`, below), or call the library functions with your own arguments, e.g. `size_throat(F=..., pc=...)` |
+| `mission_analysis` | through `baseline:` in `h2_mission_inputs.yaml` | point `baseline:` at a private copy, or `--set baseline=<file>` |
+| `tank_press_analysis` | only configs with a `baseline:` key (the H2 config) | any config without the key, e.g. `n2o_press.yaml` (H-1B) |
+| `swirl_injector_analysis` | only configs with a `baseline:` key (none at present) | all configs, including P03 and P04, set their own operating point |
+| `torch_igniter_analysis`, `orifice_lib` | never | always |
 
-A tool config without a `baseline:` key (for example the H-1B tank case or the P03 as-built injector) is used as it is. A config that names the baseline and also sets one of the baseline values keeps its own value, and the tool prints a `NOTE` with both numbers.
+A config without a `baseline:` key never reads this folder; the tank and injector tools only load `e2_baseline.py` when a config names a baseline.
 
-## Changing the baseline
+### Opting in with a tool config
+
+Add `baseline: ../../baseline/h2_baseline.yaml` (path relative to the config) to a tank or injector config and leave out the values it should take from the baseline:
+
+- **Injector:** the operating point comes from the rated row of the engine table, and each throttle point's `fraction` becomes a fraction of rated thrust with chamber pressure, O/F and total flow from the table (fuel flow fixed, oxidizer throttled, as the engine does).
+- **Tanks:** tank pressure, temperature window and cold/hot cases, residuals and fluid names.
+
+A value that the config still sets itself wins, and the tool prints a `NOTE` with both numbers.
+
+## Changing the shared baseline
 
 1. Edit `h2_baseline.yaml`, raise `meta.revision` and update `meta.date`.
 2. If you changed `propellants`, `engine` or `feed.tank_pressure_bar`, regenerate the table:
@@ -28,13 +38,27 @@ A tool config without a `baseline:` key (for example the H-1B tank case or the P
    cd h2cea && python run_engine_table.py
    ```
 
-   The mission, injector and tank tools stop with a message if the table does not match the baseline.
+   Tools that use the baseline stop with a message if the table does not match it.
 3. Re-run the tools you rely on and commit the baseline, the table and your results together.
 
-Results files record the baseline file and revision they were computed with (`meta.baseline` / `baseline_info`).
+Results files record the baseline file and revision they were computed with.
 
-## Not in the baseline yet
+## What-if studies: private baselines
+
+Do not edit the shared file for a trade study. Copy it instead:
+
+```bash
+cp baseline/h2_baseline.yaml baseline/study_pc30.yaml     # edit the copy
+cd h2cea
+E2_BASELINE=../baseline/study_pc30.yaml python run_engine_table.py   # -> baseline/study_pc30_engine_table.yaml
+E2_BASELINE=../baseline/study_pc30.yaml python run_regen.py
+```
+
+On Windows PowerShell: `$env:E2_BASELINE="..\baseline\study_pc30.yaml"; python run_engine_table.py`.
+
+Every baseline file has its own table (`<name>_engine_table.yaml`), so a study cannot overwrite the shared H2 table. Mission, tank and injector configs use a study baseline through their `baseline:` key (mission tool: `--set baseline=../baseline/study_pc30.yaml`). Commit a study baseline only if it is meant to be shared.
+
+## Not in the baseline
 
 - The tank tool's `mission` block (burn time, flow, O/F) is a hand copy of the mission handover.
-- Tank tool: pressurant bottle, regulator and ullage rules. Mission tool: vehicle, present tank volumes, pressurization. Injector: oxidizer state at the holes and pressure drops. These are used by one tool each and stay in that tool's config.
-- `torch_igniter_analysis` and `orifice_lib` are independent of the flight engine and do not use the baseline.
+- Values used by one tool only stay in that tool's config: pressurant bottle, regulator and ullage rules (tanks); vehicle, present tank volumes, pressurization (mission); oxidizer state at the holes and pressure drops (injector).

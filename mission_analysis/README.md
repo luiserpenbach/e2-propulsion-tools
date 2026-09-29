@@ -14,7 +14,7 @@ Documentation: Notion, 02 Engineering / Systems Engineering / Mission Analysis.
 
 The engine comes from the shared baseline: `baseline/h2_baseline.yaml` (rated thrust,
 throttle floor, fuel flow, propellant temperature window, residuals) and
-`baseline/engine_table.yaml` (O/F, chamber pressure, flows and Isp per throttle point,
+`baseline/h2_baseline_engine_table.yaml` (O/F, chamber pressure, flows and Isp per throttle point,
 computed by `h2cea/run_engine_table.py`). The N2O loading temperature is the warm end
 of the baseline window.
 
@@ -23,7 +23,7 @@ The Notion figure script (`plot_profiles_svg.py`) is not in this repository.
 ## Data flow
 
 ```
-baseline/h2_baseline.yaml ──> h2cea/run_engine_table.py ──> baseline/engine_table.yaml
+baseline/h2_baseline.yaml ──> h2cea/run_engine_table.py ──> baseline/h2_baseline_engine_table.yaml
           │                                                          │
           └───────────────> mission_sizing.py <── h2_mission_inputs.yaml
                                    │

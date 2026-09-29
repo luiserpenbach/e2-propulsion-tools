@@ -38,9 +38,6 @@ from CoolProp.CoolProp import PropsSI
 import ethanol_press as ep
 import n2o_press as np2
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "baseline"))
-import e2_baseline  # noqa: E402
-
 C0 = 273.15
 
 
@@ -53,7 +50,9 @@ def load_config(path: str | Path) -> dict:
     (`baseline:` key). Values set in the config win and are reported."""
     with open(path) as f:
         cfg = yaml.safe_load(f)
-    if cfg.get("baseline"):
+    if cfg.get("baseline"):            # configs without it are independent of the baseline
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "baseline"))
+        import e2_baseline
         bl = e2_baseline.load(e2_baseline.resolve(cfg["baseline"], path))
         pr = bl["propellants"]
         e2_baseline.fill(cfg, {

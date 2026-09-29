@@ -79,9 +79,6 @@ import yaml
 import CoolProp.CoolProp as CP
 from scipy.optimize import brentq, minimize_scalar
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "baseline"))
-import e2_baseline  # noqa: E402
-
 BAR = 1e5
 MM = 1e-3
 
@@ -154,7 +151,10 @@ def apply_baseline(cfg: dict, path: str) -> None:
     baseline. The rated row gives the nominal point; each throttle point's
     `fraction` is a fraction of rated THRUST and takes chamber pressure, O/F
     and total flow from the table (fuel flow fixed, oxidizer throttled).
-    Values set in the config win; differences from the baseline are reported."""
+    Values set in the config win; differences from the baseline are reported.
+    Only configs with a `baseline:` key get here; all others are independent of it."""
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "baseline"))
+    import e2_baseline
     bl = e2_baseline.load(e2_baseline.resolve(cfg["baseline"], path))
     table = e2_baseline.engine_table(bl)
     rated = e2_baseline.table_point(table, 1.0)

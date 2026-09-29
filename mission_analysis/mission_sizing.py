@@ -12,7 +12,7 @@ Two missions are flown with the same vehicle and engine:
 Each mission is a one-dimensional vertical point mass flown along a prescribed
 feed-forward profile of trapezoidal velocity segments. The throttle follows
 from T = m (g + a_cmd). The propellant flows come from the engine throttle table
-of the shared baseline, baseline/engine_table.yaml (fuel fixed by the venturi,
+of the shared baseline, baseline/h2_baseline_engine_table.yaml (fuel fixed by the venturi,
 oxidizer throttled, O/F and chamber pressure falling with thrust). From the
 burned propellant the script builds the budget per propellant (burned, 2 s hover reserve, control
 allowance, trapped residual, N2O vapour make-up), the mass point at a fixed
@@ -24,7 +24,7 @@ Files
   h2_mission_inputs.yaml    mission inputs (vehicle, tanks, pressurization,
                             allowances, missions) and the path of the baseline
   baseline/h2_baseline.yaml engine, propellant temperatures, residuals
-  baseline/engine_table.yaml  throttle table (h2cea/run_engine_table.py)
+  baseline/h2_baseline_engine_table.yaml  throttle table (h2cea/run_engine_table.py)
   mission_results.yaml      results and the hand-over to the tank sizing
 
 Usage

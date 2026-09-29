@@ -1,6 +1,7 @@
 """Engine throttle table for the shared baseline.
 
-    python run_engine_table.py      # writes baseline/engine_table.yaml (a few seconds)
+    python run_engine_table.py      # writes baseline/h2_baseline_engine_table.yaml (a few seconds)
+    E2_BASELINE=../baseline/my_study.yaml python run_engine_table.py   # table for a private baseline
 
 Computes the delivered throttle line of the flight engine from
 baseline/h2_baseline.yaml with the h2cea engine model (operating_line.py):

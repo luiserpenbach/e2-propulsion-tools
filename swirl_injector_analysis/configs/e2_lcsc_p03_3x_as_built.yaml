@@ -2,9 +2,6 @@
 # The sizing section below reproduces the original P03 design inputs; the as_built block
 # replaces the sized geometry with the P03 specification, so the operating envelope is
 # evaluated for the real hardware.
-# This file keeps the original P03 test operating point (1.0 kg/s, O/F 4, both flows scaled
-# at part thrust) and does not use the shared baseline; add `baseline:` to evaluate P03 on
-# the flight engine's throttle line instead.
 
 name: E2_P03_as_built
 elements: 3

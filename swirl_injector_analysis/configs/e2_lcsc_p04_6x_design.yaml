@@ -1,13 +1,13 @@
 # New sizing of an LCSC element for the E2 monolithic head (6 elements), regen-heated N2O.
-# Units: bar, K, kg/s, mm, deg, m/s.
-#
-# The operating point (chamber pressure, total flow and O/F of the whole head at rated
-# thrust) and the throttle points come from the engine table of the shared baseline.
-# Set operating_point values here only to override it.
+# Units: bar, K, kg/s, mm, deg, m/s. Flows in operating_point are for the whole head.
 
 name: E2_LCSC_6el
 elements: 6
-baseline: ../../baseline/h2_baseline.yaml
+
+operating_point:
+  chamber_pressure_bar: 25.0
+  mdot_total_kg_s: 1.0
+  of_ratio: 4.0
 
 fuel:
   fluid: Ethanol              # CoolProp fluid name
@@ -56,10 +56,10 @@ limits:
   min_stiffness: 0.15
   min_J: 0.5
 
-throttle_points:              # fraction of rated thrust; pc, O/F and flows from the engine table
+throttle_points:              # chamber pressure defaults to fraction x nominal if omitted
   - {fraction: 1.00}
-  - {fraction: 0.75}
-  - {fraction: 0.50}
+  - {fraction: 0.75, chamber_pressure_bar: 19.0}
+  - {fraction: 0.50, chamber_pressure_bar: 13.0}
 
 # as_built:                   # optional: replace sized geometry (mm) to analyse real hardware
 #   d_gas_out: 9.0
