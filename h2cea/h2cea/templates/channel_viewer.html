@@ -1,0 +1,368 @@
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#ffffff; --side:#f7f7f8; --view:#f3f4f6; --border:#e6e6e9; --ink:#111318; --ink2:#4b5060; --muted:#8b909c;
+  --btn:#111318; --btn-ink:#ffffff; --chip:#ececef; --hover:#eef0f3;
+  --water:#2a78d6; --hot:#eb6834; --aqua:#1baf7a; --crit:#d03b3b; --sat:#8b909c; --waterfill:#d6e6f8; --blocked:#e6e7ea;
+  --f-ui:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif; --f-head:"Barlow Semi Condensed","Barlow",system-ui,sans-serif; --f-num:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){color-scheme:dark;
+    --bg:#111214; --side:#17181b; --view:#1b1c20; --border:#2a2c31; --ink:#ececf0; --ink2:#b3b7c2; --muted:#7d828d;
+    --btn:#ececf0; --btn-ink:#111214; --chip:#24262b; --hover:#202227;
+    --water:#3987e5; --hot:#d95926; --aqua:#199e70; --crit:#e66767; --sat:#7d828d; --waterfill:#1d3552; --blocked:#2b2d33;}
+}
+:root[data-theme="dark"]{color-scheme:dark;
+  --bg:#111214; --side:#17181b; --view:#1b1c20; --border:#2a2c31; --ink:#ececf0; --ink2:#b3b7c2; --muted:#7d828d;
+  --btn:#ececf0; --btn-ink:#111214; --chip:#24262b; --hover:#202227;
+  --water:#3987e5; --hot:#d95926; --aqua:#199e70; --crit:#e66767; --sat:#7d828d; --waterfill:#1d3552; --blocked:#2b2d33;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.45;margin:0}
+.app{display:grid;grid-template-columns:292px minmax(0,1fr);min-height:100vh}
+aside{background:var(--side);border-right:1px solid var(--border);padding:18px 16px 24px;display:flex;flex-direction:column;gap:18px}
+main{padding-block:16px 28px;padding-inline:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+h1{font-family:var(--f-head);font-weight:600;font-size:21px;line-height:1.15;margin:0;text-wrap:balance;letter-spacing:.1px}
+.sub{color:var(--ink2);font-size:13px;margin-top:4px}
+.group{display:flex;flex-direction:column;gap:8px}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--chip);border-radius:8px;padding:3px;gap:3px}
+.seg button{font:inherit;font-weight:500;border:0;border-radius:6px;padding:6px 8px;background:transparent;color:var(--ink2);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;color:var(--ink)}
+.switch input{appearance:none;width:32px;height:18px;border-radius:10px;background:var(--border);position:relative;cursor:pointer;margin:0;flex:none;transition:background .15s}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch input:checked{background:var(--btn)}
+.switch input:checked::after{left:16px;background:var(--btn-ink)}
+.switch input:focus-visible,.seg button:focus-visible,.btn:focus-visible,input[type=range]:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--btn)}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.btn{font:inherit;font-size:13px;border:1px solid var(--border);background:var(--bg);color:var(--ink);border-radius:7px;padding:5px 10px;cursor:pointer}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
+.readout{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:13px}
+.readout dt{color:var(--ink2)} .readout dd{margin:0;font-family:var(--f-num);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
+.readout dd.warn{color:var(--crit);font-weight:500}
+.hint{color:var(--muted);font-size:12px}
+.scale{display:flex;flex-direction:column;gap:4px}
+.scale canvas{width:100%;height:12px;border-radius:3px;display:block}
+.scale .ticks{display:flex;justify-content:space-between;font-family:var(--f-num);font-size:11px;color:var(--ink2)}
+.card{border:1px solid var(--border);border-radius:10px;background:var(--bg);overflow:hidden}
+.card header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card h2{font-family:var(--f-head);font-weight:600;font-size:15px;margin:0}
+.card .meta{color:var(--muted);font-size:12px}
+#view{position:relative;height:min(62vh,560px);min-height:340px;background:var(--view)}
+#view canvas{display:block;width:100%;height:100%}
+.overlay{position:absolute;left:12px;bottom:10px;font-size:12px;color:var(--ink2);background:color-mix(in srgb,var(--bg) 80%,transparent);padding:4px 8px;border-radius:6px;pointer-events:none}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+#xsec{position:relative;padding:10px 14px 12px}
+#xsec canvas{width:100%;height:230px;display:block;border-radius:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 14px 0;font-size:12px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:16px;height:0;border-top:2px solid;display:inline-block}
+.chart{position:relative;padding:4px 8px 8px}
+.chart svg{width:100%;display:block;overflow:visible}
+.chart text{font-family:var(--f-ui);font-size:11px;fill:var(--muted)}
+.tip{position:absolute;pointer-events:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.08);min-width:170px;z-index:5}
+.tip b{font-family:var(--f-head);font-weight:600;font-size:13px}
+.tip .l{display:flex;justify-content:space-between;gap:12px}
+.tip .l span:last-child{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.titleblock{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:12px}
+.titleblock div{padding:8px 12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);margin:-1px -1px 0 0}
+.titleblock div span{display:block;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em}
+.titleblock div strong{font-weight:500;font-family:var(--f-num);font-size:12px}
+@media (max-width:900px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--border)}.grid2{grid-template-columns:1fr}main{padding-inline:16px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+<aside>
+  <div>
+    <h1 id="apptitle"></h1>
+    <div class="sub" id="appsub"></div>
+  </div>
+  <div class="group">
+    <div class="label">Case</div>
+    <div class="seg" role="group" aria-label="Case" id="caseseg"></div>
+  </div>
+  <div class="group">
+    <div class="label">Section</div>
+    <input id="cut" type="range" min="4" max="120" value="75" aria-label="Section position along the channel">
+    <div class="row"><span class="hint" id="cutlabel">x = 136.5 mm</span><span class="hint">injector → exit</span></div>
+    <div class="btns">
+      <button class="btn" data-x="40">Cylinder</button>
+      <button class="btn" data-x="115">Cone</button>
+      <button class="btn" data-x="136.5">Throat</button>
+      <button class="btn" data-x="180">Exit</button>
+    </div>
+  </div>
+  <div class="group">
+    <label class="switch"><input id="blocked" type="checkbox"> Centre channel blocked</label>
+    <label class="switch"><input id="closeout" type="checkbox" checked> Show closeout</label>
+    <label class="switch"><input id="fixed" type="checkbox"> <span id="fixedlabel">Fixed scale</span></label>
+  </div>
+  <div class="group scale">
+    <div class="label">Wall temperature</div>
+    <canvas id="bar" width="256" height="12" aria-hidden="true"></canvas>
+    <div class="ticks" id="ticks"></div>
+  </div>
+  <div class="group">
+    <div class="label">At the section</div>
+    <dl class="readout" id="readout"></dl>
+  </div>
+  <div class="group">
+    <div class="btns"><button class="btn primary" id="frame">Frame section</button><button class="btn" id="overview">Overview</button></div>
+    <div class="hint">Drag to orbit, scroll to zoom, right-drag to pan. Click a chart to move the section.</div>
+  </div>
+</aside>
+<main>
+  <section class="card">
+    <header><h2>Channel sector, temperature on every wall</h2><span class="meta" id="viewmeta">Solid wall coloured by temperature, coolant shown blue in the cut</span></header>
+    <div id="view"><div class="overlay" id="flowhint">Hot gas flows injector → nozzle · coolant flows nozzle → injector</div></div>
+  </section>
+  <div class="grid2">
+    <section class="card">
+      <header><h2>Cross-section at the cut</h2><span class="meta" id="xsmeta"></span></header>
+      <div id="xsec"><canvas id="xs" aria-label="Cross-section temperature map"></canvas><div class="tip" id="xstip" hidden></div></div>
+    </section>
+    <section class="card">
+      <header><h2>Along the channel</h2><span class="meta">1D march, gas-side peaks from the 2D sections</span></header>
+      <div class="legend" id="legend"></div>
+      <div class="chart" id="chartT"></div>
+      <div class="chart" id="chartQ"></div>
+      <div class="tip" id="ctip" hidden></div>
+    </section>
+  </div>
+  <div class="titleblock" aria-label="Article data" id="titleblock"></div>
+</main>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const D=JSON.parse(document.getElementById('data').textContent);
+const NS=D.n, NY=66, NZ=D.z.length, TRIB=D.meta.t_rib, TW=D.meta.t_wall, HCH=D.meta.h_ch, H=D.z[NZ-1];
+const KEYS=D.meta.cases.map(c=>c.key);
+const ST=D.st; const Z=D.z;
+const state={op:KEYS[0],blocked:false,closeout:true,fixed:false,cut:0};
+// ---------- fields ----------
+const cache={};
+function field(op,blk){const k=op+(blk?'b':'n'); if(cache[k]) return cache[k];
+  const b=atob(D.cases[op][(blk?'blk':'nom')+'_field']); const a=new Float32Array(b.length);
+  for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i)*D.tmaxScale/255; return cache[k]=a;}
+function T(F,i,f,k){const j=Math.abs(f-(NYE-1)); const jj=j<NY?j:39+((j-39)%26); return F[(i*NY+jj)*NZ+k];}
+function yverts(p,w){const segs=[[0,w/2,10],[w/2,w/2+TRIB,6],[p-w/2,p+w/2,20],[p+w/2,p+w/2+TRIB,6],[2*p-w/2,2*p+w/2,20],[2*p+w/2,2.5*p,3]];
+  const v=[0]; for(const [a,b,n] of segs){for(let q=1;q<=n;q++) v.push(a+(b-a)*q/n);} return v;}
+const YH=[]; for(let i=0;i<NS;i++) YH.push(yverts(ST.p[i],ST.w[i]));
+const EXT=5, NYE=NY+26*EXT, NF=2*NYE-1;
+function hmap(j){ if(j<NY) return [j,0]; const q=j-39; return [39+(q%26), Math.floor(q/26)]; }
+function yhalf(i,j){const [jj,m]=hmap(j); return YH[i][jj]+m*ST.p[i];}
+function yfull(i,f){const j=f-(NYE-1); return (j<0?-1:1)*yhalf(i,Math.abs(j));}
+const CH=[[0,10],[16,36],[42,62]]; const ZC=[8,18];
+function halfCellChannel(c){ if(c<10) return 0; if(c>=16&&c<36) return 1; if(c<42) return -1; const b=42+((c-42)%26); const m=Math.floor((c-42)/26); return (b>=42&&b<62)?2+m:-1; }
+function cellChannel(fc){const j0=fc-(NYE-1), j1=j0+1; const lo=Math.min(Math.abs(j0),Math.abs(j1)); return halfCellChannel(lo);}
+function stationAt(x){let b=0,bd=1e9; for(let i=0;i<NS;i++){const d=Math.abs(ST.x[i]-x); if(d<bd){bd=d;b=i;}} return b;}
+// ---------- colour ----------
+const STOPS=['#fdf3e7','#f9d7b0','#f4b077','#ec8545','#d95f27','#b3431b','#842f14','#55190b'].map(h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]);
+function cmap(t){t=Math.max(0,Math.min(1,t)); const s=t*(STOPS.length-1); const i=Math.min(STOPS.length-2,Math.floor(s)); const u=s-i;
+  return [0,1,2].map(c=>STOPS[i][c]+(STOPS[i+1][c]-STOPS[i][c])*u);}
+function lin(c){c/=255; return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
+function scaleMax(){ if(state.fixed) return D.tmaxScale; const c=D.cases[state.op]; const m=Math.max(...(state.blocked?c.blk_Tsmax:c.nom_Tsmax)); return Math.ceil(m/100)*100+(state.blocked?0:0);}
+// ---------- three.js scene ----------
+const view=document.getElementById('view');
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true}); renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.outputEncoding=THREE.sRGBEncoding; view.prepend(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(32,1,0.5,3000);
+const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=0.12;
+scene.add(new THREE.AmbientLight(0xffffff,0.55));
+scene.add(new THREE.HemisphereLight(0xffffff,0xdfe3ea,0.35));
+const dl=new THREE.DirectionalLight(0xffffff,0.45); dl.position.set(120,200,160); scene.add(dl);
+const dl2=new THREE.DirectionalLight(0xffffff,0.4); dl2.position.set(80,-160,60); scene.add(dl2);
+const dl3=new THREE.DirectionalLight(0xffffff,0.2); dl3.position.set(-150,40,-120); scene.add(dl3);
+function pos(i,y,z){const r=ST.r[i]; const phi=y/(r+TW); const xm=ST.x[i]+z*ST.nx[i], rm=r+z*ST.nr[i]; return [xm, rm*Math.cos(phi), rm*Math.sin(phi)];}
+const solidMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.62,metalness:0.08,side:THREE.DoubleSide});
+const closeMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.62,metalness:0.08,side:THREE.DoubleSide,transparent:true,opacity:1});
+// generic strip surface: samples(i) -> list of [f,k]; builds grid (i major)
+const strips=[];
+function makeStrip(samples,mat){ const m=samples.length; const P=new Float32Array(NS*m*3), C=new Float32Array(NS*m*3); const idx=[];
+  for(let i=0;i<NS;i++) for(let q=0;q<m;q++){const [f,k]=samples[q]; const p=pos(i,yfull(i,f),Z[k]); P.set(p,(i*m+q)*3);}
+  for(let i=0;i<NS-1;i++) for(let q=0;q<m-1;q++){const a=i*m+q,b=a+1,c=a+m,d=c+1; idx.push(a,c,b,b,c,d);}
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(P,3)); g.setAttribute('color',new THREE.BufferAttribute(C,3)); g.setIndex(idx); g.computeVertexNormals();
+  const mesh=new THREE.Mesh(g,mat); scene.add(mesh); const s={mesh,samples,m}; strips.push(s); return s;}
+const allF=[...Array(NF).keys()], allK=[...Array(NZ).keys()];
+makeStrip(allF.map(f=>[f,0]),solidMat);                // gas surface
+const topStrip=makeStrip(allF.map(f=>[f,NZ-1]),closeMat); // closeout outer
+makeStrip(allK.map(k=>[0,k]),solidMat); makeStrip(allK.map(k=>[NF-1,k]),solidMat); // sector sides
+// channel walls
+const chFull=[]; // [f0,f1,channelId]
+const C0=NYE-1; chFull.push([C0-10,C0+10,0]);
+{const rs=[[16,36,1]]; for(let m=0;m<=EXT;m++) rs.push([42+26*m,62+26*m,2+m]); for(const [a,b,c] of rs){chFull.push([C0+a,C0+b,c]); chFull.push([C0-b,C0-a,c]);}}
+const kf=[]; for(let k=ZC[0];k<=ZC[1];k++) kf.push(k);
+const ceilings=[], ribTops=[];
+for(const [f0,f1] of chFull){const fr=[]; for(let f=f0;f<=f1;f++) fr.push(f);
+  makeStrip(fr.map(f=>[f,ZC[0]]),solidMat); ceilings.push(makeStrip(fr.map(f=>[f,ZC[1]]),solidMat));
+  makeStrip(kf.map(k=>[f0,k]),solidMat); makeStrip(kf.map(k=>[f1,k]),solidMat);}
+{const sorted=chFull.map(c=>[c[0],c[1]]).sort((a,b)=>a[0]-b[0]); let prev=0;
+  for(const [a,b] of sorted){ if(a>prev){const fr=[]; for(let f=prev;f<=a;f++) fr.push(f); const st=makeStrip(fr.map(f=>[f,ZC[1]]),solidMat); st.mesh.visible=false; ribTops.push(st);} prev=b; }
+  if(prev<NF-1){const fr=[]; for(let f=prev;f<=NF-1;f++) fr.push(f); const st=makeStrip(fr.map(f=>[f,ZC[1]]),solidMat); st.mesh.visible=false; ribTops.push(st);} }
+// cut faces
+function faceGeom(i,F,max,withWater){ const P=[],C=[],idx=[]; const vid={};
+  function v(f,k){const key=f*100+k; if(vid[key]!==undefined) return vid[key]; const p=pos(i,yfull(i,f),Z[k]); P.push(...p); const c=cmap(T(F,i,f,k)/max); C.push(lin(c[0]),lin(c[1]),lin(c[2])); return vid[key]=P.length/3-1;}
+  for(let fc=0;fc<NF-1;fc++){const ch=cellChannel(fc); for(let kc=0;kc<(state.closeout?NZ-1:ZC[1]);kc++){ if(ch>=0 && kc>=ZC[0] && kc<ZC[1]) continue;
+      const a=v(fc,kc),b=v(fc+1,kc),c=v(fc,kc+1),d=v(fc+1,kc+1); idx.push(a,b,c,b,d,c);} }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); g.setAttribute('color',new THREE.Float32BufferAttribute(C,3)); g.setIndex(idx); g.computeVertexNormals(); return g;}
+function waterGeom(i){const P=[],idx=[]; for(const [f0,f1,c] of chFull){ if(state.blocked && c===0) continue;
+  const q=[[f0,ZC[0]],[f1,ZC[0]],[f0,ZC[1]],[f1,ZC[1]]].map(([f,k])=>pos(i,yfull(i,f),Z[k]));
+  // nudge slightly upstream so it doesn't z-fight
+  const b=P.length/3; for(const p of q){P.push(p[0]+0.02,p[1],p[2]);} idx.push(b,b+1,b+2,b+1,b+3,b+2);}
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); g.setIndex(idx); g.computeVertexNormals(); return g;}
+const cutMesh=new THREE.Mesh(new THREE.BufferGeometry(),solidMat); scene.add(cutMesh);
+const capMesh=new THREE.Mesh(new THREE.BufferGeometry(),solidMat); scene.add(capMesh);
+const waterMat=new THREE.MeshBasicMaterial({color:0x2a78d6,transparent:true,opacity:0.42,side:THREE.DoubleSide,depthWrite:false});
+const waterMesh=new THREE.Mesh(new THREE.BufferGeometry(),waterMat); scene.add(waterMesh);
+// ghost chamber (full revolution)
+(function ghost(){const seg=96; for(const [zz,op] of [[0,0.10],[H,0.07]]){const P=[],idx=[]; for(let i=0;i<NS;i++){const xm=ST.x[i]+zz*ST.nx[i], rm=ST.r[i]+zz*ST.nr[i]; for(let a=0;a<=seg;a++){const t=a/seg*Math.PI*2; P.push(xm,rm*Math.cos(t),rm*Math.sin(t));}}
+  for(let i=0;i<NS-1;i++) for(let a=0;a<seg;a++){const p=i*(seg+1)+a; idx.push(p,p+seg+1,p+1,p+1,p+seg+1,p+seg+2);}
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); g.setIndex(idx); g.computeVertexNormals();
+  const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x9aa1ad,transparent:true,opacity:op,side:THREE.DoubleSide,depthWrite:false,roughness:0.9})); m.renderOrder=-1; scene.add(m);}
+  // contour lines at 0 and 180 deg for reference
+  const lm=new THREE.LineBasicMaterial({color:0x9aa1ad,transparent:true,opacity:0.55});
+  for(const t of [Math.PI/2,Math.PI,-Math.PI/2]){const P=[]; for(let i=0;i<NS;i++){P.push(ST.x[i],ST.r[i]*Math.cos(t),ST.r[i]*Math.sin(t));} const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); scene.add(new THREE.Line(g,lm));}
+})();
+function recolor(){const F=field(state.op,state.blocked); const max=scaleMax();
+  for(const s of strips){const C=s.mesh.geometry.attributes.color.array; for(let i=0;i<NS;i++) for(let q=0;q<s.m;q++){const [f,k]=s.samples[q]; const c=cmap(T(F,i,f,k)/max); const o=(i*s.m+q)*3; C[o]=lin(c[0]);C[o+1]=lin(c[1]);C[o+2]=lin(c[2]);} s.mesh.geometry.attributes.color.needsUpdate=true;}
+  capMesh.geometry.dispose(); capMesh.geometry=faceGeom(0,F,max);
+  drawBar(max);}
+function setCut(i){ i=Math.max(4,Math.min(NS-1,i)); state.cut=i; document.getElementById('cut').value=i;
+  const F=field(state.op,state.blocked), max=scaleMax();
+  for(const s of strips){ s.mesh.geometry.setDrawRange(0,i*(s.m-1)*6); }
+  cutMesh.geometry.dispose(); cutMesh.geometry=faceGeom(i,F,max);
+  waterMesh.geometry.dispose(); waterMesh.geometry=waterGeom(i);
+  document.getElementById('cutlabel').textContent='x = '+ST.x[i].toFixed(1)+' mm';
+  updateReadout(); drawXsec(); updateCutMarkers(); requestRender();}
+// camera
+function frameSection(){const i=state.cut, x=ST.x[i], r=ST.r[i], k=Math.max(1,r/15);
+  camera.position.set(x+34*k, r*0.05, 12*k); controls.target.set(x-14*k, r*0.95, 0); controls.update(); requestRender();}
+function overview(){const i=state.cut, x=ST.x[i], r=ST.r[i];
+  camera.position.set(x+60,-10,55); controls.target.set(x-40,r+6,0); controls.update(); requestRender();}
+function resize(){const w=view.clientWidth,h=view.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); requestRender();}
+function applyTheme(){const cs=getComputedStyle(document.documentElement); renderer.setClearColor(new THREE.Color(cs.getPropertyValue('--view').trim()||'#f3f4f6'),1);
+  waterMat.color.set(cs.getPropertyValue('--water').trim()||'#2a78d6'); requestRender(); drawXsec(); buildCharts();}
+let needs=true; function requestRender(){needs=true;}
+controls.addEventListener('change',requestRender);
+(function loop(){requestAnimationFrame(loop); controls.update(); if(needs){renderer.render(scene,camera); needs=false;}})();
+// ---------- colour bar ----------
+function drawBar(max){const c=document.getElementById('bar'), g=c.getContext('2d'); for(let x=0;x<c.width;x++){const k=cmap(x/(c.width-1)); g.fillStyle=`rgb(${k.map(Math.round).join(',')})`; g.fillRect(x,0,1,c.height);}
+  const t=document.getElementById('ticks'); t.innerHTML=''; const n=4; for(let q=0;q<=n;q++){const s=document.createElement('span'); s.textContent=Math.round(max*q/n)+(q===n?' °C':''); t.appendChild(s);} }
+// ---------- readout ----------
+function updateReadout(){const i=state.cut, c=D.cases[state.op]; const margin=(c.regime[i]==='liquid')?c.Tsat[i]-c.Twc[i]:NaN;
+  const rows=[['Axial position',ST.x[i].toFixed(1)+' mm'],['Gas-side radius',ST.r[i].toFixed(2)+' mm'],['Channel width',ST.w[i].toFixed(2)+' mm'],
+    ['Heat flux',c.q[i].toFixed(2)+' MW/m²'],['Gas wall, peak (2D)',c.nom_Tsmax[i].toFixed(0)+' °C',c.nom_Tsmax[i]>776.85],['Gas wall, 1D',c.Twg[i].toFixed(0)+' °C'],
+    ['Coolant wall, 1D',c.Twc[i].toFixed(0)+' °C'],['Coolant',c.Tb[i].toFixed(1)+' °C, '+c.v[i].toFixed(1)+' m/s'],['Coolant pressure',c.pw[i].toFixed(1)+' bar'],['Coolant state',c.regime[i]+(Number.isFinite(c.xq[i])&&c.regime[i]==='two-phase'?', x = '+c.xq[i].toFixed(2):'')],
+    ['Boiling margin',isFinite(margin)?margin.toFixed(0)+' K':'n/a (not subcooled)',isFinite(margin)&&margin<20]];
+  if(Number.isFinite(c.chf[i])) rows.push(['q / q_CHF',c.chf[i].toFixed(2),c.chf[i]>0.5]);
+  if(state.blocked) rows.splice(5,0,['Over blocked channel',c.blk_Tsmax[i].toFixed(0)+' °C',c.blk_Tsmax[i]>776.85]);
+  document.getElementById('readout').innerHTML=rows.map(r=>`<dt>${r[0]}</dt><dd class="${r[2]?'warn':''}">${r[1]}</dd>`).join('');}
+// ---------- cross-section canvas ----------
+const xs=document.getElementById('xs');
+function drawXsec(){const i=state.cut, F=field(state.op,state.blocked), max=scaleMax(); const cs=getComputedStyle(document.documentElement);
+  const dpr=Math.min(2,window.devicePixelRatio||1); const Wc=xs.clientWidth, Hc=xs.clientHeight; if(!Wc) return; xs.width=Wc*dpr; xs.height=Hc*dpr; const g=xs.getContext('2d');
+  const p=ST.p[i], w=ST.w[i]; const y0=-1.5*p, y1=1.5*p; const padB=18*dpr, padT=4*dpr; const Wp=xs.width, Hp=xs.height-padB-padT;
+  const img=g.createImageData(Wp,Hp); const yv=[]; for(let f=0;f<NF;f++) yv.push(yfull(i,f));
+  const wf=cs.getPropertyValue('--waterfill').trim(), bf=cs.getPropertyValue('--blocked').trim(); const hex=h=>[1,3,5].map(o=>parseInt(h.slice(o,o+2),16));
+  const WF=hex(wf.length===7?wf:'#d6e6f8'), BF=hex(bf.length===7?bf:'#e6e7ea');
+  let fi=0; for(let px=0;px<Wp;px++){const y=y0+(y1-y0)*(px+0.5)/Wp; while(fi<NF-2 && yv[fi+1]<y) fi++; while(fi>0 && yv[fi]>y) fi--; const u=(y-yv[fi])/(yv[fi+1]-yv[fi]);
+    const ch=cellChannel(fi); let ki=0;
+    for(let py=0;py<Hp;py++){const z=H*(1-(py+0.5)/Hp); while(ki<NZ-2 && Z[ki+1]<z) ki++; while(ki>0 && Z[ki]>z) ki--; const v=(z-Z[ki])/(Z[ki+1]-Z[ki]);
+      let col; if(ch>=0 && ki>=ZC[0] && ki<ZC[1]) col=(state.blocked&&ch===0)?BF:WF; else {const t=(1-u)*(1-v)*T(F,i,fi,ki)+u*(1-v)*T(F,i,fi+1,ki)+(1-u)*v*T(F,i,fi,ki+1)+u*v*T(F,i,fi+1,ki+1); col=cmap(t/max);}
+      const o=(py*Wp+px)*4; img.data[o]=col[0]; img.data[o+1]=col[1]; img.data[o+2]=col[2]; img.data[o+3]=255;}}
+  g.clearRect(0,0,xs.width,xs.height); g.putImageData(img,0,padT);
+  // isotherms (marching squares on vertex grid)
+  const X=y=>(y-y0)/(y1-y0)*Wp, Yz=z=>padT+(1-z/H)*Hp; g.save(); g.beginPath(); g.rect(0,padT,Wp,Hp); g.clip();
+  g.strokeStyle=cs.getPropertyValue('--ink').trim(); g.globalAlpha=0.28; g.lineWidth=1*dpr; g.beginPath();
+  for(let lv=50;lv<max;lv+=50){ for(let f=0;f<NF-1;f++){ if(yv[f+1]<y0||yv[f]>y1) continue; const ch=cellChannel(f); for(let k=0;k<NZ-1;k++){ if(ch>=0&&k>=ZC[0]&&k<ZC[1]) continue;
+      const c=[[yv[f],Z[k],T(F,i,f,k)],[yv[f+1],Z[k],T(F,i,f+1,k)],[yv[f+1],Z[k+1],T(F,i,f+1,k+1)],[yv[f],Z[k+1],T(F,i,f,k+1)]]; const pts=[];
+      for(let e=0;e<4;e++){const A=c[e],B=c[(e+1)%4]; if((A[2]-lv)*(B[2]-lv)<0){const t=(lv-A[2])/(B[2]-A[2]); pts.push([A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t]);}}
+      if(pts.length>=2){g.moveTo(X(pts[0][0]),Yz(pts[0][1])); g.lineTo(X(pts[1][0]),Yz(pts[1][1]));} if(pts.length===4){g.moveTo(X(pts[2][0]),Yz(pts[2][1])); g.lineTo(X(pts[3][0]),Yz(pts[3][1]));}}}}
+  g.stroke(); g.restore(); g.globalAlpha=1;
+  // labels
+  g.fillStyle=cs.getPropertyValue('--muted').trim(); g.font=`${11*dpr}px Barlow, system-ui, sans-serif`; g.textBaseline='top';
+  g.fillText('hot gas side',4*dpr,padT+Hp+3*dpr); const t2='3 pitches = '+(3*p).toFixed(2)+' mm wide, 2.25 mm tall'; g.fillText(t2,Wp-g.measureText(t2).width-4*dpr,padT+Hp+3*dpr);
+  g.fillStyle=cs.getPropertyValue('--water').trim(); g.textBaseline='middle'; g.textAlign='center';
+  for(const k of [-1,0,1]){ if(state.blocked&&k===0){g.fillStyle=cs.getPropertyValue('--muted').trim(); g.fillText('blocked',X(k*p),Yz(TW+HCH/2)); g.fillStyle=cs.getPropertyValue('--water').trim();} else g.fillText(Math.round(D.cases[state.op].Tb[i])+' °C',X(k*p),Yz(TW+HCH/2)); }
+  g.textAlign='left';
+  const vex=(Hp/H)/(Wp/(y1-y0)); document.getElementById('xsmeta').textContent=`x = ${ST.x[i].toFixed(1)} mm · vertical scale ×${vex.toFixed(1)}`;
+  xs._map={y0,y1,Wp,Hp,padT,dpr,i};}
+xs.addEventListener('mousemove',e=>{const m=xs._map; if(!m) return; const r=xs.getBoundingClientRect(); const px=(e.clientX-r.left)*m.dpr, py=(e.clientY-r.top)*m.dpr-m.padT; const tip=document.getElementById('xstip');
+  if(py<0||py>m.Hp){tip.hidden=true;return;} const y=m.y0+(m.y1-m.y0)*px/m.Wp, z=H*(1-py/m.Hp); const i=m.i; let f=0; while(f<NF-2 && yfull(i,f+1)<y) f++; let k=0; while(k<NZ-2 && Z[k+1]<z) k++;
+  const ch=cellChannel(f); let txt; if(ch>=0&&k>=ZC[0]&&k<ZC[1]) txt=(state.blocked&&ch===0)?'Blocked channel, no flow':'Coolant '+D.cases[state.op].Tb[i].toFixed(1)+' °C';
+  else {const F=field(state.op,state.blocked); const tt=T(F,i,f,k); txt='Inconel '+Math.round(tt)+' °C';}
+  tip.innerHTML=`<b>${txt}</b><div class="l"><span>y, z</span><span>${y.toFixed(2)}, ${z.toFixed(2)} mm</span></div>`; tip.hidden=false; tip.style.left=Math.min(e.clientX-r.left+14, r.width-190)+'px'; tip.style.top=(e.clientY-r.top+18)+'px';});
+xs.addEventListener('mouseleave',()=>{document.getElementById('xstip').hidden=true;});
+// ---------- charts ----------
+const NSV='http://www.w3.org/2000/svg';
+function el(n,a,p){const e=document.createElementNS(NSV,n); for(const k in a) e.setAttribute(k,a[k]); if(p) p.appendChild(e); return e;}
+let charts=[];
+function buildCharts(){ const cs=getComputedStyle(document.documentElement); const col=v=>cs.getPropertyValue(v).trim();
+  const c=D.cases[state.op]; const x=ST.x;
+  const series=[{k:'blk',name:'Gas wall over blocked channel',color:col('--crit'),dash:'2 3',w:1.6,show:state.blocked,v:c.blk_Tsmax},
+    {k:'nom',name:'Gas wall, peak (2D)',color:col('--hot'),w:2,v:c.nom_Tsmax},{k:'twg',name:'Gas wall, 1D',color:col('--hot'),dash:'5 4',w:1.2,v:c.Twg},
+    {k:'twc',name:'Coolant wall',color:col('--aqua'),w:2,v:c.Twc},{k:'sat',name:'Saturation',color:col('--sat'),dash:'6 4',w:1.2,v:c.Tsat},{k:'tb',name:'Coolant',color:col('--water'),w:2,v:c.Tb}].filter(s=>s.show!==false);
+  document.getElementById('legend').innerHTML=series.map(s=>`<span><i class="sw" style="border-top-color:${s.color};border-top-style:${s.dash?'dashed':'solid'}"></i>${s.name}</span>`).join('')+`<span><i class="sw" style="border-top-color:${col('--crit')};border-top-style:dashed"></i>1050 K limit</span>`;
+  const tops=[...c.nom_Tsmax,...(state.blocked?c.blk_Tsmax:[]),...c.Twg]; const ymax=Math.max(600,Math.ceil(Math.max(...tops)*1.1/100)*100);
+  charts=[drawChart('chartT',series,{ymax,h:230,unit:'°C',limit:776.85,label:'Temperature [°C]'}),
+          drawChart('chartQ',[{k:'q',name:'Heat flux',color:col('--ink'),w:2,v:c.q}],{ymax:Math.ceil(Math.max(...c.q)*1.15/2)*2,h:120,unit:'MW/m²',label:'Heat flux [MW/m²]',xlabel:true})];
+  updateCutMarkers();}
+function drawChart(id,series,o){const host=document.getElementById(id); host.innerHTML=''; const W=Math.max(300,host.clientWidth-16), Hh=o.h; const m={l:40,r:10,t:8,b:o.xlabel?30:14};
+  const svg=el('svg',{viewBox:`0 0 ${W} ${Hh}`,height:Hh,role:'img','aria-label':o.label},host); const cs=getComputedStyle(document.documentElement); const rule=cs.getPropertyValue('--border').trim();
+  const X=v=>m.l+(v/182)*(W-m.l-m.r), Y=v=>m.t+(1-v/o.ymax)*(Hh-m.t-m.b);
+  const step=o.ymax>1000?200:(o.ymax>=600?200:(o.ymax>15?5:(o.ymax>10?2:1)));
+  for(let v=0;v<=o.ymax+1e-9;v+=step){el('line',{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),stroke:rule,'stroke-width':1},svg); const t=el('text',{x:m.l-6,y:Y(v)+4,'text-anchor':'end'},svg); t.textContent=v;}
+  if(o.xlabel){for(const v of [0,25,50,75,100,125,150,175]){const t=el('text',{x:X(v),y:Hh-14,'text-anchor':'middle'},svg); t.textContent=v;} const t=el('text',{x:W-m.r,y:Hh-1,'text-anchor':'end'},svg); t.textContent='x from injector face [mm]';}
+  const tl=el('text',{x:m.l+4,y:m.t+10},svg); tl.textContent=o.label;
+  if(o.limit && o.limit<o.ymax) el('line',{x1:m.l,x2:W-m.r,y1:Y(o.limit),y2:Y(o.limit),stroke:cs.getPropertyValue('--crit').trim(),'stroke-width':1,'stroke-dasharray':'5 4'},svg);
+  for(const s of series){let d='', pen=false; ST.x.forEach((xx,i)=>{const v=s.v[i]; if(!Number.isFinite(v)){pen=false; return;} d+=(pen?'L':'M')+X(xx).toFixed(1)+','+Y(Math.min(v,o.ymax)).toFixed(1); pen=true;});
+    el('path',{d,fill:'none',stroke:s.color,'stroke-width':s.w,'stroke-dasharray':s.dash||'','stroke-linejoin':'round','stroke-linecap':'round'},svg);}
+  const cut=el('line',{y1:m.t,y2:Hh-m.b,stroke:cs.getPropertyValue('--ink').trim(),'stroke-width':1.2},svg);
+  const hov=el('line',{y1:m.t,y2:Hh-m.b,stroke:cs.getPropertyValue('--muted').trim(),'stroke-width':1,visibility:'hidden'},svg);
+  const hit=el('rect',{x:m.l,y:0,width:W-m.l-m.r,height:Hh,fill:'transparent',style:'cursor:crosshair'},svg);
+  const inv=px=>Math.max(0,Math.min(182,(px-m.l)/(W-m.l-m.r)*182));
+  const tip=document.getElementById('ctip');
+  function pxOf(e){const r=svg.getBoundingClientRect(); return (e.clientX-r.left)*W/r.width;}
+  hit.addEventListener('mousemove',e=>{const xx=inv(pxOf(e)); const i=stationAt(xx); hov.setAttribute('x1',X(ST.x[i])); hov.setAttribute('x2',X(ST.x[i])); hov.setAttribute('visibility','visible');
+    const card=host.parentElement.getBoundingClientRect(), r=svg.getBoundingClientRect();
+    tip.innerHTML=`<b>x = ${ST.x[i].toFixed(1)} mm</b>`+series.filter(s=>Number.isFinite(s.v[i])).map(s=>`<div class="l"><span><i class="sw" style="border-top-color:${s.color};width:10px;margin-right:6px"></i>${s.name}</span><span>${s.v[i].toFixed(s.v[i]<30?2:0)} ${o.unit}</span></div>`).join('');
+    tip.hidden=false; const lx=e.clientX-card.left; tip.style.left=(lx>card.width/2?lx-tip.offsetWidth-14:lx+14)+'px'; tip.style.top=(r.top-card.top+10)+'px';});
+  hit.addEventListener('mouseleave',()=>{hov.setAttribute('visibility','hidden'); tip.hidden=true;});
+  hit.addEventListener('click',e=>{setCut(stationAt(inv(pxOf(e))));});
+  return {cut,X};}
+function updateCutMarkers(){for(const c of charts){const xx=c.X(ST.x[state.cut]); c.cut.setAttribute('x1',xx); c.cut.setAttribute('x2',xx);}}
+// ---------- controls ----------
+function setOp(op){state.op=op; document.querySelectorAll('#caseseg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===op)); refresh();}
+function refresh(){recolor(); setCut(state.cut); buildCharts();}
+(function(){const seg=document.getElementById('caseseg'); seg.style.gridTemplateColumns=`repeat(${Math.min(2,KEYS.length)},1fr)`;
+  for(const c of D.meta.cases){const b=document.createElement('button'); b.dataset.k=c.key; b.textContent=c.label; b.title=c.sub||''; b.setAttribute('aria-pressed',c.key===state.op); b.onclick=()=>setOp(c.key); seg.appendChild(b);}
+  document.getElementById('apptitle').textContent=D.meta.title; document.getElementById('fixedlabel').textContent='Fixed scale 0–'+D.tmaxScale+' °C'; document.getElementById('appsub').textContent=D.meta.subtitle;
+  document.getElementById('titleblock').innerHTML=D.meta.titleblock.map(([k,v])=>`<div><span>${k}</span><strong>${v}</strong></div>`).join('');})();
+document.getElementById('cut').addEventListener('input',e=>setCut(+e.target.value));
+document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{setCut(stationAt(+b.dataset.x)); frameSection();});
+document.getElementById('blocked').onchange=e=>{state.blocked=e.target.checked; refresh();};
+document.getElementById('fixed').onchange=e=>{state.fixed=e.target.checked; refresh();};
+document.getElementById('closeout').onchange=e=>{state.closeout=e.target.checked; topStrip.mesh.visible=state.closeout; for(const c of ceilings) c.mesh.visible=state.closeout; for(const r of ribTops) r.mesh.visible=!state.closeout; recolor(); setCut(state.cut);};
+document.getElementById('frame').onclick=frameSection; document.getElementById('overview').onclick=overview;
+window.addEventListener('resize',()=>{resize(); drawXsec(); buildCharts();});
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
+// ---------- start ----------
+state.cut=stationAt(136.5);
+resize(); applyTheme(); recolor(); setCut(state.cut); buildCharts();
+frameSection();
+if(document.fonts) document.fonts.ready.then(()=>{drawXsec();buildCharts();});
+})();
+</script>

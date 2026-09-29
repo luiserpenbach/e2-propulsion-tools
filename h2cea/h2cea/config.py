@@ -54,3 +54,34 @@ R_UP = 1.5 * R_T             # m, throat upstream radius
 R_DN = 0.382 * R_T           # m, throat downstream radius
 BELL_FRACTION = 0.80         # Rao bell length, fraction of 15 deg cone
 THETA_N, THETA_E = 21.0, 14.0  # deg, Rao angles for eps 4, 80 % bell (chart values)
+
+# ---- E2-REG-1 as built: nozzle and cooling jacket (Thrust Chamber E2-REG-1-A) ---
+# The as-built nozzle is not the eps-4 Rao bell above: it ends at r = 24.33 mm
+# (eps 2.99) after 43.6 mm, with 18.8 deg entry and 8 deg exit angles.
+R_E_E2 = 24.33e-3            # m, exit radius as built
+EPS_E2 = (R_E_E2 / R_T) ** 2 # 2.99
+L_BELL_E2 = 43.6e-3          # m, throat to exit plane
+THETA_N_E2, THETA_E_E2 = 18.8, 8.0   # deg
+RC_THROAT_BARTZ = None       # m; None = mean of upstream/downstream throat radius (handbook 9.2)
+
+N_CH = 50                    # channels
+T_WALL = 0.5e-3              # m, hot wall
+T_RIB = 0.6e-3               # m, rib, constant
+H_CH = 0.75e-3               # m, channel height, constant
+T_CLOSEOUT = 1.0e-3          # m, closeout (TBC against CAD: 1.0 or 1.25 mm)
+ROUGHNESS = 10e-6            # m, absolute channel roughness (assumed; take from flow test)
+WALL_MATERIAL = "IN718"
+
+# ---- Regen analysis defaults ------------------------------------------------------
+N_STATIONS = 600             # 1D march stations along the wall
+BARTZ_FACTOR = 1.0           # gas-side multiplier; CEA transport already matches the
+                             # handbook 9500 W/m2K at the full-thrust throat
+T_WG_LIMIT = 1050.0          # K, IN718 gas-side wall limit (handbook 11.1)
+T_WC_LIMIT_N2O = 573.0       # K, coolant-side wall limit with N2O (handbook 10.3)
+CHF_RATIO_LIMIT = 0.5        # q / q_CHF (handbook 10.3)
+V_MIN_N2O = 5.0              # m/s, minimum coolant velocity with N2O (handbook 10.3)
+
+# Water-cooled test configuration (E2-REG-1-A, test plan)
+WATER_MDOT = 1.0             # kg/s
+WATER_P_IN = 30.0            # bar
+WATER_T_IN = 293.15          # K

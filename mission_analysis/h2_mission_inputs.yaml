@@ -1,0 +1,123 @@
+# =============================================================================
+# H2 lander - mission analysis inputs
+# -----------------------------------------------------------------------------
+# Single source of all inputs for mission_sizing.py and engine_performance.py.
+# Units are part of every key name. Values marked "est." are estimates to be
+# replaced by test data or by the output of the tool named in "source".
+#
+# Interfaces
+#   engine_performance.py  reads  engine            -> writes engine_performance.yaml
+#   mission_sizing.py      reads  this file + engine_performance.yaml
+#                                                   -> writes mission_results.yaml
+#   tank / pressurization sizing  reads mission_results.yaml (section handover)
+#                                 and returns the values of tanks + pressurization
+# =============================================================================
+
+meta:
+  vehicle: H2 lander
+  document: Mission Analysis (Notion, Systems Engineering)
+  revision: E
+  date: 2026-09-27
+  owner: Luis
+
+# -----------------------------------------------------------------------------
+# Analysis settings
+# -----------------------------------------------------------------------------
+analysis:
+  # Mission handed to the tank sizing as the sizing case; the other missions
+  # are reported as check cases. The hop is the sizing case so that the tanks
+  # can cover both missions (Mission Analysis sections 6-7); whether the hop is
+  # flown with the same hardware is still to be decided. Set to hover for a
+  # hover-only sizing. null = mission with the largest usable propellant load.
+  sizing_case: hover
+
+# -----------------------------------------------------------------------------
+# Engine: E2-derived, N2O / ethanol, fixed fuel flow, oxidizer throttled
+# -----------------------------------------------------------------------------
+engine:
+  oxidizer: N2O                  # CEA name
+  fuel: Ethanol                  # CEA name
+  rated_thrust_N: 2250.0         # sea level, 100 % throttle
+  throttle_min: 0.50             # fraction of rated thrust
+  fuel_flow_kg_s: 0.200          # held constant by the fuel cavitating venturi
+  chamber_pressure_rated_bar: 25.0   # at rated thrust; sets the throat area
+  expansion_ratio: 4.0
+  ambient_pressure_bar: 1.01325
+  eta_cstar: 0.955               # est., c* efficiency (replace with E2-C1 data)
+  eta_cf: 0.977                  # est., thrust coefficient efficiency
+  throttle_points: [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00]
+  performance_file: engine_performance.yaml   # written by engine_performance.py
+
+# -----------------------------------------------------------------------------
+# Vehicle and mass point
+# -----------------------------------------------------------------------------
+vehicle:
+  dry_mass_kg: 124.2             # incl. maturity margins, Mass Budget workbook Rev A
+  ballast_min_kg: 15.0           # Lander Challenge payload rule
+  liftoff_thrust_to_weight: 1.20 # sets the liftoff mass; ballast fills the rest
+
+# -----------------------------------------------------------------------------
+# Propellant tanks (present hardware)
+# -----------------------------------------------------------------------------
+propellant_tanks:
+  initial_ullage_fraction: 0.05
+  oxidizer:
+    count: 2
+    volume_each_L: 18.0
+    residual_kg: 0.8             # est., trapped in tanks, lines and engine
+    loading_temperature_C: 25.0  # warm end of the 5-25 C loading window
+  fuel:
+    count: 1
+    volume_each_L: 6.9
+    residual_kg: 0.2             # est.
+    density_kg_m3: 789.0         # ethanol at 20 C
+
+# -----------------------------------------------------------------------------
+# Pressurization (output of the tank and pressurization sizing)
+# -----------------------------------------------------------------------------
+pressurization:
+  source: Tank and Pressurization Sizing Rev B (present tanks)
+  pressurant_mass_kg: 14.9       # N2 loaded, incl. 10 % margin
+  n2o_vapour_makeup_kg: 4.1      # N2O ending the flight as ullage vapour
+  # Reference point used by --size-tanks to scale both values with tank volume
+  reference:
+    propellant_volume_L: 42.9
+    oxidizer_volume_L: 36.0
+
+# -----------------------------------------------------------------------------
+# Propellant allowances on top of the burned propellant
+# -----------------------------------------------------------------------------
+allowances:
+  reserve_hover_s: 2.0           # H2-MIS-009, at touchdown mass
+  control_fraction: 0.03         # est., per propellant, of burned mass
+
+# -----------------------------------------------------------------------------
+# Missions (same vehicle, same liftoff mass)
+# -----------------------------------------------------------------------------
+missions:
+  hover:                         # Tethered Hover milestone, H2-MIS-001 to -010
+    t_startup_s: 1.0             # on the pad at the throttle floor before liftoff
+    hover_altitude_m: 1.5        # setpoint
+    climb_rate_max_m_s: 1.0
+    climb_accel_m_s2: 0.5
+    count_altitude_m: 0.5        # hover counts above this height (null: hold only)
+    hover_required_s: 10.0       # H2-MIS-001
+    hover_margin_s: 1.0
+    hover_hold_s: 11.0           # used only if count_altitude_m is null
+    descent_rate_max_m_s: 0.7
+    descent_accel_m_s2: 0.5
+    touchdown_speed_m_s: 0.5     # H2-MIS-006: <= 1.0
+    t_tailoff_s: 0.3
+    ascent_time_limit_s: 8.0     # H2-MIS-005
+  hop:                           # Bess Touchdown Award, flown as a 10 m hop
+    t_startup_s: 1.0
+    apex_m: 10.0
+    climb_rate_max_m_s: 2.0
+    climb_accel_m_s2: 0.7        # keeps liftoff throttle below 90 %
+    apex_hold_s: 1.0             # zero velocity at the apex
+    descent_rate_max_m_s: 1.5
+    descent_accel_m_s2: 0.5
+    stop_altitude_m: 0.8         # zero vertical velocity within 1 m of the ground
+    stop_hold_s: 1.0
+    touchdown_speed_m_s: 0.5
+    t_tailoff_s: 0.3
