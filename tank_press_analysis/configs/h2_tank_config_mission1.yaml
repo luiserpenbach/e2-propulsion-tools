@@ -2,9 +2,9 @@
 # PROPELLANT TANK & PRESSURIZATION SIZING — H2 LANDER, MISSION 1 (HOVER)
 # All values SI unless the key name carries a unit suffix (_bar, _C, _mm, _L).
 #
-# Tank pressure, propellant temperature window, residuals, fluid names and the
-# cold / hot cases come from the shared baseline. Set a key here only to
-# override the baseline; the tool then prints a NOTE.
+# Tank pressure, propellant temperature window, residuals, fluid names, the
+# cold / hot cases and the present tank hardware come from the shared baseline.
+# Set a key here only to override the baseline; the tool then prints a NOTE.
 # =============================================================================
 
 baseline: ../../baseline/h2_baseline.yaml
@@ -18,9 +18,16 @@ mission:
 
 # --- Tank geometry & sizing rules -------------------------------------------
 tanks:
-  diameter_inner_m: 0.300        # fixed, inner diameter
-  dome: hemispherical            # fixed; tank = cylinder + 2 hemispheres (capsule)
-  ullage_min_frac: 0.10          # minimum ullage at worst-case (warmest) fill
+  # Present hardware: count, volume and diameter of the N2O and ethanol tanks
+  # from the baseline (tanks section). Set to false to size one new capsule per
+  # propellant with the diameter below instead.
+  present_hardware: true
+  # Fixed hardware can also be given here directly, per propellant:
+  #   oxidizer: {count: 2, volume_each_L: 18.0, diameter_inner_m: 0.240}
+  diameter_inner_m: 0.300        # sized tanks only: inner diameter
+  dome: hemispherical            # tank = cylinder + 2 hemispheres (capsule)
+  ullage_min_frac: 0.10          # sized tanks: minimum ullage at worst-case (warmest) fill;
+                                 # fixed tanks: warning if the hot-fill ullage is lower
   cyl_length_round_up_mm: 5.0    # round computed cylinder length up to this grid
   min_cyl_length_mm: 0.0         # allow pure sphere if volume permits
   oxidizer_evap_makeup: true     # iterate total N2O load: delivered + residual
@@ -29,7 +36,7 @@ tanks:
   # (lowest plausible density = largest liquid volume; occurs at unpressurized fill).
   wall:
     material: AISI-304           # informational
-    thickness_m: 0.004           # used only for wall thermal-mass node
+    thickness_m: 0.004           # used only for wall thermal-mass node (check against the present tanks)
     density_kg_m3: 7900.0
     cp_J_kgK: 500.0
 

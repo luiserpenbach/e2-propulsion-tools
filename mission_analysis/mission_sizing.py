@@ -67,9 +67,13 @@ def load_inputs(path, overrides=()):
                              "and regenerate the table:  " + e2_baseline.REGENERATE)
         node, parts = cfg, key.split(".")
         for p in parts[:-1]:
-            node = node[p]
+            node = node.setdefault(p, {})        # creates sections the file leaves out
         node[parts[-1]] = yaml.safe_load(val)
     bl = e2_baseline.load(e2_baseline.resolve(cfg["baseline"], path))
+    tk = bl["tanks"]
+    e2_baseline.fill(cfg, {f"propellant_tanks.{p}.{k}": tk[p][k]
+                           for p in ("oxidizer", "fuel") for k in ("count", "volume_each_L")},
+                     label=Path(path).name)
     return cfg, bl, e2_baseline.engine_table(bl)
 
 
@@ -584,7 +588,7 @@ def main():
                          baseline=e2_baseline.describe(bl), engine_table=table.get("meta", {}),
                          pressurization=press["source"]))
     print(f"Pressurization: {press['source']} -> {veh.m_pressurant:.2f} kg N2, "
-          f"{veh.m_n2o_vapour:.2f} kg N2O vapour for the present tanks\n")
+          f"{veh.m_n2o_vapour:.2f} kg N2O vapour for {veh.V_ox_tank:.1f} L N2O + {veh.V_fuel_tank:.1f} L ethanol tanks\n")
     veh_present = copy.deepcopy(veh)             # --max-apex always uses the present tanks
     if a.size_tanks:
         size_tanks(eng, veh, missions, allw)

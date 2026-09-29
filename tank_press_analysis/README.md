@@ -1,6 +1,6 @@
 # Tank sizing and pressurization analysis
 
-Physics-based sizing and transient simulation of the propellant tanks and the shared nitrogen pressurant system. The analysis sizes capsule tank geometry (ethanol fuel + N2O oxidizer), runs coupled pressurization transients at several propellant temperatures, and sizes the pressurant bottle against the regulator inlet requirement.
+Physics-based sizing and transient simulation of the propellant tanks and the shared nitrogen pressurant system. The analysis either sizes new capsule tanks or takes existing tank hardware (ethanol fuel + N2O oxidizer), runs coupled pressurization transients at several propellant temperatures, and sizes the pressurant bottle against the regulator inlet requirement.
 
 The tool was written for H-1B and is now also used for the H2 lander (`configs/h2_tank_config_mission1.yaml`).
 
@@ -10,7 +10,7 @@ The vehicle uses **externally pressurized blowdown** with a single N2 bottle fee
 
 The main script performs four steps:
 
-1. **Tank geometry sizing** - fixed inner diameter (300 mm), hemispherical domes; cylinder length from liquid load, worst-case (warmest) fill density, and minimum ullage fraction.
+1. **Tank geometry** - either sized (one capsule per propellant, fixed inner diameter, hemispherical domes; cylinder length from liquid load, worst-case (warmest) fill density, and minimum ullage fraction) or fixed hardware (count, volume and diameter per propellant; see [Fixed tanks](#fixed-tanks)).
 2. **Coupled pressurization** - ethanol and N2O tank models are co-stepped against one shared pressurant bottle (adiabatic blowdown, isenthalpic regulator inlet).
 3. **Pressurant bottle sizing** - bisection on bottle volume using the recorded N2 demand profile; margin applied to the worst temperature case.
 4. **Reporting** - Plotly HTML report and structured YAML results.
@@ -106,7 +106,7 @@ itself.
 |---------|---------|
 | `mission` | Burn time, total mass flow, O/F ratio - or `from_mission_results` (see [Mission handover](#mission-handover)) |
 | `propellants` | CoolProp fluid names for oxidizer (N2O) and fuel (ethanol) |
-| `tanks` | Fixed diameter, ullage rules, residuals, wall thermal properties, oxidizer evaporation makeup toggle |
+| `tanks` | Fixed hardware (`present_hardware`, or `oxidizer` / `fuel` blocks) or the sizing diameter and ullage rule; residuals, wall thermal properties, oxidizer evaporation makeup toggle |
 | `operating` | Regulator set pressure, propellant temperature envelope, ambient temperature |
 | `pressurant` | N2 bottle initial state, regulator minimum inlet pressure, blowdown mode, volume margin |
 | `model` | Time step, warm starts, fixed-point iterations (N2O), evaporation model, heat-transfer mode |
@@ -138,11 +138,29 @@ Documented limitations (conservative for sizing): no N2 dissolution (superchargi
 
 Rigid vessel with adiabatic (or isothermal) discharge. Pre-pressurization draw is isothermal; burn-time draw uses d(m u)/dt = -mdot * h_bottle. Bottle volume is sized by bisection so the end pressure stays above the regulator minimum inlet pressure for the full demand profile.
 
+## Fixed tanks
+
+Instead of sizing new capsules, the tool can simulate existing tanks. Per propellant:
+
+```yaml
+tanks:
+  oxidizer: {count: 2, volume_each_L: 18.0, diameter_inner_m: 0.240}
+  fuel:     {count: 1, volume_each_L: 6.9,  diameter_inner_m: 0.175}
+```
+
+Each tank is a vertical capsule (cylinder with hemispherical domes); the cylinder length follows from the volume and the diameter. Several identical tanks of one propellant are fed in parallel from the same regulator: one tank is simulated with 1/count of the load and flow, and its N2 draw is counted `count` times. A propellant without a block is sized as before, so fixed and sized tanks can be mixed.
+
+With `tanks.present_hardware: true` in a config that names the baseline, both blocks come from the `tanks` section of `baseline/h2_baseline.yaml` (the present H2 hardware). The H2 config does this. Set it to `false` to size new tanks for the same mission.
+
+The tool stops if the load does not fit the tanks at hot fill, and warns if the hot-fill ullage is below `ullage_min_frac`. The oxidizer vapour make-up is iterated as for sized tanks, so a partly filled tank gets a larger vapour allowance.
+
 ## Known limits
 
-- The tool always sizes **one** 300 mm capsule per propellant. It cannot evaluate a fixed tank volume or several tanks (e.g. the present H2 hardware, 2 x 18 L N2O + 6.9 L ethanol).
+- Tanks are capsules with hemispherical domes; other shapes (ellipsoidal domes, spheres of a given size) are approximated by a capsule of the same volume and diameter.
+- Parallel tanks are assumed identical and equally loaded.
+- The present-tank diameters in the baseline are estimates (capsule with length = 2 x diameter) until they are replaced with the drawings.
 - It drains both tanks at constant flow (the mission's mean flow when it uses the handover), not along the mission's throttle profile.
-- The handback is for the capsule tanks this tool sizes; the mission tool scales it to the present tanks by volume (first order).
+- With sized tanks, the handback is for those tanks and the mission tool scales it to its present tanks by volume (first order). With `present_hardware: true` no scaling is needed.
 - **The reported peak N2 flow can be a numerical start-up transient.** In the first few steps the N2O tank step oscillates (and negative steps are clipped), so the peak at t ≈ 0.1-0.2 s is not physical. Read the steady flow from the report plots; do not size the regulator on the reported peak.
 - The regulator minimum inlet and bottle pressure in the H2 config are the H-1B values, not derived from the H2 feed-pressure budget. The 100 bar tank pressure comes from the baseline.
 
@@ -191,11 +209,11 @@ Re-run after changing inputs; exact numbers depend on the CoolProp version.
 
 | Item | H2, `h2_tank_config_mission1.yaml` | H-1B, `n2o_press.yaml` |
 |------|------|------|
-| N2O tank | L_cyl 105 mm, 21.6 L, 14.8 kg loaded (11.6 delivered + 0.8 residual + 2.4 vapor) | L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
-| Ethanol tank | sphere, 14.1 L, 3.6 kg | sphere, 14.1 L, 8.1 kg |
-| Bottle, worst case (cold) | 30.3 L required -> 39.4 L with 1.30 margin, 11.9 kg N2 at 300 bar | 65.7 L -> 85.4 L, 25.8 kg N2 |
+| N2O tank | present 2 x 18 L (D 240 mm est.), 36.0 L, 17.3 kg loaded (11.6 delivered + 0.8 residual + 4.9 vapor), hot-fill ullage 48 % | sized, L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
+| Ethanol tank | present 1 x 6.9 L (D 175 mm est.), 3.6 kg, hot-fill ullage 34 % | sized, sphere, 14.1 L, 8.1 kg |
+| Bottle, worst case (cold) | 30.9 L required -> 40.2 L with 1.30 margin, 12.2 kg N2 at 300 bar | 65.7 L -> 85.4 L, 25.8 kg N2 |
 
-The H2 column is for the hover handover of the mission tool (11.6 kg N2O and 3.4 kg ethanol usable, delivered over 16.9 s).
+The H2 column is for the hover handover of the mission tool (11.6 kg N2O and 3.4 kg ethanol usable, delivered over 16.9 s) in the present tanks. Sized for the same mission instead (`present_hardware: false`), the tanks would be 21.6 L N2O + 14.1 L ethanol with 11.9 kg N2 and 2.4 kg vapour.
 
 ## Development notes
 

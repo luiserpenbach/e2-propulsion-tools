@@ -64,6 +64,9 @@ def load_config(path: str | Path) -> dict:
             "tanks.residual_ox_kg": bl["residuals"]["oxidizer_kg"],
             "tanks.residual_fu_kg": bl["residuals"]["fuel_kg"],
         }, label=Path(path).name)
+        if cfg["tanks"].get("present_hardware"):
+            e2_baseline.fill(cfg, {f"tanks.{p}.{k}": v for p in ("oxidizer", "fuel")
+                                   for k, v in bl["tanks"][p].items()}, label=Path(path).name)
         cfg.setdefault("cases", [
             {"name": "cold", "prop_temp_C": cfg["operating"]["temp_min_C"]},
             {"name": "hot", "prop_temp_C": cfg["operating"]["temp_max_C"]}])
@@ -106,6 +109,27 @@ def _mission_from_handover(cfg: dict, cfg_path) -> None:
 # =============================================================================
 # 1) Tank geometry sizing
 # =============================================================================
+
+def _fixed_tanks(tk: dict, key: str):
+    """(count, cylinder length, geometry of one tank) for fixed hardware given
+    as tanks.<key>: {count, volume_each_L, diameter_inner_m}; None if absent.
+    Each tank is a vertical capsule (cylinder + hemispherical domes)."""
+    spec = tk.get(key)
+    if not spec:
+        return None
+    missing = [k for k in ("volume_each_L", "diameter_inner_m") if spec.get(k) is None]
+    if missing:
+        raise SystemExit(f"tanks.{key} needs {', '.join(missing)}")
+    n = int(spec.get("count", 1))
+    v_each = spec["volume_each_L"] / 1000.0
+    r = spec["diameter_inner_m"] / 2.0
+    v_sphere = 4.0 / 3.0 * math.pi * r ** 3
+    if v_each < v_sphere:
+        raise SystemExit(f"tanks.{key}: {v_each * 1e3:.2f} L is smaller than a sphere of "
+                         f"{2e3 * r:.0f} mm ({v_sphere * 1e3:.2f} L); reduce diameter_inner_m.")
+    l_cyl = (v_each - v_sphere) / (math.pi * r ** 2)
+    return n, l_cyl, ep.TankGeom(radius_m=r, cyl_length_m=l_cyl)
+
 
 def size_tanks(cfg: dict, m_ox_load: float | None = None,
                m_fu_load: float | None = None) -> dict:
@@ -151,27 +175,38 @@ def size_tanks(cfg: dict, m_ox_load: float | None = None,
         l_cyl = max(math.ceil(l_cyl / grid) * grid if l_cyl > 0 else 0.0, 0.0)
         return l_cyl, ep.TankGeom(radius_m=R, cyl_length_m=l_cyl)
 
-    # Oxidizer: two-phase fill volume for total mass m_ox.
-    v_req_ox = m_ox / (rho_ox_l * (1.0 - u_min) + rho_ox_v * u_min)
-    l_ox, geom_ox = _capsule(v_req_ox)
-    V_ox = geom_ox.volume_m3
+    # Oxidizer: fixed hardware, or sized for a two-phase fill of total mass m_ox.
+    fixed_ox = _fixed_tanks(tk, "oxidizer")
+    if fixed_ox:
+        n_ox, l_ox, geom_ox = fixed_ox
+    else:
+        v_req_ox = m_ox / (rho_ox_l * (1.0 - u_min) + rho_ox_v * u_min)
+        n_ox, (l_ox, geom_ox) = 1, _capsule(v_req_ox)
+    V_ox = n_ox * geom_ox.volume_m3
     m_liq_ox_fill = (m_ox - rho_ox_v * V_ox) / (1.0 - rho_ox_v / rho_ox_l)
     v_liq_ox = m_liq_ox_fill / rho_ox_l
 
     # Fuel: single-phase liquid + ullage fraction (vapor mass negligible).
     v_liq_fu = m_fu / rho_fu
-    v_req_fu = v_liq_fu / (1.0 - u_min)
-    l_fu, geom_fu = _capsule(v_req_fu)
-    V_fu = geom_fu.volume_m3
+    fixed_fu = _fixed_tanks(tk, "fuel")
+    if fixed_fu:
+        n_fu, l_fu, geom_fu = fixed_fu
+    else:
+        n_fu, (l_fu, geom_fu) = 1, _capsule(v_liq_fu / (1.0 - u_min))
+    V_fu = n_fu * geom_fu.volume_m3
 
-    def _pack(l_cyl, geom, v_liq, V):
+    def _pack(l_cyl, geom, v_liq, V, n, fixed):
         return {
+            "fixed_hardware": fixed,
+            "count": n,
+            "diameter_inner_mm": 2000.0 * geom.radius_m,
             "cyl_length_mm": l_cyl * 1000.0,
             "total_length_mm": (l_cyl + 2.0 * geom.radius_m) * 1000.0,
-            "volume_L": V * 1000.0,
+            "volume_each_L": geom.volume_m3 * 1000.0,
+            "volume_L": V * 1000.0,                     # all tanks of this propellant
             "liquid_volume_fill_L": v_liq * 1000.0,
             "ullage_frac_fill_hot": 1.0 - v_liq / V,
-            "geom": geom,
+            "geom": geom,                               # one tank
         }
 
     out = {
@@ -180,8 +215,8 @@ def size_tanks(cfg: dict, m_ox_load: float | None = None,
         "m_fu_kg": m_fu, "m_fu_delivered_kg": m_fu_del,
         "rho_sizing_ox": rho_ox_l, "rho_sizing_fu": rho_fu,
         "residual_ox_kg": m_res_ox, "residual_fu_kg": m_res_fu,
-        "ox": _pack(l_ox, geom_ox, v_liq_ox, V_ox),
-        "fu": _pack(l_fu, geom_fu, v_liq_fu, V_fu),
+        "ox": _pack(l_ox, geom_ox, v_liq_ox, V_ox, n_ox, bool(fixed_ox)),
+        "fu": _pack(l_fu, geom_fu, v_liq_fu, V_fu, n_fu, bool(fixed_fu)),
     }
 
     # Envelope ullage: cold unpressurized fill of the same total masses.
@@ -193,6 +228,12 @@ def size_tanks(cfg: dict, m_ox_load: float | None = None,
     out["fu"]["ullage_frac_fill_cold"] = 1.0 - m_fu / (rho_fu_c * V_fu)
     out["ox"]["overfill_hot"] = v_liq_ox > V_ox
     out["fu"]["overfill_hot"] = v_liq_fu > V_fu
+    for tag, label in (("ox", "N2O"), ("fu", "Ethanol")):
+        if out[tag]["overfill_hot"]:
+            raise SystemExit(f"{label} load does not fit the fixed tanks at hot fill "
+                             f"({out[tag]['liquid_volume_fill_L']:.1f} L liquid, "
+                             f"{out[tag]['volume_L']:.1f} L tank).")
+        out[tag]["ullage_below_min"] = out[tag]["ullage_frac_fill_hot"] < u_min - 1e-9
     return out
 
 
@@ -299,24 +340,28 @@ def run_case(cfg: dict, sizing: dict, t_prop_c: float,
                   h_gl_fixed=ht["h_gas_liquid_W_m2K"],
                   h_ext=ht["h_external_W_m2K"])
 
+    # Identical tanks of one propellant run in parallel: one tank is simulated
+    # with 1/n of the load and flow, and its N2 draw is counted n times.
+    n_fu, n_ox = sizing["fu"]["count"], sizing["ox"]["count"]
     cfg_fu = ep.LiquidTankConfig(
         geom=sizing["fu"]["geom"],
         fluid_liq=cfg["propellants"]["fuel"]["coolprop"],
         fluid_gas=pr["fluid"],
-        mdot_out_kg_s=mi["mdot_total_kg_s"] / (1.0 + of),
-        m_liq0_kg=sizing["m_fu_kg"], **common)
+        mdot_out_kg_s=mi["mdot_total_kg_s"] / (1.0 + of) / n_fu,
+        m_liq0_kg=sizing["m_fu_kg"] / n_fu, **common)
     cfg_ox = np2.N2OTankConfig(
         geom=np2.TankGeom(sizing["ox"]["geom"].radius_m,
                           sizing["ox"]["geom"].cyl_length_m),
         fluid_liq=cfg["propellants"]["oxidizer"]["coolprop"],
         fluid_gas=pr["fluid"],
-        mdot_out_kg_s=mi["mdot_total_kg_s"] * of / (1.0 + of),
-        m_liq0_kg=sizing["m_ox_kg"],
+        mdot_out_kg_s=mi["mdot_total_kg_s"] * of / (1.0 + of) / n_ox,
+        m_liq0_kg=sizing["m_ox_kg"] / n_ox,
         fixed_point_iters=mo["fixed_point_iters"],
         evap_model=mo.get("evap_model", "equilibrium"), **common)
 
     st_fu, mpre_fu = ep.init_state(cfg_fu)
     st_ox, mpre_ox = np2.init_state(cfg_ox)
+    mpre_fu, mpre_ox = n_fu * mpre_fu, n_ox * mpre_ox
     m_ullage_pre = mpre_fu + mpre_ox
     m_diss = (float(pr.get("dissolution_n2_mass_frac_ox", 0.0))
               * sizing.get("m_ox_liquid_fill_kg", sizing["m_ox_kg"])
@@ -350,6 +395,7 @@ def run_case(cfg: dict, sizing: dict, t_prop_c: float,
                 depleted_at = st_ox.t_s
                 break
             raise
+        md_fu, md_ox = n_fu * md_fu, n_ox * md_ox      # all tanks of a propellant
         md_tot = max(md_fu, 0.0) + max(md_ox, 0.0)
         bottle.draw(md_tot, dt)
 
@@ -364,9 +410,9 @@ def run_case(cfg: dict, sizing: dict, t_prop_c: float,
         ts["t_liq_ox"].append(st_ox.t_liq)
         ts["p_vap_ox"].append(d_ox["p_vap_pa"])
         ts["p_n2_ox"].append(d_ox["p_n2_pa"])
-        ts["m_evap_ox"].append(st_ox.m_evap_cum)
-        ts["m_vap_ox"].append(st_ox.m_vap)
-        ts["m_n2_cum"].append(m_prepress + st_fu.m_gas_cum + st_ox.m_n2_cum)
+        ts["m_evap_ox"].append(n_ox * st_ox.m_evap_cum)
+        ts["m_vap_ox"].append(n_ox * st_ox.m_vap)
+        ts["m_n2_cum"].append(m_prepress + n_fu * st_fu.m_gas_cum + n_ox * st_ox.m_n2_cum)
         ts["rho_liq_ox"].append(d_ox["rho_liq"])
         ts["v_ull_fu"].append(d_fu["v_ullage_m3"])
         ts["v_ull_ox"].append(d_ox["v_ullage_m3"])
@@ -393,16 +439,16 @@ def run_case(cfg: dict, sizing: dict, t_prop_c: float,
     return {
         "pressurant_flow": flow,
         "depleted_at_s": depleted_at,
-        "m_liq_ox_end_kg": st_ox.m_liq,
-        "m_vap_ox_end_kg": st_ox.m_vap,
-        "m_n2o_ox_end_kg": st_ox.m_liq + st_ox.m_vap,
+        "m_liq_ox_end_kg": n_ox * st_ox.m_liq,
+        "m_vap_ox_end_kg": n_ox * st_ox.m_vap,
+        "m_n2o_ox_end_kg": n_ox * (st_ox.m_liq + st_ox.m_vap),
         "prepress_fu_kg": mpre_fu,
         "prepress_ox_kg": mpre_ox,
         "n2_dissolved_kg": m_diss,
-        "expulsion_fu_kg": st_fu.m_gas_cum,
-        "expulsion_ox_kg": st_ox.m_n2_cum,
-        "n2_total_kg": m_prepress + st_fu.m_gas_cum + st_ox.m_n2_cum,
-        "n2o_evaporated_kg": st_ox.m_evap_cum,
+        "expulsion_fu_kg": n_fu * st_fu.m_gas_cum,
+        "expulsion_ox_kg": n_ox * st_ox.m_n2_cum,
+        "n2_total_kg": m_prepress + n_fu * st_fu.m_gas_cum + n_ox * st_ox.m_n2_cum,
+        "n2o_evaporated_kg": n_ox * st_ox.m_evap_cum,
         "t_liq_ox_end_C": st_ox.t_liq - C0,
         "t_ull_ox_end_C": st_ox.t_ull - C0,
         "t_gas_fu_end_C": st_fu.t_gas - C0,
@@ -472,8 +518,11 @@ def _summary_html(cfg, sizing, cases, bottle) -> str:
     rows = []
     for tag, label in (("ox", "N2O tank"), ("fu", "Ethanol tank")):
         s = sizing[tag]
+        kind = (f"fixed, {s['count']} x {s['volume_each_L']:.1f} L" if s["fixed_hardware"]
+                else "sized")
         rows.append(
-            f"<tr><td>{label}</td><td>{s['cyl_length_mm']:.0f}</td>"
+            f"<tr><td>{label}</td><td>{kind}</td><td>{s['diameter_inner_mm']:.0f}</td>"
+            f"<td>{s['cyl_length_mm']:.0f}</td>"
             f"<td>{s['total_length_mm']:.0f}</td><td>{s['volume_L']:.2f}</td>"
             f"<td>{s['liquid_volume_fill_L']:.2f}</td>"
             f"<td>{100 * s['ullage_frac_fill_hot']:.1f}% / "
@@ -488,10 +537,9 @@ def _summary_html(cfg, sizing, cases, bottle) -> str:
         f"<td>{r['p_bottle_end_bar']:.0f}</td></tr>"
         for n, r in cases.items())
     return f"""
-<h2>Tank geometry (D = {cfg['tanks']['diameter_inner_m'] * 1000:.0f} mm,
-hemispherical domes)</h2>
+<h2>Tank geometry (per tank; cylinder with hemispherical domes; V = all tanks)</h2>
 <table border=1 cellpadding=4>
-<tr><th>Tank</th><th>L_cyl [mm]</th><th>L_total [mm]</th><th>V [L]</th>
+<tr><th>Tank</th><th>Hardware</th><th>D [mm]</th><th>L_cyl [mm]</th><th>L_total [mm]</th><th>V [L]</th>
 <th>V_liq fill [L]</th><th>Ullage hot / cold</th></tr>{''.join(rows)}</table>
 <h2>Pressurization cases (P_set = {cfg['operating']['pressure_set_bar']:.0f} bar)</h2>
 <table border=1 cellpadding=4>
@@ -630,11 +678,15 @@ def main(argv=None):
     print("\n=== 2) Tank geometry ===")
     for tag, label in (("ox", "N2O"), ("fu", "EtOH")):
         s = sizing[tag]
-        print(f"  {label}: L_cyl = {s['cyl_length_mm']:6.0f} mm | "
+        kind = (f"fixed {s['count']} x {s['volume_each_L']:.1f} L, D {s['diameter_inner_mm']:.0f} mm"
+                if s["fixed_hardware"] else f"sized, D {s['diameter_inner_mm']:.0f} mm")
+        print(f"  {label} ({kind}): L_cyl = {s['cyl_length_mm']:6.0f} mm | "
               f"L_total = {s['total_length_mm']:5.0f} mm | "
               f"V = {s['volume_L']:6.2f} L | "
               f"ullage hot/cold = {100 * s['ullage_frac_fill_hot']:.1f}/"
               f"{100 * s['ullage_frac_fill_cold']:.1f} %")
+        if s.get("ullage_below_min"):
+            print(f"  WARNING: {label} hot-fill ullage below tanks.ullage_min_frac")
         if s.get("overfill_hot"):
             print(f"  WARNING: {label} liquid volume exceeds tank at hot fill")
     print(f"  oxidizer load (total N2O): {sizing['m_ox_kg']:.2f} kg "
