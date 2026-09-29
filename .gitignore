@@ -20,7 +20,6 @@ venv/
 */results/*
 !*/results/.gitkeep
 */configs/results/
-mission_analysis/engine_performance.yaml
 mission_analysis/mission_results.yaml
 mission_analysis/mission_profile_*.png
 

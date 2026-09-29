@@ -1,0 +1,79 @@
+# =============================================================================
+# H2 lander / E2 engine - shared baseline
+# -----------------------------------------------------------------------------
+# The single source for every value that more than one tool uses. Change a
+# value here, not in the tool configs.
+#
+#   h2cea            reads it through h2cea/h2cea/config.py
+#   mission_analysis reads it through `baseline:` in h2_mission_inputs.yaml
+#   tank / injector  only configs that opt in with a `baseline:` key; all other
+#                    configs are independent of this file
+#
+# A tool config may still set a value itself; the tool then prints a NOTE that
+# the config overrides the baseline.
+#
+# h2_baseline_engine_table.yaml (next to this file) is the throttle line
+# computed from this file by the h2cea engine model. After changing
+# `propellants`, `engine` or `feed.tank_pressure_bar`, regenerate it and commit
+# both files together:
+#
+#     cd h2cea && python run_engine_table.py
+#
+# Units are part of every key name. "est." marks estimates to be replaced by
+# test data.
+#
+# For a what-if study, copy this file to a new name instead of editing it, and
+# run with E2_BASELINE=<copy> (h2cea) or `baseline: <copy>` in a tool config.
+# =============================================================================
+
+meta:
+  vehicle: H2 lander
+  engine: E2, flight configuration
+  revision: A
+  date: 2026-09-29
+  owner: Luis
+  sources:
+    - H2-PRP-DOC-001 Rev A, Propulsion System Architecture (2026-09-24)
+    - H2-PRP-001 (2250 N max thrust at pc 25 bar), H2-PRP-036 (ox flow range)
+    - LDR-PRP-TNK-003 Rev B, tank sizing (100 bar set pressure)
+    - Mission Analysis Rev E (residuals)
+
+# -----------------------------------------------------------------------------
+propellants:
+  oxidizer:
+    name: N2O                    # CEA name
+    coolprop: NitrousOxide
+    temperature_nominal_C: 20.0  # at engine start; sets the CEA reactant enthalpy
+    temperature_min_C: 5.0       # loading window, no thermal control
+    temperature_max_C: 25.0
+  fuel:
+    name: Ethanol                # CEA name
+    coolprop: Ethanol
+    ethanol_wt_pct: 100.0        # ethanol in the fuel, wt% (state the grade!)
+
+# -----------------------------------------------------------------------------
+engine:
+  rated_thrust_N: 2250.0         # sea level, 100 % throttle (H2-PRP-001)
+  chamber_pressure_rated_bar: 25.0   # at rated thrust; sets the throat area
+  expansion_ratio: 4.0           # flight nozzle; E2-REG-1 as built is 2.99
+  fuel_flow_kg_s: 0.200          # fixed by the fuel cavitating venturi
+  throttle_min: 0.50             # fraction of rated thrust
+  throttle_points: [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00]
+  ambient_pressure_bar: 1.01325
+  eta_cstar: 0.955               # est., c* efficiency (replace with E2-C1 data)
+  eta_cf_vac: 0.977              # est., applied to the ideal VACUUM thrust coefficient;
+                                 # the ambient pressure term -pa*Ae carries no loss.
+                                 # 0.955 x 0.977 gives 0.930 on sea-level Isp at 100 %.
+
+# -----------------------------------------------------------------------------
+feed:
+  tank_pressure_bar: 100.0       # regulated set pressure, both tanks
+  ox_injector_inlet_bar: 40.0    # oxidizer injector inlet at 100 %
+  jacket_pressure_drop_bar: [20.0, 30.0]   # est. range at 100 %
+  venturi_inlet_bar: 93.0        # after lines, main valve and throttle
+  venturi_pressure_recovery: 0.80    # max outlet/inlet pressure ratio that keeps cavitation
+
+# -----------------------------------------------------------------------------
+residuals:                       # est., trapped in tanks, lines and engine
+  oxidizer_kg: 0.8
+  fuel_kg: 0.2

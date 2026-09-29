@@ -72,7 +72,12 @@ If the outer load / bottle iteration does not converge in 5 passes, the console 
 
 ## Configuration
 
-All mission and model inputs for one case live in a single YAML file.
+All mission and model inputs for one case live in a single YAML file. A config with a
+`baseline:` key (the H2 config) takes the tank pressure, propellant temperature window,
+cold / hot cases, residuals and fluid names from the shared baseline
+(`baseline/h2_baseline.yaml`); a value set in the config overrides the baseline and the
+tool prints a NOTE. The H-1B reference config has no `baseline:` key and sets everything
+itself.
 
 | Section | Purpose |
 |---------|---------|
@@ -115,7 +120,7 @@ Rigid vessel with adiabatic (or isothermal) discharge. Pre-pressurization draw i
 - The tool always sizes **one** 300 mm capsule per propellant. It cannot evaluate a fixed tank volume or several tanks (e.g. the present H2 hardware, 2 x 18 L N2O + 6.9 L ethanol).
 - It uses a fixed O/F and total flow, not the engine throttle line or the mission propellant budget. The handover from `mission_analysis/mission_results.yaml` is manual.
 - **The reported peak N2 flow can be a numerical start-up transient.** In the first few steps the N2O tank step oscillates (and negative steps are clipped), so the peak at t ≈ 0.1-0.2 s is not physical. Read the steady flow from the report plots; do not size the regulator on the reported peak.
-- Tank pressure, regulator minimum inlet and bottle pressure in the H2 config are the H-1B values, not derived from the H2 feed-pressure budget.
+- The regulator minimum inlet and bottle pressure in the H2 config are the H-1B values, not derived from the H2 feed-pressure budget. The 100 bar tank pressure comes from the baseline.
 
 ## Using the tank models standalone
 
@@ -162,9 +167,9 @@ Re-run after changing inputs; exact numbers depend on the CoolProp version.
 
 | Item | H2, `h2_tank_config_mission1.yaml` | H-1B, `n2o_press.yaml` |
 |------|------|------|
-| N2O tank | L_cyl 125 mm, 23.0 L, 15.7 kg loaded (12.8 delivered + 0.4 residual + 2.5 vapor) | L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
-| Ethanol tank | sphere, 14.1 L (70 % ullage), 3.3 kg | sphere, 14.1 L, 8.1 kg |
-| Bottle, worst case (cold) | 32.0 L required -> 41.6 L with 1.30 margin, 12.6 kg N2 at 300 bar | 65.7 L -> 85.4 L, 25.8 kg N2 |
+| N2O tank | L_cyl 135 mm, 23.7 L, 16.2 kg loaded (12.8 delivered + 0.8 residual + 2.6 vapor) | L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
+| Ethanol tank | sphere, 14.1 L (70 % ullage), 3.4 kg | sphere, 14.1 L, 8.1 kg |
+| Bottle, worst case (cold) | 32.0 L required -> 41.7 L with 1.30 margin, 12.6 kg N2 at 300 bar | 65.7 L -> 85.4 L, 25.8 kg N2 |
 
 ## Development notes
 

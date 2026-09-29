@@ -1,20 +1,20 @@
 # =============================================================================
 # PROPELLANT TANK & PRESSURIZATION SIZING — H2 LANDER, MISSION 1 (HOVER)
 # All values SI unless the key name carries a unit suffix (_bar, _C, _mm, _L).
+#
+# Tank pressure, propellant temperature window, residuals, fluid names and the
+# cold / hot cases come from the shared baseline. Set a key here only to
+# override the baseline; the tool then prints a NOTE.
 # =============================================================================
 
+baseline: ../../baseline/h2_baseline.yaml
+
+# Constant-flow equivalent of the hover mission, copied by hand from
+# mission_analysis/mission_results.yaml (handover). Not yet automatic.
 mission:
   burn_time_s: 14.5          # full-thrust duration the liquid load is sized for
   mdot_total_kg_s: 1.1       # total engine mass flow
-  of_ratio: 4.0              # oxidizer/fuel mass ratio -> mdot_ox = 0.8, mdot_fu = 0.2 kg/s
-
-propellants:
-  oxidizer:
-    name: N2O
-    coolprop: NitrousOxide
-  fuel:
-    name: Ethanol
-    coolprop: Ethanol
+  of_ratio: 4.0              # oxidizer/fuel mass ratio -> mdot_ox = 0.88, mdot_fu = 0.22 kg/s
 
 # --- Tank geometry & sizing rules -------------------------------------------
 tanks:
@@ -23,8 +23,6 @@ tanks:
   ullage_min_frac: 0.10          # minimum ullage at worst-case (warmest) fill
   cyl_length_round_up_mm: 5.0    # round computed cylinder length up to this grid
   min_cyl_length_mm: 0.0         # allow pure sphere if volume permits
-  residual_ox_kg: 0.40           # unusable liquid (dip-tube / film / outlet)
-  residual_fu_kg: 0.10
   oxidizer_evap_makeup: true     # iterate total N2O load: delivered + residual
                                  # + end-of-burn ullage vapor (not engine-available)
   # Sizing density convention: saturated/ambient-pressure liquid at temp_max_C
@@ -37,9 +35,6 @@ tanks:
 
 # --- Operating envelope -------------------------------------------------------
 operating:
-  pressure_set_bar: 100.0        # single regulator, both tanks, constant
-  temp_min_C: 5.0                # propellant temperature envelope (no thermal control)
-  temp_max_C: 25.0
   temp_ambient_C: 20.0           # environment around tanks during burn
 
 # --- Pressurant system --------------------------------------------------------
@@ -61,7 +56,7 @@ model:
   prepress: isothermal           # bottle pre-press draw (isothermal | adiabatic)
   makeup_headroom: 1.05          # factor on end-of-burn N2O vapor in the load
   bottle_volume_guess_m3: 0.065  # first-pass shared-bottle volume
-  ox_load_guess_kg: 15.6         # optional warm start for makeup (else delivered+residual);
+  ox_load_guess_kg: 16.2         # optional warm start for makeup (else delivered+residual);
                                  # set near the converged load, the outer loop has 5 passes
   fixed_point_iters: 4           # per-step iterations, N2O two-phase solver
   evap_model: equilibrium        # 'equilibrium' (interface always saturated;
@@ -72,8 +67,3 @@ model:
     h_gas_wall_W_m2K: 15.0       # used only if mode == fixed
     h_gas_liquid_W_m2K: 10.0     # used only if mode == fixed
     h_external_W_m2K: 5.0        # ambient air -> tank wall (always used)
-
-# --- Analysis cases -----------------------------------------------------------
-cases:
-  - {name: cold, prop_temp_C: 5.0}    # expected pressurant-mass worst case (low N2O Psat)
-  - {name: hot,  prop_temp_C: 25.0}   # tank-volume worst case (low liquid density)

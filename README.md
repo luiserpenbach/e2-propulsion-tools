@@ -4,12 +4,22 @@ Analysis and sizing tools for the E2 engine and the H2 lander propulsion system 
 
 Each folder is an independent tool with its own README. Run the commands from that folder.
 
+## Shared baseline
+
+[baseline/](baseline/) holds every value that more than one tool uses: engine design point, propellant states, feed pressures and residuals (`h2_baseline.yaml`), and the engine throttle table computed from it (`h2_baseline_engine_table.yaml`). Change those values there, not in the tool configs. See [baseline/README.md](baseline/README.md).
+
+After changing the engine, propellant or tank pressure inputs, regenerate the table:
+
+```bash
+cd h2cea && python run_engine_table.py
+```
+
 ## Tools
 
 | Folder | What it does | How to run |
 |--------|--------------|------------|
 | [mission_analysis/](mission_analysis/) | H2 hover and hop missions: throttle profile, propellant budget, mass point, tank check. | `python mission_sizing.py --max-apex --plot` |
-| [h2cea/](h2cea/) | Thrust chamber library (SI RocketCEA with real-fluid N₂O card, throttle line with fixed fuel flow, contour, Bartz) and the E2-REG-1 regenerative cooling analysis. | `python run_regen.py`, `python run_boiling.py`, `python -m pytest tests` |
+| [h2cea/](h2cea/) | Thrust chamber library (SI RocketCEA with real-fluid N₂O card, throttle line with fixed fuel flow, contour, Bartz), the engine table for the baseline, and the E2-REG-1 regenerative cooling analysis. | `python run_engine_table.py`, `python run_regen.py`, `python run_boiling.py`, `python -m pytest tests` |
 | [torch_igniter_analysis/](torch_igniter_analysis/) | Torch igniter chamber sizing (CEA) and Bartz wall heat flux / energy budget. | `python igniter_combustion_analysis.py --config configs/igniter_example.yaml`, `python igniter_thermal_analysis.py --config configs/igniter_example.yaml` |
 | [swirl_injector_analysis/](swirl_injector_analysis/) | Liquid-centred swirl coaxial element: Bazarov or Nardi swirl sizing, oxidizer annulus, HEM metering holes, throttle envelope. Streamlit app for design sweeps and test-point calibration. | `python lcsc_sizing.py configs/e2_lcsc_p04_6x_design.yaml`, `python lcsc_sizing.py --check`, `streamlit run app.py` |
 | [orifice_lib/](orifice_lib/) | Single-orifice mass flow: incompressible liquid, real gas, and flashing flow (SPI / HEM / NHNE). | `python flight_config_sizing.py configs/orifice_cases.yaml` |
@@ -17,38 +27,28 @@ Each folder is an independent tool with its own README. Run the commands from th
 
 ## Inputs and outputs
 
-- **Inputs** are YAML files in each tool's `configs/` folder (`h2_mission_inputs.yaml` for the mission tool). `h2cea` keeps its baseline in `h2cea/h2cea/config.py`.
-- **Outputs** go to `<tool>/results/` (mission tool: next to its inputs file) and are not in git. Output files are named after the config file or the `name` in it, so different cases do not overwrite each other. Re-run the tool to regenerate them.
+- **Shared inputs** are in `baseline/`. Tool configs name the baseline with a `baseline:` key and only hold tool-specific values. A config that sets a baseline value itself keeps it, and the tool prints a `NOTE`.
+- **Tool inputs** are YAML files in each tool's `configs/` folder (`h2_mission_inputs.yaml` for the mission tool). `h2cea` keeps its hardware (contour, jacket) in `h2cea/h2cea/config.py`.
+- **Outputs** go to `<tool>/results/` (mission tool: next to its inputs file) and are not in git. They are named after the config file or the `name` in it, and record the baseline revision. Re-run the tool to regenerate them.
 - `h2cea/out/` is an older committed snapshot of the cooling results; re-run before quoting numbers.
-- For a design document, archive the results together with the config file and the git commit.
+- For a design document, archive the results together with the config file, the baseline revision and the git commit.
 
-### The design point is not shared yet
-
-Each tool still has its own copy of the engine operating point, and the copies differ:
-
-| Where | Total flow at 100 % | O/F at 100 % |
-|-------|--------------------|--------------|
-| `h2cea/h2cea/config.py` (2250 N, 25 bar, 0.20 kg/s fuel) | 1.074 kg/s | 4.37 |
-| `mission_analysis` (`engine_performance.py`, gaseous N₂O card) | 1.056 kg/s | 4.28 |
-| `swirl_injector_analysis/configs/*.yaml` | 1.0 kg/s | 4.0 |
-| `tank_press_analysis/configs/h2_tank_config_mission1.yaml` | 1.1 kg/s | 4.0 |
-
-When you change the engine, update every tool's config, and check the numbers against `h2cea`, which is the reference engine model.
+Using the baseline is opt-in for the tank and injector tools: only configs with a `baseline:` key read it (at present the H2 tank config). All other configs, including the injector P03 / P04 configs and the H-1B tank case, are independent of it. For what-if studies, copy the baseline to a new file instead of editing the shared one; see [baseline/README.md](baseline/README.md).
 
 ## Data flow
 
 ```
-mission_analysis/h2_mission_inputs.yaml
-        │
-        ├─> engine_performance.py ─> engine_performance.yaml ─┐
-        │                                                     v
-        └──────────────────────────────────────────> mission_sizing.py ─> mission_results.yaml
-                                                                              │ handover (manual)
-                                                                              v
-                                   tank_press_analysis/configs/*.yaml ─> flight_config_sizing.py
-                                                                              │ pressurant mass,
-                                                                              v vapour make-up (manual)
-                                                               back into h2_mission_inputs.yaml
+baseline/h2_baseline.yaml ──> h2cea/run_engine_table.py ──> baseline/h2_baseline_engine_table.yaml
+      │                                                          │
+      ├─> h2cea (config.py)                                      │
+      ├─> swirl_injector_analysis (opt-in) <─────────────────────┤
+      ├─> tank_press_analysis (opt-in)                           │
+      └─> mission_analysis/mission_sizing.py <───────────────────┘
+                 │
+                 └─> mission_results.yaml ──(handover, manual)──> tank config `mission` block
+                                                                        │
+                           pressurant mass, vapour make-up (manual) <───┘
+                           back into h2_mission_inputs.yaml
 ```
 
 ## Requirements
@@ -57,8 +57,8 @@ Python 3.10+.
 
 | Tool | Packages |
 |------|----------|
-| mission_analysis | `rocketcea`, `numpy`, `pyyaml`, `matplotlib` |
-| h2cea | `rocketcea`, `CoolProp`, `numpy`, `scipy`, `pandas`, `matplotlib`, `pytest` |
+| mission_analysis | `numpy`, `pyyaml`, `matplotlib` (the engine table comes from h2cea) |
+| h2cea | `rocketcea`, `CoolProp`, `numpy`, `scipy`, `pyyaml`, `pandas`, `matplotlib`, `pytest` |
 | torch igniter | `rocketcea`, `CoolProp`, `numpy`, `scipy`, `pyyaml`, `plotly` (static images also need `kaleido`; HTML is written either way) |
 | swirl injector | `CoolProp`, `numpy`, `scipy`, `pyyaml`; the app also needs `streamlit` and `pandas` |
 | orifice_lib | `CoolProp`, `numpy`, `scipy`, `pyyaml`, `plotly` |

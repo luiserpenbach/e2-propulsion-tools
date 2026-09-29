@@ -46,8 +46,29 @@ C0 = 273.15
 # =============================================================================
 
 def load_config(path: str | Path) -> dict:
+    """Config file, completed from the shared baseline if it names one
+    (`baseline:` key). Values set in the config win and are reported."""
     with open(path) as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    if cfg.get("baseline"):            # configs without it are independent of the baseline
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "baseline"))
+        import e2_baseline
+        bl = e2_baseline.load(e2_baseline.resolve(cfg["baseline"], path))
+        pr = bl["propellants"]
+        e2_baseline.fill(cfg, {
+            "propellants.oxidizer.coolprop": pr["oxidizer"]["coolprop"],
+            "propellants.fuel.coolprop": pr["fuel"]["coolprop"],
+            "operating.pressure_set_bar": bl["feed"]["tank_pressure_bar"],
+            "operating.temp_min_C": pr["oxidizer"]["temperature_min_C"],
+            "operating.temp_max_C": pr["oxidizer"]["temperature_max_C"],
+            "tanks.residual_ox_kg": bl["residuals"]["oxidizer_kg"],
+            "tanks.residual_fu_kg": bl["residuals"]["fuel_kg"],
+        }, label=Path(path).name)
+        cfg.setdefault("cases", [
+            {"name": "cold", "prop_temp_C": cfg["operating"]["temp_min_C"]},
+            {"name": "hot", "prop_temp_C": cfg["operating"]["temp_max_C"]}])
+        cfg["_baseline"] = e2_baseline.describe(bl)
+    return cfg
 
 
 # =============================================================================
@@ -609,6 +630,7 @@ def main(argv=None):
 
     results = {
         "meta": {"config": Path(args.config).name,
+                 "baseline": cfg.get("_baseline"),
                  "date": str(datetime.date.today()),
                  "converged": converged},
         "tank_sizing": {t: {k: v for k, v in sizing[t].items() if k != "geom"}
