@@ -88,6 +88,12 @@ T_WC_LIMIT_N2O = 573.0       # K, coolant-side wall limit with N2O (handbook 10.
 CHF_RATIO_LIMIT = 0.5        # q / q_CHF (handbook 10.3)
 V_MIN_N2O = 5.0              # m/s, minimum coolant velocity with N2O (handbook 10.3)
 
+# N2O-cooled design case (run_regen.py): throttle points as fractions of rated thrust
+# (oxidiser flow from the baseline engine table) and the coolant-side model for boiling
+# N2O (twophase.MODELS). The jacket heat is returned to the chamber (regen.n2o_design_case).
+N2O_THROTTLE = {"100": 1.00, "81": 0.81, "74": 0.74, "50": 0.50}
+N2O_TP_MODEL = "regime"
+
 # Water-cooled test configuration (E2-REG-1-A, test plan)
 WATER_MDOT = 1.0             # kg/s
 WATER_P_IN = 30.0            # bar

@@ -7,6 +7,10 @@ the coolant enthalpy and pressure are then advanced to the next station. The
 coolant state is carried as (h, p), so the same march works for water, subcooled
 or boiling nitrous oxide and supercritical nitrous oxide.
 
+Gas side: Bartz with the throat mass flux of the delivered engine, pc / (eta_c* c*),
+CEA frozen transport at chamber conditions and the ideal (CEA) chamber temperature for
+the adiabatic wall temperature (conservative).
+
 Coolant-side heat transfer by regime
     liquid, vapour, supercritical   Gnielinski with bulk properties
     two-phase (0 < x < 1)           tp_model="liquid_only" (default): Gnielinski,
@@ -106,12 +110,14 @@ class RegenResult:
 # --------------------------------------------------------------------------- march
 def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow="counter",
           bartz_factor=C.BARTZ_FACTOR, rc_throat=C.RC_THROAT_BARTZ, case="",
-          tp_model="liquid_only", film_subcooled=False):
+          tp_model="liquid_only", film_subcooled=False, eta_cstar=C.ETA_CSTAR):
     """March the coolant along the wall stations.
 
     wall     contour.wall_stations(...) (x, r, s, nx, nr, xt, Rt, Ru, Rd)
     pt       cea_si.Point at the operating point (Tc, c*, frozen gamma, CEA transport)
     pc_bar   delivered chamber pressure
+    eta_cstar  c* efficiency: the Bartz mass flux is pc / (eta_cstar * pt.cstar), the
+             throat mass flux of the delivered engine (pc_bar must be the delivered value)
     coolant  'water', 'n2o' or a Coolant
     mdot     total coolant flow (kg/s); blocked channels in jacket.blocked carry none
     h_in     coolant specific enthalpy at the jacket inlet (J/kg)
@@ -129,8 +135,9 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
     rc = rc_throat or 0.5 * (wall["Ru"] + wall["Rd"])
     g, Tc = pt.gam_fr_c, pt.Tc
     pc = pc_bar * 1e5
+    cstar_del = eta_cstar * pt.cstar                 # delivered c*: pc / cstar_del = mdot / At
     h0 = bartz_factor * 0.026 / Dt ** 0.2 * (pt.mu_c ** 0.2 * pt.cp_fr_c / pt.pr_fr_c ** 0.6) \
-        * (pc / pt.cstar) ** 0.8 * (Dt / rc) ** 0.1
+        * (pc / cstar_del) ** 0.8 * (Dt / rc) ** 0.1
     rec = pt.pr_fr_c ** (1 / 3)
     geo = channels(r, jacket)
     n_act = jacket.n - len(jacket.blocked)
@@ -262,7 +269,8 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
               frac_vapour=float(np.mean(A["regime"] == "vapour")),
               bartz_factor=bartz_factor, flow=flow, n_stations=N, tp_model=tp_model)
     return RegenResult(case=case, coolant=cool.name, mdot=mdot, arrays=A, scalars=sc,
-                       jacket=jacket, gas=dict(Tc=Tc, gamma=g, cstar=pt.cstar, pc_bar=pc_bar,
+                       jacket=jacket, gas=dict(Tc=Tc, gamma=g, cstar=pt.cstar, cstar_del=cstar_del,
+                                               pc_bar=pc_bar,
                                                MR=pt.mr, h0=h0, rc_throat=rc, xt=xt))
 
 
@@ -291,6 +299,37 @@ def march_to_outlet_pressure(wall, pt, pc_bar, jacket, coolant, mdot, p_out_bar,
     warnings.warn(f"march_to_outlet_pressure ({kw.get('case', '')}): outlet pressure off by "
                   f"{e1:.3f} bar after 20 iterations", RuntimeWarning, stacklevel=2)
     return r1
+
+
+def n2o_design_case(wall, At, eps, jacket, mox, mox_nom, tp_model=C.N2O_TP_MODEL, case="",
+                    return_heat=True, tol_kJkg=5.0, max_iter=6):
+    """N2O-cooled operating point with the jacket heat returned to the chamber.
+
+    The N2O leaves the tank at (T_OX_NOM, P_TANK), picks up Q in the jacket and is
+    injected, so its CEA card carries Q / mox of extra enthalpy. The operating point
+    (pc, Tc, c* at fixed throat and oxidiser flow) and the march are repeated until
+    Q / mox changes by less than tol_kJkg. The jacket outlet pressure is the oxidiser
+    injector inlet (n2o.jacket_pressures). Returns (operating state, march result);
+    the result carries scalars['jacket_heat_returned_kJ_kg']."""
+    from .n2o import h_TP, jacket_pressures
+    from .operating_line import state
+    from .propellants import n2o_card
+    h_tank = h_TP(C.T_OX_NOM, C.P_TANK)
+    extra = 0.0
+    for _ in range(max_iter):
+        s = state(mox, At, eps=eps, ox=n2o_card(C.T_OX_NOM, C.P_TANK, round(extra, 1)))
+        _, p_out = jacket_pressures(mox, s["pc"], mox_nom)
+        r = march_to_outlet_pressure(wall, s["pt"], s["pc"], jacket, "n2o", mox, p_out, h_tank,
+                                     p_guess_bar=p_out + 15, case=case, tp_model=tp_model)
+        q_kJkg = r["Q"] / mox / 1e3
+        if not return_heat or abs(q_kJkg - extra) < tol_kJkg:
+            break
+        extra = q_kJkg
+    else:
+        warnings.warn(f"n2o_design_case ({case}): jacket heat not converged "
+                      f"({extra:.1f} -> {q_kJkg:.1f} kJ/kg)", RuntimeWarning, stacklevel=2)
+    r.scalars["jacket_heat_returned_kJ_kg"] = round(extra, 1) if return_heat else 0.0
+    return s, r
 
 
 def checks(res: RegenResult):
