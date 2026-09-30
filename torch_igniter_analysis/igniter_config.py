@@ -56,7 +56,11 @@ def load(path: str | Path = DEFAULT_CONFIG) -> IgniterCase:
     path = Path(path)
     with path.open(encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
+    return from_dict(raw, default_name=path.stem)
 
+
+def from_dict(raw: dict, default_name: str = "igniter") -> IgniterCase:
+    """Case from the same keys as a config file (used by app.py)."""
     dt = float(_req(raw, "dt_mm"))
     dc = float(_req(raw, "dc_mm"))
     if dt <= 0 or dc <= dt:
@@ -102,7 +106,7 @@ def load(path: str | Path = DEFAULT_CONFIG) -> IgniterCase:
     rc_ratio = float(raw.get("rc_curv_over_dt", 1.0))
 
     return IgniterCase(
-        name=str(raw.get("name", path.stem)),
+        name=str(raw.get("name", default_name)),
         ox=str(_req(raw, "ox")),
         fuel=str(_req(raw, "fuel")),
         of_nominal=float(_req(raw, "of_nominal")),
