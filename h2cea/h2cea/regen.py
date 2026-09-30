@@ -302,7 +302,7 @@ def march_to_outlet_pressure(wall, pt, pc_bar, jacket, coolant, mdot, p_out_bar,
 
 
 def n2o_design_case(wall, At, eps, jacket, mox, mox_nom, tp_model=C.N2O_TP_MODEL, case="",
-                    return_heat=True, tol_kJkg=1.0, max_iter=6):
+                    return_heat=True, tol_kJkg=5.0, max_iter=6):
     """N2O-cooled operating point with the jacket heat returned to the chamber.
 
     The N2O leaves the tank at (T_OX_NOM, P_TANK), picks up Q in the jacket and is

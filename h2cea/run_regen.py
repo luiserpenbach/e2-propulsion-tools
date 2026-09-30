@@ -1,7 +1,7 @@
 """Regenerative cooling analyses of E2-REG-1 (replaces the resa-v3 runs for E2).
 
-    python run_regen.py             # water and N2O cases, figures, CSVs, results_regen.json (~2 min)
-    python run_regen.py --viewer    # also 2D sections along the channel and the 3D viewer (+ ~6 min)
+    python run_regen.py             # water and N2O cases, figures, CSVs, results_regen.json (~15 min)
+    python run_regen.py --viewer    # also 2D sections along the channel and the 3D viewer (+ ~8 min)
 
 Everything is written into out/regen/. Inputs come from h2cea/config.py (engine,
 jacket, water test conditions) and the operating line (operating_line.state with
