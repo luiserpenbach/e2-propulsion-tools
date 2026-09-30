@@ -5,7 +5,7 @@ meta:
   date: '2026-09-29'
   baseline:
     file: h2_baseline.yaml
-    revision: A
+    revision: B
     date: '2026-09-29'
   status: estimate (CEA equilibrium, liquid N2O card, assumed efficiencies)
 throat:

@@ -47,17 +47,13 @@ vehicle:
   liftoff_thrust_to_weight: 1.20 # sets the liftoff mass; ballast fills the rest
 
 # -----------------------------------------------------------------------------
-# Propellant tanks (present hardware)
+# Propellant tanks. Count and volume of the present tanks, the residuals and
+# the loading temperature (warm end of the window) come from the baseline;
+# set oxidizer/fuel count or volume_each_L here only to study other tanks.
 # -----------------------------------------------------------------------------
 propellant_tanks:
   initial_ullage_fraction: 0.05
-  oxidizer:
-    count: 2
-    volume_each_L: 18.0
-    # residual and loading temperature (warm end of the window) from the baseline
   fuel:
-    count: 1
-    volume_each_L: 6.9
     density_kg_m3: 789.0         # ethanol at 20 C
 
 # -----------------------------------------------------------------------------

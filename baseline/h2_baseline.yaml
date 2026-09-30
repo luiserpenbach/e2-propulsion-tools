@@ -29,7 +29,7 @@
 meta:
   vehicle: H2 lander
   engine: E2, flight configuration
-  revision: A
+  revision: B                    # B: present tank hardware added
   date: 2026-09-29
   owner: Luis
   sources:
@@ -77,3 +77,16 @@ feed:
 residuals:                       # est., trapped in tanks, lines and engine
   oxidizer_kg: 0.8
   fuel_kg: 0.2
+
+# -----------------------------------------------------------------------------
+tanks:                           # present flight tank hardware
+  oxidizer:
+    count: 2
+    volume_each_L: 18.0
+    diameter_inner_m: 0.240      # est.: capsule with total length = 2 x diameter;
+                                 # replace with the tank drawing
+  fuel:
+    count: 1
+    volume_each_L: 6.9
+    diameter_inner_m: 0.175      # est.: capsule with total length = 2 x diameter;
+                                 # replace with the tank drawing
