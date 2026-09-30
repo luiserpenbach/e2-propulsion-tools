@@ -72,5 +72,13 @@ def size_throat(F=C.F_MAX, pc=C.PC_MAX, eps=C.EPS, mf=C.MDOT_FUEL, eta_c=C.ETA_C
     return mr, At
 
 
+def ox_flow_from_table(fraction):
+    """Oxidiser flow (kg/s) of the flight engine at a fraction of rated thrust,
+    from the baseline engine table (baseline/<name>_engine_table.yaml)."""
+    import e2_baseline   # on sys.path through config
+    table = e2_baseline.engine_table(C.BASELINE)
+    return e2_baseline.table_point(table, fraction)["ox_flow_kg_s"]
+
+
 def thrust_to_mox(F_target, At, **kw):
     return brentq(lambda m: state(m, At, **kw)["F"] - F_target, 0.15, 1.2, xtol=1e-5)

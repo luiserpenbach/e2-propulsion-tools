@@ -9,11 +9,14 @@ the as-built throat and area ratio).
 
 Cases
     water      E2-REG-1-A test configuration: 1.0 kg/s, 30 bar, 20 C, at 100 % and 50 %
-    n2o        design case: full oxidiser flow through the jacket at 100/81/74/50 %,
-               jacket inlet enthalpy = tank state (isenthalpic valves and venturi),
-               jacket outlet pressure = oxidiser injector inlet (n2o.jacket_pressures)
-               NOTE: these use the liquid-only coolant model, which is optimistic
-               for boiling N2O. run_boiling.py gives the regime-switching case.
+    n2o        design case: full oxidiser flow through the jacket at 100/81/74/50 % thrust
+               (flows from the baseline engine table), jacket inlet enthalpy = tank state
+               (isenthalpic valves and venturi), jacket outlet pressure = oxidiser injector
+               inlet (n2o.jacket_pressures). Coolant side: config.N2O_TP_MODEL ("regime").
+               The jacket heat is returned to the chamber: the N2O card carries Q / mox and
+               the operating point is iterated (regen.n2o_design_case).
+    n2o liquid-only   the same operating points with the liquid-only coolant model, for
+               comparison with earlier results (optimistic for boiling N2O)
 """
 import argparse
 import json
@@ -31,14 +34,13 @@ from h2cea import structure as ST
 from h2cea.contour import e2_reg1_asbuilt, wall_stations
 from h2cea.coolant import h_from_Tp
 from h2cea.jacket import e2_reg1, Jacket
-from h2cea.operating_line import state
+from h2cea.operating_line import ox_flow_from_table, state
 from h2cea.propellants import n2o_card
-from h2cea.regen import march, march_to_outlet_pressure, checks, verify
+from h2cea.regen import march, march_to_outlet_pressure, checks, n2o_design_case, verify
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out", "regen")
 os.makedirs(OUT, exist_ok=True)
-LIQ = n2o_card(C.T_OX_NOM, 70.0)
-POINTS = {"100": 0.874, "81": 0.715, "74": 0.658, "50": 0.470}   # oxidiser flow, kg/s
+LIQ = n2o_card(C.T_OX_NOM, C.P_TANK)       # tank-state liquid N2O, no jacket heat
 R = {}
 
 
@@ -69,7 +71,8 @@ def main(viewer=False):
     jac = e2_reg1()
     At = np.pi * C.R_T ** 2
     xt = contour["xt"]
-    ops = {k: state(m, At, eps=C.EPS_E2, ox=LIQ) for k, m in POINTS.items()}
+    points = {k: ox_flow_from_table(fr) for k, fr in C.N2O_THROTTLE.items()}   # oxidiser flow, kg/s
+    ops = {k: state(m, At, eps=C.EPS_E2, ox=LIQ) for k, m in points.items()}
     R["operating_points"] = {k: {"mox": s["mox"], "MR": s["MR"], "pc_bar": s["pc"], "F_N": s["F"],
                                  "Tc_K": s["Tc"]} for k, s in ops.items()}
 
@@ -141,16 +144,29 @@ def main(viewer=False):
 
     # ------------------------------------------------------------------ N2O
     h_tank = n2o.h_TP(C.T_OX_NOM, C.P_TANK)
-    nox = {}
-    for k, s in ops.items():
-        _, p_out = n2o.jacket_pressures(s["mox"], s["pc"], POINTS["100"])
-        nox[k] = march_to_outlet_pressure(wall, s["pt"], s["pc"], jac, "n2o", s["mox"], p_out, h_tank,
-                                          p_guess_bar=p_out + 15, case=f"n2o {k} %")
+    nox, nox_lo, ops_n2o = {}, {}, {}
+    for k, m in points.items():
+        s, nox[k] = n2o_design_case(wall, At, C.EPS_E2, jac, m, points["100"], case=f"n2o {k} %")
+        ops_n2o[k] = s
         nox[k].dataframe().to_csv(f(f"n2o_{k}_profile.csv"), index=False)
-        log(f"n2o {k} % done ({time.time()-t0:.0f} s)")
+        # liquid-only coolant model at the same operating point, for comparison
+        _, p_out = n2o.jacket_pressures(m, s["pc"], points["100"])
+        nox_lo[k] = march_to_outlet_pressure(wall, s["pt"], s["pc"], jac, "n2o", m, p_out, h_tank,
+                                             p_guess_bar=p_out + 15, case=f"n2o {k} % liquid-only")
+        nox_lo[k].dataframe().to_csv(f(f"n2o_{k}_liquid_only_profile.csv"), index=False)
+        log(f"n2o {k} %: Twg_max {nox[k]['Twg_max']:.0f} K ({C.N2O_TP_MODEL}), "
+            f"{nox_lo[k]['Twg_max']:.0f} K (liquid-only), jacket heat "
+            f"{nox[k]['jacket_heat_returned_kJ_kg']:.0f} kJ/kg ({time.time()-t0:.0f} s)")
+    R["n2o_operating_points"] = {k: {"mox": s["mox"], "MR": s["MR"], "pc_bar": s["pc"], "F_N": s["F"],
+                                     "Tc_K": s["Tc"],
+                                     "jacket_heat_returned_kJ_kg": nox[k]["jacket_heat_returned_kJ_kg"]}
+                                 for k, s in ops_n2o.items()}
     R["n2o"] = {k: scalars(v) for k, v in nox.items()}
-    R["n2o_note"] = ("Two-phase: liquid-only Gnielinski (no boiling credit). Hall-Mudawar CHF only for x <= 0.05; "
-                     "dryout CHF in the saturated region is not evaluated. N2O transport by CO2 corresponding states.")
+    R["n2o_liquid_only"] = {k: scalars(v) for k, v in nox_lo.items()}
+    R["n2o_note"] = (f"Design case: coolant-side model '{C.N2O_TP_MODEL}' (twophase.py), jacket heat returned "
+                     "to the chamber. n2o_liquid_only: liquid-only Gnielinski at the same operating points, "
+                     "optimistic for boiling N2O. Hall-Mudawar CHF only for x <= 0.05; dryout CHF in the "
+                     "saturated region is not evaluated. N2O transport by CO2 corresponding states.")
     R["venturi_max_outlet_bar"] = C.VENTURI_RECOVERY * C.P_VENTURI_IN
 
     # ------------------------------------------------------------------ structure

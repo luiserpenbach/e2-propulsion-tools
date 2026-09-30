@@ -23,7 +23,7 @@ from h2cea import config as C
 from h2cea import n2o
 from h2cea.contour import e2_reg1_asbuilt, wall_stations
 from h2cea.jacket import e2_reg1
-from h2cea.operating_line import state
+from h2cea.operating_line import ox_flow_from_table, state
 from h2cea.propellants import n2o_card
 from h2cea.regen import march_to_outlet_pressure, chf_hall_mudawar
 from h2cea import twophase as TP
@@ -32,7 +32,7 @@ from h2cea.coolant import Coolant
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out", "boiling")
 os.makedirs(OUT, exist_ok=True)
-POINTS = {"100": 0.874, "81": 0.715, "74": 0.658, "50": 0.470}
+
 F = "NitrousOxide"
 PROPS = TP.Props(Coolant("n2o"))
 
@@ -83,12 +83,13 @@ def main(models=TP.MODELS):
     wall = wall_stations(contour)
     jac = e2_reg1()
     At = np.pi * C.R_T ** 2
-    liq = n2o_card(C.T_OX_NOM, 70.0)
-    ops = {k: state(m, At, eps=C.EPS_E2, ox=liq) for k, m in POINTS.items()}
+    liq = n2o_card(C.T_OX_NOM, C.P_TANK)     # tank-state liquid; no jacket heat returned here
+    points = {k: ox_flow_from_table(fr) for k, fr in C.N2O_THROTTLE.items()}
+    ops = {k: state(m, At, eps=C.EPS_E2, ox=liq) for k, m in points.items()}
     h_tank = n2o.h_TP(C.T_OX_NOM, C.P_TANK)
     summary, profiles = [], {}
     for k, s in ops.items():
-        _, p_out = n2o.jacket_pressures(s["mox"], s["pc"], POINTS["100"])
+        _, p_out = n2o.jacket_pressures(s["mox"], s["pc"], points["100"])
         for mdl in models:
             for fs in ((False, True) if mdl in ("miropolskii", "jackson") else (False,)):
                 r = march_to_outlet_pressure(wall, s["pt"], s["pc"], jac, "n2o", s["mox"], p_out, h_tank,
