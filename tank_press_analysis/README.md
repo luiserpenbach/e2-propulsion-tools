@@ -24,9 +24,10 @@ tank_press_analysis/
 |-- n2o_press.py              # two-phase N2O tank pressurization model (oxidizer)
 |-- mixing_crosscheck.py      # standalone PR/Dalton ullage mixing cross-check (n2o_press)
 |-- configs/
-|   |-- h2_tank_config_mission1.yaml   # H2 lander, hover mission (14.5 s, 1.1 kg/s) - default
-|   `-- n2o_press.yaml                 # H-1B reference case (40 s, 1.0 kg/s)
-|-- results/                  # generated, not in git
+|   |-- h2_tank_config_mission1.yaml        # H2 lander, hover mission, present hardware - default
+|   |-- h2_tank_config_mission1_sized.yaml  # same mission, minimum sized tanks (D 200 mm)
+|   `-- n2o_press.yaml                      # H-1B reference case (40 s, 1.0 kg/s)
+|-- results/                  # generated; only the H2 mission1 results are in git
 `-- README.md
 ```
 
@@ -152,6 +153,8 @@ Each tank is a vertical capsule (cylinder with hemispherical domes); the cylinde
 
 With `tanks.present_hardware: true` in a config that names the baseline, both blocks come from the `tanks` section of `baseline/h2_baseline.yaml` (the present H2 hardware). The H2 config does this. Set it to `false` to size new tanks for the same mission.
 
+The pressurant bottles work the same way: `pressurant.bottle_count` and `pressurant.bottle_volume_each_L` (from `tanks.pressurant` of the baseline with `present_hardware: true`) fix the bottle volume. The bottles are treated as one vessel of the total volume. The cases are then simulated with that volume, the required volume is still computed, and the results report the available margin (`bottle.margin_available` = available / required volume), the end pressure, and the N2 mass loaded in the fixed bottles, which is also the handback. The tool warns if the bottles are smaller than required or below `margin_factor`. Without these keys the bottle is sized as before.
+
 The tool stops if the load does not fit the tanks at hot fill, and warns if the hot-fill ullage is below `ullage_min_frac`. The oxidizer vapour make-up is iterated as for sized tanks, so a partly filled tank gets a larger vapour allowance.
 
 ## Known limits
@@ -209,11 +212,11 @@ Re-run after changing inputs; exact numbers depend on the CoolProp version.
 
 | Item | H2, `h2_tank_config_mission1.yaml` | H-1B, `n2o_press.yaml` |
 |------|------|------|
-| N2O tank | present 2 x 18 L (D 240 mm est.), 36.0 L, 17.3 kg loaded (11.6 delivered + 0.8 residual + 4.9 vapor), hot-fill ullage 48 % | sized, L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
-| Ethanol tank | present 1 x 6.9 L (D 175 mm est.), 3.6 kg, hot-fill ullage 34 % | sized, sphere, 14.1 L, 8.1 kg |
-| Bottle, worst case (cold) | 30.9 L required -> 40.2 L with 1.30 margin, 12.2 kg N2 at 300 bar | 65.7 L -> 85.4 L, 25.8 kg N2 |
+| N2O tank | present 2 x 12 L (D 209 mm est.), 24.0 L, 15.2 kg loaded (11.6 delivered + 0.8 residual + 2.8 vapor), hot-fill ullage 20 % | sized, L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
+| Ethanol tank | present 1 x 6 L (D 166 mm est.), 3.6 kg, hot-fill ullage 24 % | sized, sphere, 14.1 L, 8.1 kg |
+| Bottle, worst case (cold) | 25.6 L required; present 2 x 15 L = 30.0 L, margin 1.17 (below the 1.30 target), 9.1 kg N2 at 300 bar, 140 bar at the end | 65.7 L -> 85.4 L, 25.8 kg N2 |
 
-The H2 column is for the hover handover of the mission tool (11.6 kg N2O and 3.4 kg ethanol usable, delivered over 16.9 s) in the present tanks. Sized for the same mission instead (`present_hardware: false`), the tanks would be 21.6 L N2O + 14.1 L ethanol with 11.9 kg N2 and 2.4 kg vapour.
+The H2 column is for the hover handover of the mission tool (11.6 kg N2O and 3.4 kg ethanol usable, delivered over 16.9 s) in the present hardware (baseline revision C). Sized for the same mission instead (`h2_tank_config_mission1_sized.yaml`, D 200 mm), the tanks would be 21.6 L N2O + 5.1 L ethanol with a 31.9 L bottle (9.6 kg N2) and 2.4 kg vapour.
 
 ## Development notes
 

@@ -20,7 +20,9 @@ venv/
 */results/*
 !*/results/.gitkeep
 */configs/results/
-mission_analysis/mission_results.yaml
+# Exception: the H2 mission / tank results of the shared baseline are committed
+!tank_press_analysis/results/h2_tank_config_mission1*_results.yaml
+!tank_press_analysis/results/h2_tank_config_mission1*_report.html
 mission_analysis/mission_profile_*.png
 
 # Injector test log written by the Streamlit app (local only)
