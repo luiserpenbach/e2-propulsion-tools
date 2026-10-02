@@ -25,7 +25,7 @@ A config without a `baseline:` key never reads this folder; the tank and injecto
 Add `baseline: ../../baseline/h2_baseline.yaml` (path relative to the config) to a tank or injector config and leave out the values it should take from the baseline:
 
 - **Injector:** the operating point comes from the rated row of the engine table, and each throttle point's `fraction` becomes a fraction of rated thrust with chamber pressure, O/F and total flow from the table (fuel flow fixed, oxidizer throttled, as the engine does).
-- **Tanks:** tank pressure, temperature window and cold/hot cases, residuals and fluid names; with `tanks.present_hardware: true` also the present tank count, volume and diameter.
+- **Tanks:** tank pressure, temperature window and cold/hot cases, residuals and fluid names; with `tanks.present_hardware: true` also the present tank count, volume and diameter, and the present N2 bottles (count and volume).
 
 A value that the config still sets itself wins, and the tool prints a `NOTE` with both numbers.
 
@@ -60,5 +60,5 @@ Every baseline file has its own table (`<name>_engine_table.yaml`), so a study c
 
 ## Not in the baseline
 
-- Values used by one tool only stay in that tool's config: pressurant bottle, regulator and ullage rules (tanks); vehicle, fill ullage, pressurization (mission); oxidizer state at the holes and pressure drops (injector).
+- Values used by one tool only stay in that tool's config: bottle pressure and temperature, regulator and ullage rules (tanks); vehicle, fill ullage, pressurization (mission); oxidizer state at the holes and pressure drops (injector).
 - The present tank diameters in `tanks` are estimates (capsule with length = 2 x diameter); replace them with the drawings.

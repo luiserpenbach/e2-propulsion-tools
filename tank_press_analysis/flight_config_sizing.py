@@ -67,6 +67,10 @@ def load_config(path: str | Path) -> dict:
         if cfg["tanks"].get("present_hardware"):
             e2_baseline.fill(cfg, {f"tanks.{p}.{k}": v for p in ("oxidizer", "fuel")
                                    for k, v in bl["tanks"][p].items()}, label=Path(path).name)
+            if bl["tanks"].get("pressurant"):
+                e2_baseline.fill(cfg, {f"pressurant.bottle_{k}": v
+                                       for k, v in bl["tanks"]["pressurant"].items()},
+                                 label=Path(path).name)
         cfg.setdefault("cases", [
             {"name": "cold", "prop_temp_C": cfg["operating"]["temp_min_C"]},
             {"name": "hot", "prop_temp_C": cfg["operating"]["temp_max_C"]}])
@@ -552,7 +556,16 @@ def _summary_html(cfg, sizing, cases, bottle) -> str:
 loaded N2 mass {bottle['m_loaded_kg']:.2f} kg at
 {cfg['pressurant']['bottle_pressure_bar']:.0f} bar.
 Dissolved-N2 allowance {bottle.get('m_dissolved_kg', 0):.2f} kg.</p>
-"""
+{_fixed_bottle_html(bottle)}"""
+
+
+def _fixed_bottle_html(bottle) -> str:
+    if not bottle.get("fixed_hardware"):
+        return ""
+    return (f"<p>Fixed bottles: {bottle['count']} x {bottle['volume_each_L']:.1f} L = "
+            f"{bottle['v_available_L']:.1f} L, <b>margin {bottle['margin_available']:.2f}</b> on volume, "
+            f"end pressure {bottle['p_end_worst_bar']:.0f} bar. The loaded N2 mass above is for "
+            f"the fixed bottles.</p>")
 
 
 # =============================================================================
@@ -587,7 +600,9 @@ def main(argv=None):
     m_res_ox = float(tk.get("residual_ox_kg", 0.0))
     makeup_on = tk.get("oxidizer_evap_makeup", True)
     headroom = float(mo.get("makeup_headroom", 1.05))
-    v_bottle = float(mo.get("bottle_volume_guess_m3", 0.060))
+    v_fixed = (int(pr.get("bottle_count", 1)) * pr["bottle_volume_each_L"] / 1000.0
+               if pr.get("bottle_volume_each_L") else None)
+    v_bottle = v_fixed or float(mo.get("bottle_volume_guess_m3", 0.060))
     m_load = float(mo.get("ox_load_guess_kg", m_ox_del + m_res_ox))
 
     print("=== 1) Coupled makeup + bottle-volume iteration ===")
@@ -628,7 +643,7 @@ def main(argv=None):
 
         load_ok = (not makeup_on) or (
             abs(m_need - m_load) <= 0.005 * max(m_load, 1.0))
-        vol_ok = abs(v_new - v_bottle) <= max(1e-4, 0.01 * v_bottle)
+        vol_ok = v_fixed is not None or abs(v_new - v_bottle) <= max(1e-4, 0.01 * v_bottle)
         print(f"  outer {it}: load {m_load:.2f} kg (need {m_need:.2f}, "
               f"vap_end {vap_max:.2f}) | V_b {v_bottle * 1000:.1f} L "
               f"(sized {v_new * 1000:.1f} L)", flush=True)
@@ -637,7 +652,7 @@ def main(argv=None):
             break
         if makeup_on and not load_ok:
             m_load = 0.5 * (m_load + m_need)   # under-relax: avoid load/vapor hunt
-        v_bottle = v_new
+        v_bottle = v_fixed or v_new
 
     if not converged:
         print(f"  WARNING: load / bottle iteration not converged after {n_outer} passes "
@@ -713,6 +728,23 @@ def main(argv=None):
           f"-> margined {v_marg * 1000:.1f} L "
           f"({bottle['m_loaded_kg']:.2f} kg N2 loaded, "
           f"{m_diss_rep:.2f} kg dissolution allowance)")
+    if v_fixed:
+        n_b = int(pr.get("bottle_count", 1))
+        bottle.update(fixed_hardware=True, count=n_b,
+                      volume_each_L=pr["bottle_volume_each_L"],
+                      v_available_L=v_fixed * 1000.0,
+                      margin_available=v_fixed / v_req,
+                      m_loaded_kg=rho0 * v_fixed,
+                      p_end_worst_bar=cases[worst]["p_bottle_end_bar"])
+        print(f"  fixed bottles {n_b} x {pr['bottle_volume_each_L']:.1f} L = {v_fixed * 1000:.1f} L: "
+              f"{bottle['m_loaded_kg']:.2f} kg N2 loaded, margin {bottle['margin_available']:.2f} "
+              f"on volume, end pressure {bottle['p_end_worst_bar']:.0f} bar ('{worst}')")
+        if v_fixed < v_req:
+            print(f"  WARNING: the bottles are too small: {v_fixed * 1000:.1f} L < {v_req * 1000:.1f} L "
+                  f"required (end pressure below regulator_min_inlet_bar)")
+        elif v_fixed < v_marg:
+            print(f"  WARNING: bottle margin {bottle['margin_available']:.2f} is below "
+                  f"margin_factor {pr['margin_factor']:.2f}")
 
     results = {
         "meta": {"config": Path(args.config).name,

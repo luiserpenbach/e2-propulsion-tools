@@ -1,5 +1,11 @@
 # =============================================================================
 # PROPELLANT TANK & PRESSURIZATION SIZING — H2 LANDER, MISSION 1 (HOVER)
+# MINIMUM SIZED TANKS: h2_tank_config_mission1.yaml with present_hardware: false
+# (one capsule per propellant at diameter_inner_m, bottle sized).
+# MINIMUM SIZED TANKS: h2_tank_config_mission1.yaml with present_hardware: false
+# (one capsule per propellant at diameter_inner_m, bottle sized).
+# MINIMUM SIZED TANKS: h2_tank_config_mission1.yaml with present_hardware: false
+# (one capsule per propellant at diameter_inner_m, bottle sized).
 # All values SI unless the key name carries a unit suffix (_bar, _C, _mm, _L).
 #
 # Tank pressure, propellant temperature window, residuals, fluid names, the
@@ -21,7 +27,7 @@ tanks:
   # Present hardware: count, volume and diameter of the N2O and ethanol tanks
   # from the baseline (tanks section). Set to false to size one new capsule per
   # propellant with the diameter below instead.
-  present_hardware: true
+  present_hardware: false
   # Fixed hardware can also be given here directly, per propellant:
   #   oxidizer: {count: 2, volume_each_L: 18.0, diameter_inner_m: 0.240}
   diameter_inner_m: 0.200        # sized tanks only: inner diameter

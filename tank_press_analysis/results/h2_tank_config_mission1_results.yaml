@@ -1,0 +1,124 @@
+meta:
+  config: h2_tank_config_mission1.yaml
+  baseline:
+    file: h2_baseline.yaml
+    revision: C
+    date: '2026-10-01'
+  date: '2026-10-02'
+  converged: true
+tank_sizing:
+  ox:
+    fixed_hardware: true
+    count: 2
+    diameter_inner_mm: 209.0
+    cyl_length_mm: 210.4497425308171
+    total_length_mm: 419.4497425308171
+    volume_each_L: 12.0
+    volume_L: 24.0
+    liquid_volume_fill_L: 19.285349936972764
+    ullage_frac_fill_hot: 0.1964437526261349
+    ullage_frac_fill_cold: 0.3154430068371753
+    overfill_hot: false
+    ullage_below_min: false
+  fu:
+    fixed_hardware: true
+    count: 1
+    diameter_inner_mm: 166.0
+    cyl_length_mm: 166.5665046358074
+    total_length_mm: 332.5665046358074
+    volume_each_L: 6.0
+    volume_L: 6.0
+    liquid_volume_fill_L: 4.564830136592946
+    ullage_frac_fill_hot: 0.239194977234509
+    ullage_frac_fill_cold: 0.25536377721088277
+    overfill_hot: false
+    ullage_below_min: false
+propellant_loads_kg:
+  oxidizer_loaded_total: 15.217683588613202
+  oxidizer_liquid_fill: 14.327722466950146
+  oxidizer_delivered: 11.618000000000002
+  oxidizer_residual: 0.8
+  oxidizer_vapor_allowance: 2.7996835886132
+  fuel: 3.5840000000000005
+  fuel_delivered: 3.3840000000000003
+  fuel_residual: 0.2
+cases:
+  cold:
+    pressurant_flow:
+      mdot_n2_peak_g_s: 137.04621585702782
+      mdot_n2_peak_at_s: 16.6500000000001
+      mdot_n2_end_g_s: 136.44140157237072
+      mdot_n2_mean_g_s: 123.09438489932097
+      mdot_n2_ox_peak_g_s: 101.29247704591116
+      mdot_n2_fu_peak_g_s: 35.84868673550834
+    depleted_at_s: null
+    m_liq_ox_end_kg: 2.302379720001533
+    m_vap_ox_end_kg: 1.3110367291316283
+    m_n2o_ox_end_kg: 3.613416449133161
+    prepress_fu_kg: 0.19275840132584177
+    prepress_ox_kg: 0.6758052385488013
+    n2_dissolved_kg: 0.16119722466950145
+    expulsion_fu_kg: 0.556920472782271
+    expulsion_ox_kg: 1.5233746320162533
+    n2_total_kg: 3.110055969342669
+    n2o_evaporated_kg: 0.46916718868716495
+    t_liq_ox_end_C: -1.4574806152363067
+    t_ull_ox_end_C: -11.387478788164742
+    t_gas_fu_end_C: -8.589792674678108
+    rho_liq_ox_end: 957.0876869427892
+    p_bottle_end_bar: 140.01642215374108
+    t_bottle_end_C: -26.415502267050783
+    m_prepress: 1.0297608645441445
+  hot:
+    pressurant_flow:
+      mdot_n2_peak_g_s: 138.7527589218966
+      mdot_n2_peak_at_s: 16.700000000000102
+      mdot_n2_end_g_s: 114.5861639164825
+      mdot_n2_mean_g_s: 109.15244100236879
+      mdot_n2_ox_peak_g_s: 104.03806686614115
+      mdot_n2_fu_peak_g_s: 34.77593352117951
+    depleted_at_s: null
+    m_liq_ox_end_kg: 0.9538231680732623
+    m_vap_ox_end_kg: 2.6595932810599083
+    m_n2o_ox_end_kg: 3.6134164491331706
+    prepress_fu_kg: 0.1669324578683487
+    prepress_ox_kg: 0.3517443339563835
+    n2_dissolved_kg: 0.16119722466950145
+    expulsion_fu_kg: 0.5536094312282753
+    expulsion_ox_kg: 1.291066821711757
+    n2_total_kg: 2.5245502694342656
+    n2o_evaporated_kg: 1.334039735418742
+    t_liq_ox_end_C: 10.359495916427875
+    t_ull_ox_end_C: 10.502948362627194
+    t_gas_fu_end_C: -0.5435552034672355
+    rho_liq_ox_end: 903.2664259073138
+    p_bottle_end_bar: 161.09457991845946
+    t_bottle_end_C: -19.997672761266188
+    m_prepress: 0.6798740164942336
+bottle:
+  worst_case: cold
+  v_required_L: 25.57843017578125
+  margin_factor: 1.3
+  v_margined_L: 33.25195922851563
+  m_loaded_kg: 9.073162794924977
+  m_dissolved_kg: 0.16119722466950145
+  fixed_hardware: true
+  count: 2
+  volume_each_L: 15.0
+  v_available_L: 30.0
+  margin_available: 1.1728632208400842
+  p_end_worst_bar: 140.01642215374108
+handback:
+  pressurant_mass_kg: 9.073162794924977
+  pressurant_margin_factor: 1.3
+  n2o_vapour_makeup_kg: 2.7996835886132
+  oxidizer_volume_L: 24.0
+  propellant_volume_L: 30.0
+  sized_for:
+    file: mission_results.yaml
+    mission_date: '2026-10-01'
+    sizing_case: hover
+    usable_n2o_kg: 11.618
+    usable_ethanol_kg: 3.384
+    duration_s: 16.92
+    mission_overrides: []
