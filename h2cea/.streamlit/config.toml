@@ -1,0 +1,14 @@
+# Theme of the E2 Test Explorer (streamlit run test_explorer.py, from h2cea/)
+[theme]
+base = "dark"
+primaryColor = "#ff7a2f"
+backgroundColor = "#0d0d0d"
+secondaryBackgroundColor = "#181817"
+textColor = "#f0efec"
+font = "sans serif"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false
