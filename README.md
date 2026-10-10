@@ -19,7 +19,7 @@ cd h2cea && python run_engine_table.py
 | Folder | What it does | How to run |
 |--------|--------------|------------|
 | [mission_analysis/](mission_analysis/) | H2 hover and hop missions: throttle profile, propellant budget, mass point, tank check. | `python mission_sizing.py --max-apex --plot` |
-| [h2cea/](h2cea/) | Thrust chamber library (SI RocketCEA with real-fluid N₂O card, throttle line with fixed fuel flow, contour, Bartz), the engine table for the baseline, and the E2-REG-1 regenerative cooling analysis. | `python run_engine_table.py`, `python run_regen.py`, `python run_boiling.py`, `python -m pytest tests` |
+| [h2cea/](h2cea/) | Thrust chamber library (SI RocketCEA with real-fluid N₂O card, throttle line with fixed fuel flow, contour, Bartz), the engine table for the baseline, and the E2-REG-1 regenerative cooling analysis. E2 Test Explorer: Streamlit app that compares hot-fire test points with CEA, the engine model, the jacket model and earlier tests. | `python run_engine_table.py`, `python run_regen.py`, `python run_boiling.py`, `python -m pytest tests`, `streamlit run test_explorer.py` |
 | [torch_igniter_analysis/](torch_igniter_analysis/) | Torch igniter chamber sizing (CEA) and Bartz wall heat flux / energy budget. Streamlit app for design exploration and test-point analysis. | `streamlit run app.py`, `python igniter_combustion_analysis.py --config configs/igniter_example.yaml`, `python igniter_thermal_analysis.py --config configs/igniter_example.yaml` |
 | [swirl_injector_analysis/](swirl_injector_analysis/) | Liquid-centred swirl coaxial element: Bazarov or Nardi swirl sizing, oxidizer annulus, HEM metering holes, throttle envelope. Streamlit app for design sweeps and test-point calibration. | `python lcsc_sizing.py configs/e2_lcsc_p04_6x_design.yaml`, `python lcsc_sizing.py --check`, `streamlit run app.py` |
 | [orifice_lib/](orifice_lib/) | Single-orifice mass flow: incompressible liquid, real gas, and flashing flow (SPI / HEM / NHNE). | `python flight_config_sizing.py configs/orifice_cases.yaml` |
@@ -60,14 +60,14 @@ Python 3.10+.
 | Tool | Packages |
 |------|----------|
 | mission_analysis | `numpy`, `pyyaml`, `matplotlib` (the engine table comes from h2cea) |
-| h2cea | `rocketcea`, `CoolProp`, `numpy`, `scipy`, `pyyaml`, `pandas`, `matplotlib`, `pytest` |
+| h2cea | `rocketcea`, `CoolProp`, `numpy`, `scipy`, `pyyaml`, `pandas`, `matplotlib`, `pytest`; the test explorer also needs `streamlit` and `plotly` |
 | torch igniter | `rocketcea`, `CoolProp`, `numpy`, `scipy`, `pyyaml`, `plotly` (static images also need `kaleido`; HTML is written either way); the app also needs `streamlit` and `pandas` |
 | swirl injector | `CoolProp`, `numpy`, `scipy`, `pyyaml`; the app also needs `streamlit` and `pandas` |
 | orifice_lib | `CoolProp`, `numpy`, `scipy`, `pyyaml`, `plotly` |
 | tank pressurization | `CoolProp`, `pyyaml`, `plotly`, `numpy` |
 
 ```bash
-pip install rocketcea CoolProp numpy scipy pyyaml pandas matplotlib plotly pytest
+pip install rocketcea CoolProp numpy scipy pyyaml pandas matplotlib plotly pytest streamlit
 ```
 
 `rocketcea` builds from source on Linux and needs a Fortran compiler (`gfortran`).
