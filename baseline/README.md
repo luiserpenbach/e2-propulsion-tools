@@ -61,4 +61,4 @@ Every baseline file has its own table (`<name>_engine_table.yaml`), so a study c
 ## Not in the baseline
 
 - Values used by one tool only stay in that tool's config: bottle pressure and temperature, regulator and ullage rules (tanks); vehicle, fill ullage, pressurization (mission); oxidizer state at the holes and pressure drops (injector).
-- The present tank diameters in `tanks` are estimates (capsule with length = 2 x diameter); replace them with the drawings.
+- The present tank diameters in `tanks` are estimates from the outside diameters of the cylinders; replace them with measured values.

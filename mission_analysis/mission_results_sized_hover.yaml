@@ -2,14 +2,14 @@
 # The 'handover' section is the input to the tank and pressurization sizing.
 meta:
   generated_by: mission_sizing.py
-  date: '2026-10-02'
+  date: '2026-10-21'
   inputs: h2_mission_inputs.yaml
   overrides:
   - pressurization.from_tank_results=../tank_press_analysis/results/h2_tank_config_mission1_sized_results.yaml
   baseline:
     file: h2_baseline.yaml
-    revision: C
-    date: '2026-10-01'
+    revision: D
+    date: '2026-10-21'
   engine_table:
     generated_by: h2cea/run_engine_table.py
     date: '2026-09-29'
@@ -18,7 +18,7 @@ meta:
       revision: B
       date: '2026-09-29'
     status: estimate (CEA equilibrium, liquid N2O card, assumed efficiencies)
-  pressurization: h2_tank_config_mission1_sized_results.yaml (2026-10-02)
+  pressurization: h2_tank_config_mission1_sized_results.yaml (2026-10-21)
   tank_results_current: true
 sized_tanks:
   n2o_volume_L: 20.85
@@ -136,6 +136,8 @@ missions:
       ethanol_volume_required_L: 4.78
       n2o_volume_available_L: 20.85
       ethanol_volume_available_L: 4.78
+      n2o_load_max_kg: null
+      n2o_load_ok: true
       n2o_usable_margin_kg: 0.0
       ethanol_usable_margin_kg: -0.0
       ethanol_margin_engine_s: -0.0
@@ -163,5 +165,5 @@ handover:
   rated_flow_n2o_kg_s: 0.874
   rated_flow_ethanol_kg_s: 0.2
   duration_rated_flow_s: 13.96
-  pressurant_used_kg: 10.82
-  n2o_vapour_used_kg: 2.64
+  pressurant_used_kg: 14.06
+  n2o_vapour_used_kg: 3.3

@@ -26,6 +26,7 @@ tank_press_analysis/
 |-- configs/
 |   |-- h2_tank_config_mission1.yaml        # H2 lander, hover mission, present hardware - default
 |   |-- h2_tank_config_mission1_sized.yaml  # same mission, minimum sized tanks (D 200 mm)
+|   |-- h2_tank_config_mission1_full_load.yaml  # present hardware, hover stretched to the 19.4 kg N2O load limit
 |   `-- n2o_press.yaml                      # H-1B reference case (40 s, 1.0 kg/s)
 |-- results/                  # generated; only the H2 mission1 results are in git
 `-- README.md
@@ -161,7 +162,7 @@ The tool stops if the load does not fit the tanks at hot fill, and warns if the 
 
 - Tanks are capsules with hemispherical domes; other shapes (ellipsoidal domes, spheres of a given size) are approximated by a capsule of the same volume and diameter.
 - Parallel tanks are assumed identical and equally loaded.
-- The present-tank diameters in the baseline are estimates (capsule with length = 2 x diameter) until they are replaced with the drawings.
+- The present-tank diameters in the baseline are estimates from the outside diameters (about 204 mm for the 15 L steel N2O cylinders, 174 mm for the 9 L ethanol COPV) until the tanks are measured. The real cylinders have a flat-ish base and a neck, not two hemispheres.
 - It drains both tanks at constant flow (the mission's mean flow when it uses the handover), not along the mission's throttle profile.
 - With sized tanks, the handback is for those tanks and the mission tool scales it to its present tanks by volume (first order). With `present_hardware: true` no scaling is needed.
 - **The reported peak N2 flow can be a numerical start-up transient.** In the first few steps the N2O tank step oscillates (and negative steps are clipped), so the peak at t ≈ 0.1-0.2 s is not physical. Read the steady flow from the report plots; do not size the regulator on the reported peak.
@@ -212,11 +213,11 @@ Re-run after changing inputs; exact numbers depend on the CoolProp version.
 
 | Item | H2, `h2_tank_config_mission1.yaml` | H-1B, `n2o_press.yaml` |
 |------|------|------|
-| N2O tank | present 2 x 12 L (D 209 mm est.), 24.0 L, 15.2 kg loaded (11.6 delivered + 0.8 residual + 2.8 vapor), hot-fill ullage 20 % | sized, L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
-| Ethanol tank | present 1 x 6 L (D 166 mm est.), 3.6 kg, hot-fill ullage 24 % | sized, sphere, 14.1 L, 8.1 kg |
-| Bottle, worst case (cold) | 25.6 L required; present 2 x 15 L = 30.0 L, margin 1.17 (below the 1.30 target), 9.1 kg N2 at 300 bar, 140 bar at the end | 65.7 L -> 85.4 L, 25.8 kg N2 |
+| N2O tank | present 2 x 15 L (D 190 mm est.), 30.0 L, 16.2 kg loaded (11.6 delivered + 0.8 residual + 3.8 vapor), hot-fill ullage 36 % | sized, L_cyl 600 mm, 56.6 L, 38.7 kg loaded (32.0 + 0.4 + 6.3) |
+| Ethanol tank | present 1 x 9 L (D 158 mm est.), 3.6 kg, hot-fill ullage 49 % | sized, sphere, 14.1 L, 8.1 kg |
+| Bottle, worst case (cold) | 29.8 L required; present 2 x 20 L = 40.0 L, margin 1.34, 12.1 kg N2 at 300 bar, 156 bar at the end | 65.7 L -> 85.4 L, 25.8 kg N2 |
 
-The H2 column is for the hover handover of the mission tool (11.6 kg N2O and 3.4 kg ethanol usable, delivered over 16.9 s) in the present hardware (baseline revision C). Sized for the same mission instead (`h2_tank_config_mission1_sized.yaml`, D 200 mm), the tanks would be 21.6 L N2O + 5.1 L ethanol with a 31.9 L bottle (9.6 kg N2) and 2.4 kg vapour.
+The H2 column is for the hover handover of the mission tool (11.6 kg N2O and 3.4 kg ethanol usable, delivered over 16.9 s) in the present hardware (baseline revision D). With the hover stretched until the N2O load reaches the 19.4 kg pad-hold limit (`h2_tank_config_mission1_full_load.yaml`, 14.8 kg N2O and 4.3 kg ethanol usable over 21.6 s), the cold case needs 33.2 L (margin 1.21, 143 bar at the end). Sized for the hover instead (`h2_tank_config_mission1_sized.yaml`, D 200 mm), the tanks would be 21.6 L N2O + 5.1 L ethanol with a 31.9 L bottle (9.6 kg N2) and 2.4 kg vapour.
 
 ## Development notes
 
