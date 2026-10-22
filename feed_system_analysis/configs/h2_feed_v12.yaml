@@ -1,0 +1,76 @@
+# =============================================================================
+# FEED PRESSURE BUDGET — H2 LANDER, P&ID H2 / CFG-01 V1.2, FULL THRUST
+# Notion: Pressurant and Feed System Pressure Drop Analysis (H2-FLD-ANA-003)
+# Rev C and Feed Line Sizing (H2-FLD-ANA-002) Rev C.
+#
+# Units are part of every key name (bar a unless _bar_g). Rated N2O and fuel
+# flow, the regulator set pressure (tank pressure) and the ambient pressure come
+# from the shared baseline; set a key here only to override it (NOTE printed).
+# =============================================================================
+
+name: H2 V1.2, full thrust near the end of the burn (N2 flow of Tank Sizing Rev D)
+baseline: ../../baseline/h2_baseline.yaml
+
+operating:
+  n2o_temperatures_C: [10, 15, 20, 25]   # venturi flow is reported for each
+
+# --- Nitrogen ----------------------------------------------------------------
+# Tank and Pressurization Sizing Rev D (fixed tank set): 0.135 kg/s steady at
+# the mission's mean flow near the end of the burn, scaled to the full-thrust
+# propellant volume flow (oxidizer side x 1.27). Rev B used 0.116 / 0.029 kg/s.
+nitrogen:
+  flow_ox_kg_s: 0.126
+  flow_fuel_kg_s: 0.034
+  regulated: {pressure_bar: 96.0, temperature_C: 0.0}   # after the regulator, cold after throttling
+  storage: {pressure_bar: 120.0, temperature_C: -24.0}  # HP line check: sizing limit, coldest gas of Rev D
+
+regulator:
+  dropout_bar: 10.0              # inlet above outlet needed to keep regulating
+  sizing_limit_bar_a: 120.0      # bottle sizing rule of the tank tool
+  end_of_burn_bar_a: 144.0       # Rev D, full load check, cold case (143 bar g)
+
+# --- Lines: tube [OD, wall] mm, length m, sum of fitting K, parallel count ------
+# Typical fitting counts until the routing exists in CAD.
+roughness_um: 1.5
+lines:
+  n2_hp:             {tube_mm: [12, 2.0], length_m: 1.0, K: 2.0}
+  n2_reg_outlet:     {tube_mm: [12, 1.0], length_m: 1.0, K: 2.0}
+  n2_ox_branch:      {tube_mm: [12, 1.0], length_m: 1.0, K: 3.0}
+  n2_fuel_branch:    {tube_mm: [12, 1.0], length_m: 1.0, K: 3.0}
+  n2_ox_standpipe:   {tube_mm: [6, 1.0], length_m: 0.5, K: 1.5, count: 2}
+  n2_fuel_standpipe: {tube_mm: [6, 1.0], length_m: 0.5, K: 1.5}
+  ox_tank_leg:       {tube_mm: [12, 1.0], length_m: 0.5, K: 1.0, count: 2}
+  ox_main_line:      {tube_mm: [12, 1.0], length_m: 1.0, K: 2.6}
+  fuel_line:         {tube_mm: [12, 1.0], length_m: 1.0, K: 2.6}
+
+# Liquid states for the line losses
+n2o_liquid: {pressure_bar: 100.0, temperature_C: 20.0, viscosity_Pa_s: 7.0e-5}   # viscosity assumed (no CoolProp model)
+fuel_liquid: {pressure_bar: 100.0, temperature_C: 20.0}
+
+# --- Component allowances, bar (Rev A / Rev B) -----------------------------------
+allowances_bar:
+  regulator_droop: 3.0
+  ox_pressurisation_valves: 1.5  # PS-AV-12, two check valves, hose
+  fuel_pressurisation_valves: 1.0  # PS-AV-13, check valve
+  ox_filter: 0.5
+  ox_main_valve: 1.0
+  ox_spool: 0.13
+  fuel_filter: 0.3
+  fuel_main_valve: 1.0
+throttle_valve_cv: 2.4           # fully open, loss computed from the Cv
+throttle_valve_allowance_bar: 2.0  # for the required-Cv table
+
+# --- Venturis -------------------------------------------------------------------
+venturis:
+  oxidizer: {throat_mm: 3.92, cd: 0.80, recovery_limit: 0.80, outlet_needed_bar_a: 65.0}
+  fuel: {throat_mm: 1.5, cd: 0.874}
+
+# --- Options, applied cumulatively in this order -------------------------------
+options:
+  - name: Legs joined at the main valve
+    joined_legs_loss_bar: 0.8    # Rev B estimate for both legs at half flow
+  - name: + 8 mm standpipes
+    ox_standpipe_tube_mm: [8, 1.0]
+  - name: + throttle Cv 4.2, main valve Cv 5.6
+    throttle_valve_cv: 4.2
+    ox_main_valve_cv: 5.6
