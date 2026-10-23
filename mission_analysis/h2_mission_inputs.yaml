@@ -18,8 +18,8 @@
 meta:
   vehicle: H2 lander
   document: Mission Analysis (Notion, Systems Engineering)
-  revision: E
-  date: 2026-09-27
+  revision: G
+  date: 2026-10-21
   owner: Luis
 
 # Shared baseline (engine, propellant temperatures, residuals), relative to this file
@@ -53,6 +53,12 @@ vehicle:
 # -----------------------------------------------------------------------------
 propellant_tanks:
   initial_ullage_fraction: 0.05
+  oxidizer:
+    # Pad-hold limit on the loaded N2O (liquid + vapour) in the present 2 x 15 L
+    # tanks: 19.4 kg keeps 9 % ullage at 30 C, and the tanks only fill with
+    # liquid at 32.7 C (Tank and Pressurization Sizing Rev D, section 4.1).
+    # Caps the margins and --max-apex; not used with --size-tanks. null: no limit.
+    load_max_kg: 19.4
   fuel:
     density_kg_m3: 789.0         # ethanol at 20 C
 
@@ -66,12 +72,12 @@ pressurization:
   from_tank_results: ../tank_press_analysis/results/h2_tank_config_mission1_results.yaml
   # Manual values, used when from_tank_results is removed or its file does not
   # exist yet (fresh clone). Same meaning and scaling as the handback.
-  source: Tank and Pressurization Sizing Rev B (present tanks)
-  pressurant_mass_kg: 14.9       # N2 loaded, incl. 10 % margin
-  n2o_vapour_makeup_kg: 4.1      # N2O ending the flight as ullage vapour
+  source: Tank and Pressurization Sizing Rev D (present tanks)
+  pressurant_mass_kg: 12.1       # N2 loaded in the 2 x 20 L bottles at 300 bar
+  n2o_vapour_makeup_kg: 3.8      # N2O ending the flight as ullage vapour
   reference:                     # tank volumes the two values above belong to
-    propellant_volume_L: 42.9
-    oxidizer_volume_L: 36.0
+    propellant_volume_L: 39.0
+    oxidizer_volume_L: 30.0
 
 # -----------------------------------------------------------------------------
 # Propellant allowances on top of the burned propellant

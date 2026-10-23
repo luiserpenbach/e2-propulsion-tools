@@ -120,6 +120,7 @@ class Vehicle:
     ref_V_ox: float
     ref_m_pressurant: float
     ref_m_vapour: float
+    ox_load_max: float | None = None   # pad-hold limit on the loaded N2O (present tanks only)
 
     @classmethod
     def from_cfg(cls, c, bl, press):
@@ -138,7 +139,8 @@ class Vehicle:
                   m_pressurant=0.0, m_n2o_vapour=0.0,
                   ref_V_prop=press["propellant_volume_L"], ref_V_ox=press["oxidizer_volume_L"],
                   ref_m_pressurant=press["pressurant_mass_kg"],
-                  ref_m_vapour=press["n2o_vapour_makeup_kg"])
+                  ref_m_vapour=press["n2o_vapour_makeup_kg"],
+                  ox_load_max=t["oxidizer"].get("load_max_kg"))
         resize(veh, veh.V_ox_tank, veh.V_fuel_tank)   # scale to the present tanks
         return veh
 
@@ -387,9 +389,12 @@ def tank_check(b, veh):
 
 
 def tank_capacity(veh):
-    """Usable propellant the present tanks can deliver (kg)."""
-    ox = veh.V_ox_tank * 1e-3 * (1 - veh.ullage_load) * rho_n2o(veh.T_load_C) \
-        - veh.residual_ox - veh.m_n2o_vapour
+    """Usable propellant the present tanks can deliver (kg), within the N2O
+    load limit if one is set."""
+    ox_load = veh.V_ox_tank * 1e-3 * (1 - veh.ullage_load) * rho_n2o(veh.T_load_C)
+    if veh.ox_load_max is not None:
+        ox_load = min(ox_load, veh.ox_load_max)
+    ox = ox_load - veh.residual_ox - veh.m_n2o_vapour
     fu = veh.V_fuel_tank * 1e-3 * (1 - veh.ullage_load) * veh.rho_fuel - veh.residual_fuel
     return ox, fu
 
@@ -397,7 +402,8 @@ def tank_capacity(veh):
 def fits(res, veh):
     tc = tank_check(res["b"], veh)
     return (tc["n2o_volume_required_L"] <= veh.V_ox_tank + 1e-9
-            and tc["ethanol_volume_required_L"] <= veh.V_fuel_tank + 1e-9)
+            and tc["ethanol_volume_required_L"] <= veh.V_fuel_tank + 1e-9
+            and (veh.ox_load_max is None or res["b"]["loaded_ox"] <= veh.ox_load_max + 1e-9))
 
 
 def resize(veh, V_ox, V_fu):
@@ -477,6 +483,8 @@ def mission_result(eng, veh, mis, res):
                              up=rnd(authority(m, eng)[0], 2), down=rnd(authority(m, eng)[1], 2))
                         for lab, m in pts],
         tanks={**{k: rnd(v, 2) for k, v in tank_check(b, veh).items()},
+               "n2o_load_max_kg": veh.ox_load_max,
+               "n2o_load_ok": veh.ox_load_max is None or bool(b["loaded_ox"] <= veh.ox_load_max + 1e-9),
                "n2o_usable_margin_kg": rnd(cap_ox - b["usable_ox"]),
                "ethanol_usable_margin_kg": rnd(cap_fu - b["usable_fuel"]),
                "ethanol_margin_engine_s": rnd((cap_fu - b["usable_fuel"]) / eng.fuel_flow, 2)},
@@ -512,7 +520,9 @@ def print_mission(name, x):
     print(f"Tanks: N2O {tk['n2o_volume_required_L']:.1f} of {tk['n2o_volume_available_L']:.1f} L "
           f"(margin {tk['n2o_usable_margin_kg']:+.2f} kg), ethanol {tk['ethanol_volume_required_L']:.2f} of "
           f"{tk['ethanol_volume_available_L']:.2f} L (margin {tk['ethanol_usable_margin_kg']:+.2f} kg = "
-          f"{tk['ethanol_margin_engine_s']:+.1f} s)\n")
+          f"{tk['ethanol_margin_engine_s']:+.1f} s)"
+          + (f"; N2O load limit {tk['n2o_load_max_kg']:.1f} kg" if tk["n2o_load_max_kg"] is not None else "")
+          + ("  WARNING: N2O load above the limit" if not tk["n2o_load_ok"] else "") + "\n")
 
 
 def sweep(eng, veh, missions, allw, tws=(1.15, 1.20, 1.25, 1.30, 1.35)):
@@ -591,6 +601,7 @@ def main():
           f"{veh.m_n2o_vapour:.2f} kg N2O vapour for {veh.V_ox_tank:.1f} L N2O + {veh.V_fuel_tank:.1f} L ethanol tanks\n")
     veh_present = copy.deepcopy(veh)             # --max-apex always uses the present tanks
     if a.size_tanks:
+        veh.ox_load_max = None                   # the load limit belongs to the present tanks
         size_tanks(eng, veh, missions, allw)
         out["sized_tanks"] = dict(n2o_volume_L=round(float(veh.V_ox_tank), 2),
                                   ethanol_volume_L=round(float(veh.V_fuel_tank), 2),

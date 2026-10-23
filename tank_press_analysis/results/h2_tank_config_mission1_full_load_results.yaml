@@ -1,0 +1,125 @@
+meta:
+  config: h2_tank_config_mission1_full_load.yaml
+  baseline:
+    file: h2_baseline.yaml
+    revision: D
+    date: '2026-10-21'
+  date: '2026-10-21'
+  converged: true
+tank_sizing:
+  ox:
+    fixed_hardware: true
+    count: 2
+    diameter_inner_mm: 190.0
+    cyl_length_mm: 402.3802355778608
+    total_length_mm: 592.3802355778608
+    volume_each_L: 15.0
+    volume_L: 30.0
+    liquid_volume_fill_L: 24.24181409585951
+    ullage_frac_fill_hot: 0.19193953013801623
+    ullage_frac_fill_cold: 0.3122506087633179
+    overfill_hot: false
+    ullage_below_min: false
+  fu:
+    fixed_hardware: true
+    count: 1
+    diameter_inner_mm: 158.0
+    cyl_length_mm: 353.69390199019114
+    total_length_mm: 511.69390199019114
+    volume_each_L: 9.000000000000002
+    volume_L: 9.000000000000002
+    liquid_volume_fill_L: 5.76335278127318
+    ullage_frac_fill_hot: 0.35962746874742446
+    ullage_frac_fill_cold: 0.37323681024539623
+    overfill_hot: false
+    ullage_below_min: false
+propellant_loads_kg:
+  oxidizer_loaded_total: 19.09698735606884
+  oxidizer_liquid_fill: 18.01004314653342
+  oxidizer_delivered: 14.8
+  oxidizer_residual: 0.8
+  oxidizer_vapor_allowance: 3.49698735606884
+  fuel: 4.525
+  fuel_delivered: 4.325
+  fuel_residual: 0.2
+cases:
+  cold:
+    pressurant_flow:
+      mdot_n2_peak_g_s: 133.0501685542149
+      mdot_n2_peak_at_s: 21.55000000000017
+      mdot_n2_end_g_s: 132.39724633489925
+      mdot_n2_mean_g_s: 121.18290050511726
+      mdot_n2_ox_peak_g_s: 97.63804901147921
+      mdot_n2_fu_peak_g_s: 35.42557301433204
+    depleted_at_s: null
+    m_liq_ox_end_kg: 2.5914571079066335
+    m_vap_ox_end_kg: 1.7055302481621373
+    m_n2o_ox_end_kg: 4.296987356068771
+    prepress_fu_kg: 0.41776592585250055
+    prepress_ox_kg: 0.8375974717725299
+    n2_dissolved_kg: 0.2027254314653342
+    expulsion_fu_kg: 0.7086270054150103
+    expulsion_ox_kg: 1.9089236454955227
+    n2_total_kg: 4.0756394800008975
+    n2o_evaporated_kg: 0.6621115848904685
+    t_liq_ox_end_C: -2.8397423704881817
+    t_ull_ox_end_C: -10.443430899539578
+    t_gas_fu_end_C: -5.81581561612478
+    rho_liq_ox_end: 962.9421944695308
+    p_bottle_end_bar: 143.43995963727235
+    t_bottle_end_C: -23.99707985458153
+    m_prepress: 1.4580888290903646
+  hot:
+    pressurant_flow:
+      mdot_n2_peak_g_s: 137.0459488931479
+      mdot_n2_peak_at_s: 21.50000000000017
+      mdot_n2_end_g_s: 136.23371203995936
+      mdot_n2_mean_g_s: 108.97767562105372
+      mdot_n2_ox_peak_g_s: 102.71333379401781
+      mdot_n2_fu_peak_g_s: 34.35185213370947
+    depleted_at_s: null
+    m_liq_ox_end_kg: 0.972533856491274
+    m_vap_ox_end_kg: 3.3244534995774924
+    m_n2o_ox_end_kg: 4.296987356068766
+    prepress_fu_kg: 0.37098112933629546
+    prepress_ox_kg: 0.4338471155973291
+    n2_dissolved_kg: 0.2027254314653342
+    expulsion_fu_kg: 0.704675147088145
+    expulsion_ox_kg: 1.6492426463266154
+    n2_total_kg: 3.3614714698137194
+    n2o_evaporated_kg: 1.680961135651816
+    t_liq_ox_end_C: 10.072819666380042
+    t_ull_ox_end_C: 10.203775787934092
+    t_gas_fu_end_C: 3.881472437540083
+    rho_liq_ox_end: 904.6639110261661
+    p_bottle_end_bar: 162.65810457880943
+    t_bottle_end_C: -18.485418238781875
+    m_prepress: 1.0075536763989588
+bottle:
+  worst_case: cold
+  v_required_L: 33.177337646484375
+  margin_factor: 1.3
+  v_margined_L: 43.13053894042969
+  m_loaded_kg: 12.097550393233304
+  m_dissolved_kg: 0.2027254314653342
+  fixed_hardware: true
+  count: 2
+  volume_each_L: 20.0
+  v_available_L: 40.0
+  margin_available: 1.2056422497252002
+  p_end_worst_bar: 143.43995963727235
+handback:
+  pressurant_mass_kg: 12.097550393233304
+  pressurant_margin_factor: 1.3
+  n2o_vapour_makeup_kg: 3.49698735606884
+  oxidizer_volume_L: 30.0
+  propellant_volume_L: 39.0
+  sized_for:
+    file: mission_results_full_load.yaml
+    mission_date: '2026-10-21'
+    sizing_case: hover
+    usable_n2o_kg: 14.8
+    usable_ethanol_kg: 4.325
+    duration_s: 21.6
+    mission_overrides:
+    - missions.hover.hover_margin_s=5.57

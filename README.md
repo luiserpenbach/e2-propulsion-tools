@@ -24,6 +24,7 @@ cd h2cea && python run_engine_table.py
 | [swirl_injector_analysis/](swirl_injector_analysis/) | Liquid-centred swirl coaxial element: Bazarov or Nardi swirl sizing, oxidizer annulus, HEM metering holes, throttle envelope. Streamlit app for design sweeps and test-point calibration. | `python lcsc_sizing.py configs/e2_lcsc_p04_6x_design.yaml`, `python lcsc_sizing.py --check`, `streamlit run app.py` |
 | [orifice_lib/](orifice_lib/) | Single-orifice mass flow: incompressible liquid, real gas, and flashing flow (SPI / HEM / NHNE). | `python flight_config_sizing.py configs/orifice_cases.yaml` |
 | [tank_press_analysis/](tank_press_analysis/) | Capsule tank sizing, coupled N₂O / ethanol pressurization transient, pressurant bottle sizing. | `python flight_config_sizing.py configs/h2_tank_config_mission1.yaml` |
+| [feed_system_analysis/](feed_system_analysis/) | Pressure budget of the vehicle fluid system at full thrust: regulator to tanks, tanks to venturi inlets, venturi flow per N₂O temperature, required Cv, hardware options. | `python feed_pressure_budget.py`, `python -m pytest tests` |
 
 ## Inputs and outputs
 
@@ -65,6 +66,7 @@ Python 3.10+.
 | swirl injector | `CoolProp`, `numpy`, `scipy`, `pyyaml`; the app also needs `streamlit` and `pandas` |
 | orifice_lib | `CoolProp`, `numpy`, `scipy`, `pyyaml`, `plotly` |
 | tank pressurization | `CoolProp`, `pyyaml`, `plotly`, `numpy` |
+| feed system | `CoolProp`, `pyyaml`, `pytest` |
 
 ```bash
 pip install rocketcea CoolProp numpy scipy pyyaml pandas matplotlib plotly pytest streamlit

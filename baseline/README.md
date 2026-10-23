@@ -15,6 +15,7 @@ The agreed H2 lander / E2 flight engine numbers that more than one tool uses: en
 | `h2cea` | always, through `h2cea/h2cea/config.py` | run with a private copy (`E2_BASELINE`, below), or call the library functions with your own arguments, e.g. `size_throat(F=..., pc=...)` |
 | `mission_analysis` | through `baseline:` in `h2_mission_inputs.yaml`: engine table, residuals, loading temperature, present tank count and volume | point `baseline:` at a private copy, `--set baseline=<file>`, or `--set propellant_tanks.oxidizer.volume_each_L=...` |
 | `tank_press_analysis` | only configs with a `baseline:` key (the H2 config); present tank hardware only with `tanks.present_hardware: true` | any config without the key, e.g. `n2o_press.yaml` (H-1B) |
+| `feed_system_analysis` | configs with a `baseline:` key (the H2 V1.2 config): rated N2O and fuel flow from the engine table, tank pressure as regulator set point, ambient pressure | any config without the key |
 | `swirl_injector_analysis` | only configs with a `baseline:` key (none at present) | all configs, including P03 and P04, set their own operating point |
 | `torch_igniter_analysis`, `orifice_lib` | never | always |
 
@@ -61,4 +62,4 @@ Every baseline file has its own table (`<name>_engine_table.yaml`), so a study c
 ## Not in the baseline
 
 - Values used by one tool only stay in that tool's config: bottle pressure and temperature, regulator and ullage rules (tanks); vehicle, fill ullage, pressurization (mission); oxidizer state at the holes and pressure drops (injector).
-- The present tank diameters in `tanks` are estimates (capsule with length = 2 x diameter); replace them with the drawings.
+- The present tank diameters in `tanks` are estimates from the outside diameters of the cylinders; replace them with measured values.
