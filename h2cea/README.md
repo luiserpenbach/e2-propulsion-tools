@@ -122,7 +122,16 @@ not see this. The water-cooled test configuration passes (about 1010 K at 100 %)
 
 Modules
 - `coolant.py` – water (CoolProp) and N2O (CoolProp EOS; transport by CO2 corresponding states)
-- `jacket.py` – channel geometry; `materials.py` – IN718 k, E, alpha, yield vs temperature
+- `jacket.py` – channel geometry; `materials.py` – IN718 k, E, alpha, yield vs temperature.
+  Constant jacket by default (E2-REG-1). `Jacket.with_profile(x, h=, t_rib= | w=, t_wall=, n=, share=)`
+  gives axial profiles (x in m from the injector face, linear interpolation): variable channel
+  height and width/rib, hot-wall thickness, channel count, and `share`, the fraction of the
+  circumference whose heat goes into this flow. An alternating down/up jacket is two marches
+  with n = N/2 and share 0.5 where both passes run side by side (share 1 where only one is
+  left); `jacket.from_station_table()` builds these from a channel-generator stations.csv.
+  `regen.march` uses the local values at every station and returns them (`h_ch`, `t_rib`,
+  `t_wall`, `share`, `n_ch`); `Q` is the heat into the marched flow. `structure.py`,
+  `section2d.py` and the viewer still use the constant fields (for a profile: the maximum).
 - `regen.py` – 1D march: Bartz with CEA transport and sigma at the wall temperature,
   wall conductivity at the mean wall temperature, Gnielinski with rib fin efficiency,
   Haaland friction plus acceleration, Hall–Mudawar CHF (x <= 0.05), ONB flag;
