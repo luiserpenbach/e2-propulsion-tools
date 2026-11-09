@@ -139,9 +139,10 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
     h0 = bartz_factor * 0.026 / Dt ** 0.2 * (pt.mu_c ** 0.2 * pt.cp_fr_c / pt.pr_fr_c ** 0.6) \
         * (pc / cstar_del) ** 0.8 * (Dt / rc) ** 0.1
     rec = pt.pr_fr_c ** (1 / 3)
-    geo = channels(r, jacket)
-    n_act = jacket.n - len(jacket.blocked)
+    geo = channels(r, jacket, x)                     # local geometry (axial profile if any)
+    n_act = geo["n"] - len(jacket.blocked)
     G_all = mdot / (n_act * geo["A_one"])
+    share = geo["share"]                             # heated circumference fraction of this flow
     n_unconverged = 0
 
     names = ["M", "X", "Taw", "hg0", "sigma", "hg", "q", "Twg", "Twc", "Tb", "p", "h", "rho", "v",
@@ -168,6 +169,7 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
         hc = nusselt_gnielinski(Re, st.Pr, f) * st.k / D
         h_lo = hc
         w = geo["w"][i]
+        t_rib, h_ch, t_wall = geo["t_rib"][i], geo["h"][i], geo["t_wall"][i]
         sat = cool.sat(p)
         tsat = props.sat(p) if (props is not None and sat is not None) else None
         use_tp = tsat is not None and (two_phase or (film_subcooled and st.regime == "liquid"))
@@ -177,18 +179,18 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
             sig = bartz_sigma(Twg, Tc, X)
             hg = hg0 * sig
             kw = float(mat.k(m, 0.5 * (Twg + Twc)))
-            eta = fin_efficiency(hc, kw, jacket.t_rib, jacket.h)
+            eta = fin_efficiency(hc, kw, t_rib, h_ch)
             if use_tp and q is not None:
-                q_c = q * (w + jacket.t_rib) / (w + 2 * eta * jacket.h)
+                q_c = q * (w + t_rib) / (w + 2 * eta * h_ch)
                 active = two_phase or Twc > tsat["T_sl"]
-                ph_pf = (w + 2 * jacket.h) / (2 * w + 2 * jacket.h)
+                ph_pf = (w + 2 * h_ch) / (2 * w + 2 * h_ch)
                 hc_new = (TP.coolant_htc(tp_model, G, D, st, tsat, props, Twc, q_c, h_lo, ph_pf)
                           if active else h_lo)
                 hc = 0.5 * hc + 0.5 * hc_new
-                eta = fin_efficiency(hc, kw, jacket.t_rib, jacket.h)
-            hce = hc * (w + 2 * eta * jacket.h) / (w + jacket.t_rib)
+                eta = fin_efficiency(hc, kw, t_rib, h_ch)
+            hce = hc * (w + 2 * eta * h_ch) / (w + t_rib)
             q_old = q
-            q = (Taw - st.T) / (1 / hg + jacket.t_wall / kw + 1 / hce)
+            q = (Taw - st.T) / (1 / hg + t_wall / kw + 1 / hce)
             Twg_new, Twc = Taw - q / hg, st.T + q / hce
             done = abs(Twg_new - Twg) < 0.02 and (q_old is None or abs(q - q_old) < 1e-5 * q)
             Twg = Twg_new if done else 0.5 * (Twg + Twg_new)
@@ -203,8 +205,8 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
                     Tb=st.T, p=p, h=h, rho=st.rho, v=G / st.rho, Re=Re, Pr=st.Pr, f=f, hc=hc,
                     eta_fin=eta, hce=hce, kw=kw, Tsat=st.Tsat, xq=st.x, chf=chf,
                     chf_ratio=q / chf if chf and np.isfinite(chf) and chf > 0 else np.nan,
-                    Rg=1 / hg, Rw=jacket.t_wall / kw, Rc=1 / hce, G=G, hc_lo=h_lo,
-                    q_c=q * (w + jacket.t_rib) / (w + 2 * eta * jacket.h),
+                    Rg=1 / hg, Rw=t_wall / kw, Rc=1 / hce, G=G, hc_lo=h_lo,
+                    q_c=q * (w + t_rib) / (w + 2 * eta * h_ch),
                     T_sl=tsat["T_sl"] if tsat else (TP.T_superheat_limit(sat["T"], cool.Tcrit) if sat else np.nan),
                     q_nb_max=np.nan)
         for k_, v_ in vals.items():
@@ -215,7 +217,7 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
         if 0 <= nxt < N:
             ds = abs(s[nxt] - s[i])
             rm = 0.5 * (r[i] + r[nxt])
-            h = h + q * 2 * np.pi * rm * ds / mdot
+            h = h + 0.5 * (share[i] + share[nxt]) * q * 2 * np.pi * rm * ds / mdot
             # friction with homogeneous density; McAdams viscosity for the Reynolds number
             if two_phase:
                 xx = min(max(st.x, 0.0), 1.0)
@@ -228,7 +230,8 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
             if p <= 1e5:
                 raise RuntimeError(f"coolant pressure fell below 1 bar at x = {x[nxt]*1e3:.1f} mm")
     A.update(x=x, r=r, s=s, nx=wall["nx"], nr=wall["nr"], w=geo["w"], Dh=geo["Dh"],
-             pitch=geo["pitch"], A_flow=geo["A_flow"])
+             pitch=geo["pitch"], A_flow=geo["A_flow"], t_rib=geo["t_rib"], h_ch=geo["h"],
+             t_wall=geo["t_wall"], share=share, n_ch=geo["n"])
     A["regime"] = np.array(regime)
     pr = A["p"] / cool.pcrit
     ok = np.isfinite(A["T_sl"]) & (pr < 1)
@@ -241,7 +244,8 @@ def march(wall, pt, pc_bar, jacket: Jacket, coolant, mdot, p_in_bar, h_in, flow=
     ds = np.diff(s)
     rm = 0.5 * (r[1:] + r[:-1])
     qm = 0.5 * (A["q"][1:] + A["q"][:-1])
-    Q = float(np.sum(qm * 2 * np.pi * rm * ds))
+    shm = 0.5 * (share[1:] + share[:-1])
+    Q = float(np.sum(shm * qm * 2 * np.pi * rm * ds))   # heat into THIS flow
     i_out = 0 if flow == "counter" else N - 1
     i_in = N - 1 - i_out
     st_out = cool.state(A["h"][i_out], A["p"][i_out])
