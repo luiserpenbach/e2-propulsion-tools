@@ -125,7 +125,12 @@ def full_output(pc, mr, eps, ox=None, fuel=None):
 
 
 def species(pc, mr, eps, ox=None, fuel=None, where=0, min_fraction=1e-4):
-    """Mole fractions; where = 0 chamber, 1 throat, 2 exit."""
+    """Mole fractions at one station.
+
+    where = 0 injector face, 1 chamber (nozzle inlet), 2 throat, 3 exit: RocketCEA
+    returns the four stations in this order. Without fac_CR (infinite-area combustor,
+    as here) the injector and chamber stations are identical.
+    """
     c = cea_obj(ox or n2o_card(), fuel or ethanol_card())
     _, d = c.get_SpeciesMoleFractions(Pc=pc, MR=mr, eps=eps, min_fraction=min_fraction)
     return {k.strip('*'): v[where] for k, v in d.items()}

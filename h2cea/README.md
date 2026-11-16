@@ -63,6 +63,29 @@ before they go into hopper-test-lab (Next.js, runs in the browser, cannot call C
 pc × O/F grid (`hotfire.cea_map`) so that a derived channel there can compute the same
 η c\* by bilinear interpolation.
 
+## thrust_chamber_design.ipynb (design notebook)
+
+Takes a thrust chamber from the requirement to a checked first design in one pass, with
+every physical calculation done by the library: propellant cards and mixture ratio
+sweep, design point and throat (`operating_line`), throttle line, area ratio trade with
+the separation criteria (`gasdyn`), contour with the cylinder length solved for the
+target L* (`contour`), Bartz heat load, jacket geometry and the N2O march with the jacket
+heat returned to the chamber (`regen`, regime and liquid-only models at 100 % and the
+throttle floor), an optional water-cooled case, wall stresses (`structure`) and a summary.
+
+    pip install jupyterlab
+    jupyter lab thrust_chamber_design.ipynb     # edit the Spec cell, run all (~3 min)
+
+All inputs are in one `Spec` dataclass. Its defaults are the baseline (through
+`config.py`), so an unedited run is the E2 flight engine; override fields in the
+`Spec(...)` call for another design without touching the baseline. The mixture ratio is
+set either by a fixed fuel flow (E2 architecture) or directly. The Rao angles are chart
+inputs and must be re-read when the area ratio changes. Results (`design_summary.yaml`
+with the inputs, a hash of the spec and the git commit, `contour_xr.csv` in mm for CAD,
+the throttle line, every march station per case) go to
+`results/thrust_chamber_design/<name>/`, which is not committed. The notebook is
+committed without outputs; the model limits listed below for `run_regen.py` apply.
+
 ## run_engine_table.py
 
 Computes the delivered throttle line of the flight engine from the baseline
