@@ -11,7 +11,7 @@ E2-REG-1 hardware and the regen settings are set in `config.py` itself.
     python run_regen.py --viewer   # + 2D sections along the channel and the 3D viewer (~8 min)
     python run_boiling.py          # N2O boiling regime, all coolant-side models -> out/boiling/
     python -m pytest tests         # regression and handbook 10.8 verification checks
-    streamlit run test_explorer.py # E2 Test Explorer: hot-fire points against the models (needs streamlit, plotly)
+    python test_explorer.py        # E2 Test Explorer: hot-fire points against the models (local web page)
 
 Run the commands from this folder (`h2cea/`), so that `import h2cea` finds the package.
 For a what-if study, run with a private copy of the baseline instead of editing the shared
@@ -24,44 +24,54 @@ here: `cea_si.point()`, `operating_line.size_throat()` / `thrust_to_mox()`, `bar
 
 ## E2 Test Explorer (test_explorer.py)
 
-For the minutes after a hot fire: drop the DAQ CSV (or type the steady-state means)
-and compare the test with CEA, the engine model and earlier tests.
+For the minutes after a hot fire: once the test is analysed in hopper-test-lab, type its
+steady-state means and compare the test with CEA, the engine model and earlier tests.
 
-    pip install streamlit plotly pandas
-    streamlit run test_explorer.py          # from h2cea/; dark theme in .streamlit/config.toml
+    python test_explorer.py                 # from h2cea/; opens http://localhost:8600
 
-- **Hot fire.** The CSV columns are matched by name (`PT-CC`, `FM-OX`, `FM-FU`, `LC`,
-  `PT-OX-INJ`, `TT-W-IN`, …, units in brackets are converted), the burn and a steady
-  window are found from the chamber pressure, and the window means fill the form.
-  Results: η c\*, η Cf,vac, Isp, pc and thrust against the model at the measured flows,
-  O/F and Tc, nozzle exit pressure with the Summerfield and Schmucker separation checks,
-  injector dp, stiffness and CdA, and with water data the calorimetric jacket heat
-  against `regen.march` and the Bartz factor that matches it (with the hot-wall maximum
-  at that factor). Each card compares with the previous test on the same hardware;
-  findings are listed with OK / Check / Off; a text summary is ready to paste into
-  the test channel. **Save** writes `hotfire_tests/<test id>.yaml`.
+No further packages are needed. `--port`, `--no-browser` and `--host 0.0.0.0` (to reach
+it from other machines) are optional. A local server (`h2cea/explorer.py`, standard
+library) keeps the model loaded and one static page (`h2cea/templates/test_explorer.html`)
+talks to it: a changed input is analysed in about 50 ms, and the slow parts (jacket
+march with the Bartz fit about 1.5 s, throttle line about 1 s) run in worker processes
+and are filled in when they arrive. Follows the light or dark setting of the system.
+
+- **Test.** The inputs are the steady-state means; an empty field names the result of
+  the hopper-test-lab template *E2 engine hot fire* to copy (`pc_mean`, `mdot_ox_mean`,
+  …). That template reports gauge pressures: tick *Pressures are gauge*. A decimal comma
+  is accepted. Results: η c\*, η Cf,vac, Isp, pc and thrust against the model at the
+  measured flows, O/F and Tc, nozzle exit pressure with the Summerfield and Schmucker
+  separation checks, injector dp, stiffness and CdA, and with water data the
+  calorimetric jacket heat against `regen.march` and the Bartz factor that matches it
+  (with the hot-wall maximum at that factor). Each card compares with the previous test
+  on the same hardware; findings are listed with OK / Check / Off, the ones to look at
+  first; a text summary is ready to copy into the test channel. **Save** (Ctrl+S) writes
+  `hotfire_tests/<test id>.yaml`; the form is kept in the browser until then.
 - **Campaign.** All saved tests, recomputed with the current model and efficiencies:
-  table, trend with ±2σ band, scatter of any two results, side-by-side comparison of
-  selected tests, CSV export.
+  sortable table, trend with ±2σ band, scatter of any two results, side-by-side
+  comparison of ticked tests, CSV export.
 - **Model.** Throttle line of the hardware (thrust and pc against oxidiser flow), and
-  the CEA map export for hopper-test-lab.
+  the CEA map export.
 
-"Show demo campaign" and "Load demo trace" generate synthetic points from the model to
-try the app; they are labelled DEMO and are not saved.
+"Demo campaign" adds six synthetic points from the model to try the tool; they are
+labelled demo and are not saved.
 
-The analysis is in `h2cea/hotfire.py` (no UI code; tests in `tests/test_hotfire.py`).
+The analysis is in `h2cea/hotfire.py` (no UI code; tests in `tests/test_hotfire.py`,
+the server in `tests/test_explorer.py`).
 Conventions: η c\* = pc·At/ṁ / c\*_CEA(pc, O/F); η Cf,vac = (F + pa·Ae)/(pc·At) /
 Cf_vac,CEA (the split of the baseline). The CEA card is liquid N2O at the measured
 temperature and the supply pressure: the feed throttles isenthalpically, so a card at
 the injector pressure (often below saturation) would be wrong. A measured throat
 diameter changes At and ε. The jacket model is the E2-REG-1 as built with water.
 
-**hopper-test-lab.** The explorer is the place to find out which numbers are useful
-before they go into hopper-test-lab (Next.js, runs in the browser, cannot call CEA).
-`hotfire.py` keeps the field names and the outcome values (`pass` / `anomaly` / `fail` /
-`void`) of hopper-test-lab, and the Model tab exports the ideal CEA values on a
-pc × O/F grid (`hotfire.cea_map`) so that a derived channel there can compute the same
-η c\* by bilinear interpolation.
+**hopper-test-lab.** hopper-test-lab stays generic (traces, phases, formulas, campaigns);
+everything that needs the E2 model is here. Today the steady-state means are typed by
+hand. `HTL_SOURCE` in `explorer.py` lists where each input is found in a test analysed
+with the E2 template; it is the mapping for pulling an analysed test over the
+hopper-test-lab API (`GET /api/runs/<id>`) as the next step. `hotfire.py` keeps the
+outcome values (`pass` / `anomaly` / `fail` / `void`) of hopper-test-lab. The CEA map
+(`hotfire.cea_map`, ideal values on a pc × O/F grid) remains for a derived channel there
+that wants the same η c\* by bilinear interpolation.
 
 ## thrust_chamber_design.ipynb (design notebook)
 
