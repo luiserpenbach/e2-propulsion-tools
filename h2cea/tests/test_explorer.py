@@ -39,6 +39,15 @@ def test_analyse_matches_hotfire(store):
     assert out["jacket"] is True and "pt" not in out["R"]
     assert len(out["R"]["nozzle"]["x_mm"]) == len(out["R"]["nozzle"]["p_wall_bar"]) <= 320
     assert [o[0] for o in out["obs"]] == [o[0] for o in H.observations(R)]
+    assert {o[2] for o in out["obs"]} <= {"performance", "nozzle", "injector", "jacket"}
+    assert out["level"] == X.worst(out["obs"]) and out["level"] in ("crit", "warn", "good")
+
+
+def test_findings_are_filed_under_the_part_of_the_engine():
+    obs = [("warn", "η c* 0.9 vs 0.955 assumed"), ("info", "Jacket heat 130 kW measured"), ("good", "Hot-wall maximum 780 K"),
+           ("warn", "Nozzle flow likely separated"), ("good", "Ox injector stiffness 50 %"), ("warn", "Fuel CdA +6 % against the mean")]
+    assert [o[2] for o in X.tagged(obs)] == ["performance", "jacket", "jacket", "nozzle", "injector", "injector"]
+    assert X.worst(obs) == "warn" and X.worst(obs[1:3]) == "good" and X.worst(obs + [("crit", "x")]) == "crit"
 
 
 def test_missing_inputs_are_reported_not_raised(store):

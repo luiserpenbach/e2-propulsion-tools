@@ -85,8 +85,8 @@ def derived_constant(text, name):
 def to_test(bundle: dict) -> dict:
     """Map a hopper-test-lab test (the JSON of GET /api/runs/<id>) to a test point.
 
-    Returns {"test", "pulled": [[input label, source, value]], "missing": [input labels],
-    "notes": [text]}. Inputs that the test does not hold stay empty."""
+    Returns {"test", "pulled": [[input label, source, value]], "sources": {input key: source},
+    "missing": [input labels], "notes": [text]}. Inputs that the test does not hold stay empty."""
     run = bundle.get("run") or {}
     an = run.get("analysis") or {}
     res = {}
@@ -113,13 +113,14 @@ def to_test(bundle: dict) -> dict:
                       source=f"hopper-test-lab {run.get('id')}" + (f" ({an['templateName']})" if an.get("templateName") else ""))
     for k in H.INPUTS:                      # only what the test holds, no defaults of the form
         test["inputs"][k] = None
-    pulled = []
+    pulled, sources = [], {}
 
     def put(key, value, source):
         if value is None:
             return
         test["inputs"][key] = float(f"{value:.6g}")
         pulled.append([H.INPUTS[key].label, source, test["inputs"][key]])
+        sources[key] = source
 
     for key, rk in RESULT_FOR.items():
         put(key, res.get(rk), rk)
@@ -152,7 +153,7 @@ def to_test(bundle: dict) -> dict:
     missing = [H.INPUTS[k].label for k in H.REQUIRED if test["inputs"][k] is None]
     if run.get("type") not in (None, "engine"):
         notes.append(f"This is a test of type '{run.get('type')}', not an engine hot fire.")
-    return {"test": test, "pulled": pulled, "missing": missing, "notes": notes}
+    return {"test": test, "pulled": pulled, "sources": sources, "missing": missing, "notes": notes}
 
 
 # ----------------------------------------------------------------------------------------

@@ -41,6 +41,8 @@ def test_template_results_map_to_the_inputs():
     assert i["p_ox_inj_bar"] == pytest.approx(28.5) and i["p_fuel_inj_bar"] == pytest.approx(25.8)
     assert i["ox_temp_C"] == 17.5 and i["duration_s"] == 4.2
     assert i["throat_d_mm"] is None             # the template throat is the hardware nominal
+    assert out["sources"]["pc_bar"] == "pc_mean" and out["sources"]["p_ox_inj_bar"] == "pc_mean + dp_ox_inj_mean"
+    assert "throat_d_mm" not in out["sources"] and len(out["sources"]) == len(out["pulled"])
     assert i["water_flow_kg_s"] is None and out["missing"] == [] and out["notes"] == []
     assert "Hard start" in t["notes"] and "rough" in t["notes"] and "E2-HF-007" in t["source"]
     R = H.analyse(t)                            # gauge pc plus ambient, as hopper-test-lab's pc_abs

@@ -36,26 +36,30 @@ talks to it: a changed input is analysed in about 50 ms, and the slow parts (jac
 march with the Bartz fit about 1.5 s, throttle line about 1 s) run in worker processes
 and are filled in when they arrive. Follows the light or dark setting of the system.
 
-- **Test.** The inputs are the steady-state means, pulled from hopper-test-lab (below)
-  or typed; an empty field names the result of
-  the hopper-test-lab template *E2 engine hot fire* to copy (`pc_mean`, `mdot_ox_mean`,
-  …). That template reports gauge pressures: tick *Pressures are gauge*. A decimal comma
-  is accepted. Results: η c\*, η Cf,vac, Isp, pc and thrust against the model at the
-  measured flows, O/F and Tc, nozzle exit pressure with the Summerfield and Schmucker
-  separation checks, injector dp, stiffness and CdA, and with water data the
-  calorimetric jacket heat against `regen.march` and the Bartz factor that matches it
-  (with the hot-wall maximum at that factor). Each card compares with the previous test
-  on the same hardware; findings are listed with OK / Check / Off, the ones to look at
-  first; a text summary is ready to copy into the test channel. **Save** (Ctrl+S) writes
-  `hotfire_tests/<test id>.yaml`; the form is kept in the browser until then.
+- **Tests.** Three columns. At the left the list of tests: engine tests that are in
+  hopper-test-lab but not saved here yet (*New in Hopper Test Lab*, one click pulls one),
+  the saved tests with their worst finding as a dot and η c\*, a filter and *New test*.
+  The list is read again when the browser tab gets the focus back. In the middle the
+  inputs of the open test (steady-state means, pulled or typed; a decimal comma is
+  accepted; *HTL* marks a pulled value). At the right the results, in this order: the
+  verdict (how many findings to check, each with a link to its tab; passed checks and
+  notes folded away), the headline numbers against the model and the previous test on
+  the same hardware, then one tab per part of the engine with its numbers next to its
+  plot: *Performance* (measured / model / Δ / CEA ideal / previous test, throttle-line
+  map), *Nozzle* (exit pressure, Summerfield and Schmucker separation, wall pressure),
+  *Injector* (dp, stiffness, CdA and its history), *Jacket* (calorimetric heat against
+  `regen.march`, the Bartz factor that matches it, hot-wall maximum) and *All results*
+  (text summary for the test channel, full table). A tab with a finding carries a dot.
+  **Save test** (Ctrl+S) writes `hotfire_tests/<test id>.yaml`; the form is kept in the
+  browser until then.
 - **Campaign.** All saved tests, recomputed with the current model and efficiencies:
-  sortable table, trend with ±2σ band, scatter of any two results, side-by-side
-  comparison of ticked tests, CSV export.
-- **Model.** Throttle line of the hardware (thrust and pc against oxidiser flow), and
-  the CEA map export.
+  summary numbers, sortable table, trend with ±2σ band, scatter of any two results,
+  side-by-side comparison of ticked tests, CSV export.
+- **Model.** The assumed efficiencies (changed here, used on every page), the throttle
+  line of the hardware (thrust and pc against oxidiser flow) and the CEA map export.
 
-"Demo campaign" adds six synthetic points from the model to try the tool; they are
-labelled demo and are not saved.
+"Show demo tests" (bottom left) adds six synthetic points from the model to try the tool;
+they are listed under Demo and are not saved.
 
 The analysis is in `h2cea/hotfire.py` (no UI code; tests in `tests/test_hotfire.py`,
 the server in `tests/test_explorer.py`).
@@ -72,9 +76,9 @@ hopper-test-lab API and only reads there. Set the connection up once per machine
     cp hopper_test_lab.example.yaml hopper_test_lab.yaml     # url and the shared team password; not committed
 
 (or the environment variables `HTL_URL` and `HTL_PASSWORD`). The Test page then lists the
-engine tests of all campaigns under *Pull from Hopper Test Lab*; choosing one fills the
-form and shows the results. The line under the list says how many values came over and
-what the test does not hold; hover it for each value and its source. The mapping is in
+engine tests of all campaigns that are not saved here under *New in Hopper Test Lab*;
+clicking one fills the inputs and shows the results. What the test does not hold is
+named under the verdict; hover the *HTL* mark of an input for its source. The mapping is in
 `h2cea/htl.py` (tests in `tests/test_htl.py`) and follows the template *E2 engine hot
 fire*: `pc_mean`, `mdot_ox_mean`, `mdot_fu_mean`, `thrust_mean`, the injector inlets from
 `pc_mean + dp_ox_inj_mean` / `dp_fu_inj_mean`, the steady-state duration, the condition

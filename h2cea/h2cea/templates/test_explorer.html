@@ -7,90 +7,175 @@
 <style>
 :root {
   color-scheme: light;
-  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
-  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10); --wash: rgba(11,11,11,.04);
+  --page: #f6f6f3; --surface: #fdfdfc; --sunk: #f1f1ed; --ink: #0b0b0b; --ink2: #52514e; --muted: #86847e;
+  --grid: #e6e5df; --axis: #c3c2b7; --border: rgba(11,11,11,.10); --wash: rgba(11,11,11,.045); --sel: rgba(42,120,214,.10);
   --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s7: #6250d6; --other: #a9a79f;
   --good: #0ca30c; --warn: #fab219; --crit: #d03b3b; --info: #2a78d6;
   --m0: #cde2fb; --m1: #86b6ef; --m2: #3987e5; --m3: #184f95;
+  --bar: 46px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
-    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --wash: rgba(255,255,255,.05);
+    --page: #0f0f0e; --surface: #1a1a19; --sunk: #141413; --ink: #f0efec; --ink2: #c3c2b7; --muted: #8b8983;
+    --grid: #2c2c2a; --axis: #3d3d3a; --border: rgba(255,255,255,.10); --wash: rgba(255,255,255,.055); --sel: rgba(57,135,229,.16);
     --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s7: #9085e9; --other: #5d5c58;
     --info: #3987e5;
     --m0: #0d366b; --m1: #1c5cab; --m2: #3987e5; --m3: #b7d3f6;
   }
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--page); color: var(--ink);
-  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+html, body { margin: 0; background: var(--page); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 button, input, select, textarea { font: inherit; color: inherit; }
-header { display: flex; align-items: center; gap: 18px; padding: 0 16px; height: 44px; background: var(--surface);
-  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
-header h1 { font-size: 14px; font-weight: 650; margin: 0; white-space: nowrap; }
-nav { display: flex; gap: 2px; }
-nav button { border: 0; background: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--ink2); }
-nav button:hover { background: var(--wash); }
-nav button[aria-selected=true] { background: var(--wash); color: var(--ink); font-weight: 600; }
+h1, h2, h3 { margin: 0; }
+
+/* top bar */
+header { display: flex; align-items: center; gap: 20px; padding: 0 16px; height: var(--bar); background: var(--surface);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 6; }
+header h1 { font-size: 14px; font-weight: 650; white-space: nowrap; }
+nav { display: flex; gap: 2px; align-self: stretch; }
+nav button { border: 0; background: none; padding: 0 13px; cursor: pointer; color: var(--ink2); border-bottom: 2px solid transparent; border-top: 2px solid transparent; }
+nav button:hover { color: var(--ink); }
+nav button[aria-selected=true] { color: var(--ink); font-weight: 600; border-bottom-color: var(--s1); }
 .hd-right { margin-left: auto; display: flex; align-items: center; gap: 14px; color: var(--ink2); font-size: 12px; white-space: nowrap; }
-.hd-right label { display: flex; align-items: center; gap: 6px; }
-.hd-right input[type=text] { width: 62px; }
-#status { min-width: 120px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
-main { padding: 14px 16px 40px; max-width: 1560px; margin: 0 auto; }
+#assume { border: 1px solid var(--border); border-radius: 6px; background: none; padding: 4px 10px; cursor: pointer; color: var(--ink2); }
+#assume:hover { background: var(--wash); color: var(--ink); }
+#status { min-width: 116px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* layout */
 .view { display: none; }
 .view.on { display: block; }
-#view-test.on { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 16px; align-items: start; }
-@media (max-width: 900px) { #view-test.on { grid-template-columns: 1fr; } }
+#view-test.on { display: grid; grid-template-columns: 230px 312px minmax(0, 1fr); align-items: start; }
+.pane { position: sticky; top: var(--bar); height: calc(100vh - var(--bar)); overflow-y: auto; border-right: 1px solid var(--border); background: var(--surface); }
+#rail { background: var(--sunk); display: flex; flex-direction: column; }
+#work { padding: 16px 20px 48px; min-width: 0; }
+.page { padding: 16px 20px 48px; max-width: 1560px; margin: 0 auto; }
+@media (max-width: 1180px) {
+  #view-test.on { grid-template-columns: 220px minmax(0, 1fr); }
+  #inputs { grid-column: 2; position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); columns: 2 280px; column-gap: 28px; }
+  #inputs > * { break-inside: avoid; }
+  #inputs .sec { margin-top: 0; padding-top: 12px; break-after: avoid; }
+  #work { grid-column: 2; }
+  #rail { grid-row: 1 / span 2; }
+}
+
+/* shared pieces */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
-.sec { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
-.sec:first-child { margin-top: 0; }
-.steps { margin: 0 0 10px; padding: 0 0 10px 18px; color: var(--ink2); font-size: 12px; border-bottom: 1px solid var(--border); }
-.steps li { margin: 1px 0; }
-.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; align-items: end; }
-.fld { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.fld > span { font-size: 11.5px; color: var(--ink2); }
-.fld > span i { font-style: normal; color: var(--muted); }
-input[type=text], input[type=date], select, textarea { width: 100%; background: var(--page); border: 1px solid var(--border);
-  border-radius: 5px; padding: 4px 7px; height: 28px; }
-textarea { height: 64px; resize: vertical; }
-input.num { text-align: right; font-variant-numeric: tabular-nums; }
-input::placeholder { color: var(--muted); font-size: 10.5px; opacity: .85; }
-input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--s1); outline-offset: -1px; }
-input.bad { border-color: var(--crit); }
-input.req:placeholder-shown { border-color: var(--s1); }
-.chk { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: var(--ink2); }
-.btn { border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 5px 11px; cursor: pointer; height: 28px; white-space: nowrap; }
+.sec { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); } .ink2 { color: var(--ink2); } .small { font-size: 11.5px; }
+.btn { border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 0 12px; cursor: pointer; height: 30px; white-space: nowrap; }
 .btn:hover { background: var(--wash); }
 .btn.primary { background: var(--s1); border-color: var(--s1); color: #fff; font-weight: 600; }
 .btn.primary:hover { filter: brightness(1.08); }
-.btn:disabled { opacity: .45; cursor: default; }
-.row { display: flex; gap: 8px; align-items: center; }
-.row > .grow { flex: 1; min-width: 0; }
-.muted { color: var(--muted); } .small { font-size: 11.5px; }
-.res-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 10px; }
-.res-head h2 { font-size: 16px; margin: 0; font-weight: 650; }
-.tag { font-size: 11px; padding: 1px 7px; border-radius: 4px; border: 1px solid var(--border); color: var(--ink2); }
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin-bottom: 10px; }
-.tile { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--st, var(--axis)); border-radius: 6px; padding: 8px 11px; min-width: 0; }
-.tile .l { display: flex; justify-content: space-between; gap: 6px; font-size: 11.5px; color: var(--ink2); }
-.tile .l b { font-weight: 600; font-size: 10.5px; color: var(--ink2); display: flex; align-items: center; gap: 4px; }
+.btn:disabled { opacity: .45; cursor: default; filter: none; }
+.btn.quiet { border-color: transparent; background: none; color: var(--ink2); }
+.btn.quiet:hover { background: var(--wash); color: var(--ink); }
+input[type=text], input[type=date], input[type=search], select, textarea { width: 100%; background: var(--page); border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px; height: 27px; }
+textarea { height: 76px; resize: vertical; padding: 6px 8px; }
+input.num { text-align: right; font-variant-numeric: tabular-nums; }
+input::placeholder, textarea::placeholder { color: var(--muted); font-size: 11.5px; }
+input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible { outline: 2px solid var(--s1); outline-offset: -1px; }
+input.bad { border-color: var(--crit); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--st, var(--axis)); display: inline-block; flex: none; }
-.tile .v { font-size: 22px; font-weight: 600; line-height: 1.25; }
-.tile .v span { font-size: 12px; font-weight: 400; color: var(--ink2); margin-left: 3px; }
-.tile .s, .tile .p { font-size: 11.5px; color: var(--ink2); overflow-wrap: anywhere; }
-.tile .p { color: var(--muted); }
-.findings { margin: 0 0 10px; padding: 0; list-style: none; }
-.findings li { display: grid; grid-template-columns: 10px 62px 1fr; gap: 8px; align-items: baseline; padding: 5px 2px; border-top: 1px solid var(--border); }
-.findings li:first-child { border-top: 0; }
-.findings b { font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--ink2); }
-.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 10px; flex-wrap: wrap; }
-.tabs button { border: 0; background: none; padding: 6px 11px; cursor: pointer; color: var(--ink2); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tag { font-size: 10.5px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); color: var(--ink2); white-space: nowrap; }
+.row { display: flex; gap: 8px; align-items: center; }
+.grow { flex: 1; min-width: 0; }
+.cap { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+.empty { padding: 26px 10px; color: var(--ink2); text-align: center; }
+a.lnk { color: var(--s1); cursor: pointer; text-decoration: none; } a.lnk:hover { text-decoration: underline; }
+#toast { position: fixed; right: 16px; bottom: 16px; background: var(--ink); color: var(--page); padding: 8px 12px; border-radius: 6px; display: none; z-index: 9; max-width: 440px; }
+
+/* rail: the list of tests */
+.rail-top { padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 8px; }
+#rail-list { flex: 1; overflow-y: auto; padding: 0 6px 8px; }
+.grp { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 8px 4px; }
+.grp button { border: 0; background: none; color: var(--s1); cursor: pointer; font-size: 11.5px; padding: 0; }
+.item { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: 8px; align-items: center; width: 100%; text-align: left; border: 0; background: none;
+  padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.item:hover { background: var(--wash); }
+.item[aria-current=true] { background: var(--sel); }
+.item .id { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .sub { grid-column: 2 / 4; font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .val { font-variant-numeric: tabular-nums; color: var(--ink2); font-size: 12px; }
+.item .ring { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--s1); }
+.rail-foot { border-top: 1px solid var(--border); padding: 9px 14px; font-size: 11.5px; color: var(--ink2); display: flex; flex-direction: column; gap: 5px; }
+.rail-foot label { display: flex; align-items: center; gap: 7px; }
+
+/* inputs: a property sheet */
+#inputs { padding: 14px 14px 30px; }
+#inputs .sec { margin: 16px 0 6px; display: flex; justify-content: space-between; }
+#inputs .sec:first-child { margin-top: 0; }
+.pr { display: grid; grid-template-columns: minmax(0, 1fr) 84px 30px; gap: 6px; align-items: center; min-height: 31px; }
+.pr > span:first-child { color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pr .u { color: var(--muted); font-size: 11.5px; }
+.pr.wide { grid-template-columns: 96px minmax(0, 1fr); }
+.pr .src { font-size: 9.5px; font-weight: 600; letter-spacing: .04em; color: var(--s1); margin-left: 5px; vertical-align: 1px; }
+.pr input.req:placeholder-shown { border-color: var(--s1); }
+.chk { display: flex; align-items: center; gap: 7px; margin: 5px 0 2px; color: var(--ink2); }
+
+/* work area */
+.thead { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.thead h2 { font-size: 19px; font-weight: 650; }
+.thead .meta { color: var(--ink2); }
+.verdict { border-left: 4px solid var(--st); padding: 11px 14px; margin-bottom: 12px; }
+.verdict .vh { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.verdict .vh b { font-size: 15px; font-weight: 650; }
+.find { list-style: none; margin: 8px 0 0; padding: 0; }
+.find li { display: grid; grid-template-columns: 10px 50px minmax(0, 1fr) auto; gap: 9px; align-items: baseline; padding: 5px 0; border-top: 1px solid var(--border); }
+.find li b { font-size: 10.5px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--ink2); }
+.find li button { border: 0; background: none; color: var(--s1); cursor: pointer; font-size: 11.5px; padding: 0; white-space: nowrap; }
+.find li button:hover { text-decoration: underline; }
+details > summary { cursor: pointer; color: var(--ink2); }
+.verdict details { margin-top: 6px; }
+.verdict details > summary { font-size: 12px; padding: 3px 0; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; min-width: 0; }
+.kpi .l { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink2); }
+.kpi .v { font-size: 23px; font-weight: 600; line-height: 1.25; letter-spacing: -.01em; }
+.kpi .v span { font-size: 12px; font-weight: 400; color: var(--ink2); margin-left: 3px; letter-spacing: 0; }
+.kpi .s { font-size: 11.5px; color: var(--ink2); }
+.kpi .p { font-size: 11.5px; color: var(--muted); }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin: 0 -14px 12px; padding: 0 10px; flex-wrap: wrap; }
+.tabs button { border: 0; background: none; padding: 7px 12px; cursor: pointer; color: var(--ink2); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 6px; }
+.tabs button:hover { color: var(--ink); }
 .tabs button[aria-selected=true] { color: var(--ink); border-bottom-color: var(--s1); font-weight: 600; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px; align-items: start; }
+.split.wide { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.split > div { min-width: 0; }
+.split > div:first-child > table { display: block; overflow-x: auto; }
+@media (max-width: 1340px) { .split { grid-template-columns: 1fr; } }
+@media (max-width: 1520px) { .split.wide { grid-template-columns: 1fr; } }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
 .seg button { border: 0; background: none; padding: 3px 10px; cursor: pointer; color: var(--ink2); }
 .seg button[aria-selected=true] { background: var(--wash); color: var(--ink); font-weight: 600; }
+
+/* tables */
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 5px 8px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { font-weight: 600; font-size: 11.5px; color: var(--ink2); background: var(--surface); }
+.scroll th { position: sticky; top: 0; }
+th.sort { cursor: pointer; } th.sort:hover { color: var(--ink); }
+td.t, th.t { text-align: left; }
+td.t i { font-style: normal; color: var(--muted); font-size: 11.5px; margin-left: 4px; }
+td.strong { font-weight: 600; }
+td.notes { white-space: normal; min-width: 220px; color: var(--ink2); text-align: left; }
+tr.cur td { background: var(--sel); }
+table.hover tbody tr:hover td { background: var(--wash); }
+table.stat td, table.stat th { padding-left: 6px; padding-right: 6px; }
+table.stat tr:last-child td { border-bottom: 0; }
+.scroll { overflow: auto; max-height: 440px; }
+.scrollx { overflow-x: auto; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 1000px) { .grid2 { grid-template-columns: 1fr; } }
+pre.sum { background: var(--page); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; white-space: pre-wrap; margin: 0 0 12px; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-bottom: 12px; color: var(--ink2); }
+.filters label { display: inline-flex; align-items: center; gap: 5px; }
+.steps { margin: 10px 0 0; padding-left: 20px; color: var(--ink2); }
+.steps li { margin: 5px 0; }
+.fld { display: flex; flex-direction: column; gap: 3px; }
+.fld > span { font-size: 11.5px; color: var(--ink2); }
+
+/* charts */
 .ch-title { font-weight: 600; margin: 2px 0 2px; }
 .ch-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--ink2); margin-bottom: 2px; min-height: 16px; }
 .ch-legend span { display: inline-flex; align-items: center; gap: 5px; }
@@ -100,56 +185,45 @@ input.req:placeholder-shown { border-color: var(--s1); }
 .ch-plot svg { display: block; width: 100%; }
 .ch-plot text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .ch-plot text.lab { fill: var(--ink2); }
-.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
-  padding: 5px 8px; font-size: 11.5px; box-shadow: 0 2px 10px rgba(0,0,0,.18); white-space: nowrap; display: none; z-index: 3; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 11.5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18); white-space: nowrap; display: none; z-index: 3; }
 .tip div { display: flex; align-items: center; gap: 6px; }
 .tip b { font-weight: 600; }
-.cap { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-th, td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
-th { font-weight: 600; font-size: 11.5px; color: var(--ink2); position: sticky; top: 0; background: var(--surface); }
-th.sort { cursor: pointer; } th.sort:hover { color: var(--ink); }
-td.t, th.t { text-align: left; }
-td.notes { white-space: normal; min-width: 220px; color: var(--ink2); text-align: left; }
-tr.cur td { background: var(--wash); }
-tbody tr:hover td { background: var(--wash); }
-a.lnk { color: var(--s1); cursor: pointer; text-decoration: none; } a.lnk:hover { text-decoration: underline; }
-.scroll { overflow: auto; max-height: 420px; }
-.scrollx { overflow-x: auto; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-@media (max-width: 1000px) { .grid2 { grid-template-columns: 1fr; } }
-pre.sum { background: var(--page); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; white-space: pre-wrap; margin: 0 0 10px; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
-.empty { padding: 26px 10px; color: var(--ink2); text-align: center; }
-details summary { cursor: pointer; color: var(--ink2); margin: 8px 0; }
-#toast { position: fixed; right: 16px; bottom: 16px; background: var(--ink); color: var(--page); padding: 8px 12px; border-radius: 6px; display: none; z-index: 9; max-width: 420px; }
-.filters { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-bottom: 10px; color: var(--ink2); }
-.filters label { display: inline-flex; align-items: center; gap: 5px; }
+.bar { position: relative; min-width: 70px; height: 14px; background: var(--wash); border-radius: 0 4px 4px 0; }
+.bar > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; }
+.bar > u { position: absolute; top: -3px; bottom: -3px; border-left: 2px solid var(--ink2); }
 </style>
 </head>
 <body>
 <header>
   <h1>E2 Test Explorer</h1>
   <nav id="nav">
-    <button data-view="test" aria-selected="true">Test</button>
+    <button data-view="test" aria-selected="true">Tests</button>
     <button data-view="campaign">Campaign</button>
     <button data-view="model">Model</button>
   </nav>
   <div class="hd-right">
-    <label title="Baseline value. The model pc and thrust at the measured flows use it.">Model &eta; c* <input type="text" class="num" id="eta_c" inputmode="decimal"></label>
-    <label title="Applied to the ideal vacuum Cf; the ambient term carries no loss.">&eta; Cf,vac <input type="text" class="num" id="eta_f" inputmode="decimal"></label>
-    <label title="Six synthetic test points built from the model, to try the tool. Never saved."><input type="checkbox" id="demo"> Demo campaign</label>
-    <span id="baseline"></span>
+    <button id="assume" title="The efficiencies the model is run with. Change them on the Model page."></button>
     <span id="status"></span>
   </div>
 </header>
-<main>
-  <section class="view on" id="view-test">
-    <aside class="card" id="form"></aside>
-    <div id="results"></div>
-  </section>
-  <section class="view" id="view-campaign"></section>
-  <section class="view" id="view-model"></section>
-</main>
+<section class="view on" id="view-test">
+  <aside class="pane" id="rail">
+    <div class="rail-top">
+      <button class="btn primary" id="new">New test</button>
+      <input type="search" id="filter" placeholder="Filter tests" aria-label="Filter tests">
+    </div>
+    <div id="rail-list"></div>
+    <div class="rail-foot">
+      <div id="htl-state"></div>
+      <label title="Six synthetic test points built from the model, to try the tool. Never saved."><input type="checkbox" id="demo"> Show demo tests</label>
+    </div>
+  </aside>
+  <aside class="pane" id="inputs"></aside>
+  <div id="work"><div id="thead"></div><div id="results"></div></div>
+</section>
+<section class="view" id="view-campaign"><div class="page" id="campaign"></div></section>
+<section class="view" id="view-model"><div class="page" id="model"></div></section>
 <div id="toast"></div>
 <script>
 "use strict";
@@ -161,8 +235,11 @@ const has = v => v !== null && v !== undefined && !(typeof v === "number" && !is
 const fx = (v, nd = 2, sign = false) => !has(v) ? "–" : (sign && v > 0 ? "+" : "") + Number(v).toFixed(nd);
 const num = s => { if (s === null || s === undefined) return null; s = String(s).trim().replace(",", "."); if (s === "") return null; const v = Number(s); return isFinite(v) ? v : NaN; };
 const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const STATUS = {good: ["--good", "OK"], warn: ["--warn", "Check"], crit: ["--crit", "Off"], info: ["--info", "Note"]};
 const ORDER = {crit: 0, warn: 1, good: 2, info: 3};
+const AREA = {performance: "Performance", nozzle: "Nozzle", injector: "Injector", jacket: "Jacket"};
+const st = lv => STATUS[lv] ? `--st:var(${STATUS[lv][0]})` : "";
 
 async function api(path, body) {
   const r = await fetch(path, body === undefined ? {} : {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
@@ -171,15 +248,17 @@ async function api(path, body) {
   return d;
 }
 let toastTimer;
-function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = "none", 3200); }
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = "none", 3600); }
 function status(msg) { $("#status").textContent = msg; }
+function download(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
 
 // ------------------------------------------------------------------------------------ state
 let META = null;
 const S = {
-  view: "test", tab: "Engine map", ymap: "pc", test: null, savedJson: null, eta_c: 0, eta_f: 0, demo: false,
+  view: "test", tab: "performance", ymap: "pc", test: null, savedJson: null, sources: {}, origin: "", pullNote: "",
+  eta_c: 0, eta_f: 0, demo: false, filter: "",
   A: null, err: null, W: null, Wpending: false, line: null, lineKey: "", pool: [], nextId: "E2-HF-001",
-  qratio: {}, picked: new Set(), sort: {k: "date", d: 1}, trend: "r_eta_cstar", sx: "r_OF", sy: "r_eta_cstar",
+  runs: null, runsErr: "", qratio: {}, picked: new Set(), sort: {k: "date", d: -1}, trend: "r_eta_cstar", sx: "r_OF", sy: "r_eta_cstar",
   fHw: null, fOut: null, model: null, modelLine: null,
 };
 let seqA = 0, seqW = 0, seqL = 0, seqM = 0;
@@ -194,6 +273,10 @@ const inputsKey = t => JSON.stringify([t.hardware, t.pressures_gauge, t.inputs, 
 const recJson = t => JSON.stringify([t.test_id, t.date, t.hardware, t.outcome, t.pressures_gauge, t.notes, t.inputs]);
 const dirty = () => S.savedJson !== recJson(S.test);
 const isDemo = () => S.test.test_id.toUpperCase().startsWith("DEMO");
+const isSaved = () => S.pool.some(p => p.saved && p.test.test_id === S.test.test_id);
+const findings = () => !S.A ? [] : ((S.W && S.W.obs) || S.A.obs);
+const worst = obs => obs.some(o => o[0] === "crit") ? "crit" : obs.some(o => o[0] === "warn") ? "warn" : "good";
+const saveDraft = () => localStorage.setItem("e2x_draft2", JSON.stringify({test: S.test, sources: S.sources, origin: S.origin, pullNote: S.pullNote}));
 
 // ------------------------------------------------------------------------------------ charts (SVG)
 function ticks(lo, hi, n = 6) {
@@ -206,9 +289,9 @@ function ticks(lo, hi, n = 6) {
 }
 const sig = v => !has(v) ? "–" : Math.abs(v) >= 1000 ? v.toFixed(0) : Math.abs(v) >= 100 ? v.toFixed(1) : Math.abs(v) >= 10 ? v.toFixed(2) : v.toFixed(3);
 
-/* chart(el, {title, xLabel, yLabel, height, series: [{name, x, y, color, width, dash, points, labels, r, colors, tag}],
-              hlines: [{y, label, color, dash}], vlines: [{x, label, color, dash}], bands: [{y0, y1, color}],
-              cats, yRange, xRange, aspect, under(sx, sy), legend}) */
+/* chart(el, {title, xLabel, yLabel, height, series: [{name, x, y, color, width, dash, points, line, labels, r, rs, colors, tag, extra}],
+              hlines: [{y, label, color, dash, fit}], vlines: [{x, label, color, dash}], bands: [{y0, y1, color}],
+              cats, yRange, xRange, aspect, under(sx, sy), legend, forceLegend, xShort, yShort}) */
 function chart(el, o) {
   const series = (o.series || []).filter(s => s && s.x && s.x.length);
   const named = series.filter(s => s.name);
@@ -219,7 +302,7 @@ function chart(el, o) {
   const svg = $("svg", el), tip = $(".tip", el), W = Math.max(280, el.clientWidth);
   const m = {l: 56, r: 18, t: 10, b: o.xLabel ? 42 : 26};
   const rot = o.cats && Math.max(...o.cats.map(c => String(c).length)) * 6.6 > (W - 74) / o.cats.length;
-  if (rot) m.b += 40;
+  if (rot) { m.b += 40; m.r = 46; }
   let xs = [], ys = [];
   for (const s of series) for (let i = 0; i < s.x.length; i++) { if (has(s.x[i])) xs.push(s.x[i]); if (has(s.y[i])) ys.push(s.y[i]); }
   for (const h of o.hlines || []) if (has(h.y) && h.fit !== false) ys.push(h.y);
@@ -263,7 +346,7 @@ function chart(el, o) {
   }
   g += "</g>";
   for (const h of o.hlines || []) if (has(h.y) && h.label) g += `<text x="${W - m.r - 4}" y="${sy(h.y) - 4}" text-anchor="end">${esc(h.label)}</text>`;
-  for (const v of o.vlines || []) if (has(v.x) && v.label) g += `<text x="${sx(v.x) + 4}" y="${m.t + 11}">${esc(v.label)}</text>`;
+  for (const v of o.vlines || []) if (has(v.x) && v.label) g += `<text x="${sx(v.x) + 4}" y="${m.t + ph - 6}">${esc(v.label)}</text>`;
   for (const s of series) if (s.points) for (let i = 0; i < s.x.length; i++) {
     if (!has(s.y[i]) || !has(s.x[i])) continue;
     const r = (s.rs && s.rs[i]) || s.r || 5, c = (s.colors && s.colors[i]) || s.color;
@@ -290,10 +373,10 @@ function chart(el, o) {
     } else if (px >= m.l && px <= W - m.r && series.some(s => !s.points)) {
       const xv = x0 + (px - m.l) / pw * (x1 - x0);
       html = `<div><b>${xname(xv)}</b></div>`;
-      for (const s of series) if (!s.points) {
+      for (const s of series) if (!s.points && s.name) {
         let bi = -1, bd = Infinity;
         for (let i = 0; i < s.x.length; i++) { const d = Math.abs(s.x[i] - xv); if (has(s.y[i]) && d < bd) { bd = d; bi = i; } }
-        if (bi >= 0 && bd <= (x1 - x0) * 0.05) html += `<div><i class="dot" style="background:${s.color}"></i>${esc(s.name || "")} ${sig(s.y[bi])}</div>`;
+        if (bi >= 0 && bd <= (x1 - x0) * 0.05) html += `<div><i class="dot" style="background:${s.color}"></i>${esc(s.name)} ${sig(s.y[bi])}</div>`;
       }
       xh.setAttribute("x1", px); xh.setAttribute("x2", px); xh.style.display = "";
     }
@@ -304,128 +387,149 @@ function chart(el, o) {
   };
   svg.onmouseleave = () => { tip.style.display = "none"; xh.style.display = "none"; };
 }
+function interp(xs, ys, x) { let i = 1; while (i < xs.length - 1 && xs[i] < x) i++; const f = (x - xs[i - 1]) / ((xs[i] - xs[i - 1]) || 1); return ys[i - 1] + (ys[i] - ys[i - 1]) * Math.max(0, Math.min(1, f)); }
+/* statTable(["", "Measured", ...], [[label, unit, cell, ...]]): the first data column is set in bold */
+function statTable(head, rows) {
+  return `<table class="stat"><thead><tr>${head.map((h, i) => `<th class="${i ? "" : "t"}">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.filter(Boolean).map(r =>
+    `<tr><td class="t">${r[0]}${r[1] ? `<i>${esc(r[1])}</i>` : ""}</td>${r.slice(2).map((c, i) => `<td class="${i ? "" : "strong"}">${c === undefined ? "" : c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
 
-// ------------------------------------------------------------------------------------ form
-function buildForm() {
-  const fld = f => `<label class="fld" title="${esc([f.help, f.htl ? "Hopper Test Lab: " + f.htl : ""].filter(Boolean).join(" "))}">
-      <span>${esc(f.label)} <i>[${esc(f.unit)}]</i></span>
-      <input type="text" inputmode="decimal" class="num${f.required ? " req" : ""}" data-in="${f.key}" placeholder="${esc(f.htl ? f.htl.split(" (")[0] : f.required ? "required" : "optional")}"></label>`;
-  const grp = keys => `<div class="g2">${keys.map(k => fld(META.fields.find(f => f.key === k))).join("")}</div>`;
-  $("#form").innerHTML = `
-    <ol class="steps">
-      <li>Analyse the test in Hopper Test Lab.</li>
-      <li>${META.htl ? "Pull it here, or type its steady-state means." : "Type its steady-state means here."} An empty field names the result to copy. The E2 template reports gauge pressures: tick the gauge box when typing.</li>
-      <li>Read the findings, set the outcome, save.</li>
-    </ol>
-    <div class="row"><select id="open" class="grow" title="Open a saved test"></select><button class="btn" id="new">New</button></div>
-    ${META.htl ? `<div class="row" style="margin-top:6px"><select id="pull" class="grow" title="Engine tests saved in Hopper Test Lab, newest first"><option value="">Pull from Hopper Test Lab</option></select><button class="btn" id="pullreload" title="Read the list of tests again">Refresh</button></div>` : ""}
-    <div class="cap" id="pullinfo">${META.htl ? "" : `Pull from Hopper Test Lab is not set up: copy hopper_test_lab.example.yaml to ${esc(META.htl_config)} in h2cea/ and restart.`}</div>
-    <div class="sec">Test</div>
-    <div class="g2">
-      <label class="fld"><span>Test ID</span><input type="text" data-meta="test_id" placeholder="as in Hopper Test Lab"></label>
-      <label class="fld"><span>Date</span><input type="date" data-meta="date"></label>
-      <label class="fld" title="${esc(Object.values(META.hardware).map(h => h.label).join("\n"))}"><span>Hardware</span><select data-meta="hardware">${Object.keys(META.hardware).map(k => `<option>${esc(k)}</option>`).join("")}</select></label>
-      <label class="fld"><span>Outcome</span><select data-meta="outcome">${Object.entries(META.outcomes).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select></label>
-    </div>
-    <div class="sec">Operating point (steady state)</div>
-    ${grp(["pc_bar", "thrust_N", "ox_flow_kg_s", "fuel_flow_kg_s", "duration_s", "p_amb_bar"])}
-    <label class="chk" title="The E2 template of Hopper Test Lab reports gauge pressures."><input type="checkbox" data-meta="pressures_gauge"> Pressures are gauge (ambient is added)</label>
-    <div class="sec">Injector, propellant, throat</div>
-    ${grp(["p_ox_inj_bar", "p_fuel_inj_bar", "ox_temp_C", "throat_d_mm"])}
-    <div class="sec">Water jacket (calorimetry)</div>
-    ${grp(["water_flow_kg_s", "water_p_in_bar", "water_T_in_C", "water_p_out_bar", "water_T_out_C"])}
-    <div class="sec">Notes</div>
-    <textarea data-meta="notes" placeholder="What happened, what to change next"></textarea>
-    <div class="row" style="margin-top:10px">
-      <button class="btn primary grow" id="save" title="Writes hotfire_tests/<test id>.yaml (Ctrl+S)">Save test</button>
-      <button class="btn" id="del">Delete</button>
-    </div>
-    <div class="cap" id="saveinfo"></div>`;
-  $("#form").addEventListener("input", onFormInput);
-  $("#form").addEventListener("change", onFormInput);
-  $("#open").onchange = e => { const id = e.target.value; if (id) openTest(id); };
-  $("#new").onclick = () => { if (confirmLeave()) loadTest(blankTest(S.test.hardware), false); };
-  $("#save").onclick = save;
-  $("#del").onclick = del;
-  if (META.htl) {
-    $("#pull").onchange = e => { const id = e.target.value; e.target.value = ""; if (id) pull(id); };
-    $("#pullreload").onclick = () => loadRuns(true);
-    loadRuns(false);
+// ------------------------------------------------------------------------------------ rail: the tests
+function renderRail() {
+  const q = S.filter.trim().toLowerCase(), match = id => !q || id.toLowerCase().includes(q);
+  const cur = S.test.test_id, curListed = isSaved() || S.pool.some(p => p.test.demo && p.test.test_id === cur);
+  const item = o => `<button class="item" data-kind="${o.kind}" data-id="${esc(o.id)}" aria-current="${!!o.current}" title="${esc(o.title || "")}">
+      ${o.level ? `<i class="dot" style="${st(o.level)}"></i>` : `<i class="ring"></i>`}<span class="id">${esc(o.id || "New test")}</span><span class="val">${o.val || ""}</span>
+      <span class="sub">${esc(o.sub)}</span></button>`;
+  const liveLevel = S.A ? worst(findings()) : null, liveVal = S.A ? fx(S.A.R.eta_cstar, 3) : "";
+  let h = "";
+  if (!curListed && match(cur)) h += `<div class="grp"><span class="sec">Not saved</span></div>` +
+    item({kind: "cur", id: cur, current: true, level: liveLevel, val: liveVal, sub: S.A ? `${S.test.date} · ${S.origin === "htl" ? "pulled, not saved" : "not saved"}` : "Waiting for the inputs"});
+  if (S.runs) {
+    const fresh = S.runs.filter(r => !r.saved && r.id !== cur && match(r.id));
+    if (fresh.length) h += `<div class="grp"><span class="sec">New in Hopper Test Lab · ${fresh.length}</span></div>` +
+      fresh.map(r => item({kind: "htl", id: r.id, sub: `${r.date} · click to pull`, title: `Pull ${r.id} from the campaign ${r.campaign}`})).join("");
   }
+  const row = p => { const c = p.test.test_id === cur, lv = c && S.A ? liveLevel : p.level;
+    return item({kind: "pool", id: p.test.test_id, current: c, level: lv || "crit", val: c && S.A ? liveVal : p.row ? fx(p.row.r_eta_cstar, 3) : "",
+      sub: `${p.test.date} · ${META.outcomes[p.test.outcome] || ""}${c && dirty() && !p.test.demo ? " · unsaved changes" : ""}${p.error ? " · " + p.error : ""}`, title: "The number is η c*" }); };
+  const byNew = (a, b) => (b.test.date + b.test.test_id).localeCompare(a.test.date + a.test.test_id);
+  const saved = S.pool.filter(p => p.saved && match(p.test.test_id)).sort(byNew), demo = S.pool.filter(p => p.test.demo && match(p.test.test_id)).sort(byNew);
+  h += `<div class="grp"><span class="sec">Saved · ${S.pool.filter(p => p.saved).length}</span><button id="reread" title="Read hotfire_tests/ again (after a git pull)">Re-read</button></div>`;
+  h += saved.length ? saved.map(row).join("") : `<div class="cap" style="padding:2px 8px">${q ? "No saved test matches." : "No saved tests yet."}</div>`;
+  if (demo.length) h += `<div class="grp"><span class="sec">Demo</span></div>` + demo.map(row).join("");
+  $("#rail-list").innerHTML = h;
+  $$("#rail-list .item").forEach(b => b.onclick = () => { const id = b.dataset.id, k = b.dataset.kind; if (k === "htl") pull(id); else if (k === "pool" && id !== S.test.test_id) openTest(id); });
+  $("#reread").onclick = () => loadPool(true).then(() => toast("hotfire_tests/ read again"));
+  const hs = $("#htl-state");
+  if (!META.htl) hs.innerHTML = `<span title="Copy hopper_test_lab.example.yaml to ${esc(META.htl_config)} in h2cea/, fill in the url and the password, restart.">Hopper Test Lab: not set up</span>`;
+  else if (S.runsErr) hs.innerHTML = `<span style="color:var(--crit)">${esc(S.runsErr)}</span> <a class="lnk" id="rerun">Retry</a>`;
+  else hs.innerHTML = S.runs ? `Hopper Test Lab: ${plural(S.runs.length, "engine test", "engine tests")} · <a class="lnk" id="rerun">Refresh</a>` : "Hopper Test Lab: reading";
+  const b = $("#rerun"); if (b) b.onclick = () => loadRuns(true);
 }
 async function loadRuns(reload) {
-  const sel = $("#pull"), info = $("#pullinfo");
-  try {
-    const d = await api("/api/htl/runs" + (reload ? "?reload=1" : ""));
-    sel.innerHTML = `<option value="">Pull from Hopper Test Lab (${d.runs.length} engine tests)</option>` + d.runs.map(r =>
-      `<option value="${esc(r.id)}">${esc(r.id)} · ${esc(r.date)} · ${esc(META.outcomes[r.outcome] || r.outcome)}${r.saved ? " · saved here" : ""}</option>`).join("");
-    if (reload) info.textContent = "Test list read again.";
-  } catch (e) { info.textContent = e.message; }
+  if (!META.htl) return;
+  try { S.runs = (await api("/api/htl/runs" + (reload ? "?reload=1" : ""))).runs; S.runsErr = ""; }
+  catch (e) { S.runsErr = e.message; }
+  renderRail();
 }
 async function pull(id) {
   if (!confirmLeave()) return;
-  const info = $("#pullinfo"); info.textContent = `Pulling ${id}.`;
+  status(`pulling ${id}`);
   try {
     const d = await api("/api/htl/test?id=" + encodeURIComponent(id));
-    loadTest(d.test, false); setView("test");
-    info.textContent = [`Pulled ${d.pulled.length} values of ${id}.`, d.missing.length ? `Not in the test: ${d.missing.join(", ")}.` : "", ...d.notes].filter(Boolean).join(" ");
-    info.title = d.pulled.map(([l, src, v]) => `${l}: ${v}  (${src})`).join("\n");
-  } catch (e) { info.textContent = e.message; }
+    const note = [d.missing.length ? `Not in the Hopper Test Lab test: ${d.missing.join(", ")}.` : "", ...d.notes].filter(Boolean).join(" ");
+    loadTest(d.test, false, {sources: d.sources, origin: "htl", pullNote: note});
+    toast(`Pulled ${plural(d.pulled.length, "value", "values")} of ${id}` + (d.missing.length ? `; missing: ${d.missing.join(", ")}` : ""));
+  } catch (e) { status(""); toast(e.message); }
 }
 function confirmLeave() { return !dirty() || !S.A || isDemo() || confirm(`Discard the unsaved changes to ${S.test.test_id || "this test"}?`); }
-function fillForm() {
+function openTest(id) {
+  const p = S.pool.find(p => p.test.test_id === id);
+  if (!p || !confirmLeave()) return;
+  loadTest(p.test, p.saved, {origin: p.test.demo ? "demo" : "saved"}); setView("test");
+}
+function loadTest(t, saved, o = {}) {
+  S.test = JSON.parse(JSON.stringify(t)); delete S.test.demo; delete S.test.saved;
+  for (const f of META.fields) if (!(f.key in S.test.inputs)) S.test.inputs[f.key] = null;
+  S.savedJson = saved ? recJson(S.test) : null; S.W = null; S.A = null; S.err = null;
+  S.sources = o.sources || {}; S.origin = o.origin || "typed"; S.pullNote = o.pullNote || "";
+  saveDraft(); fillInputs(); renderHeader(); renderRail(); analyse();
+}
+
+// ------------------------------------------------------------------------------------ inputs
+function buildInputs() {
+  const fld = k => { const f = META.fields.find(f => f.key === k);
+    return `<label class="pr" title="${esc([f.help, f.htl ? "In Hopper Test Lab: " + f.htl : ""].filter(Boolean).join(" "))}">
+      <span>${esc(f.label)}<b class="src" data-src="${k}"></b></span><input type="text" inputmode="decimal" class="num${f.required ? " req" : ""}" data-in="${k}" placeholder="${f.required ? "required" : ""}"><span class="u">${esc(f.unit)}</span></label>`; };
+  $("#inputs").innerHTML = `
+    <div class="sec">Test</div>
+    <label class="pr wide"><span>Test ID</span><input type="text" data-meta="test_id" placeholder="as in Hopper Test Lab"></label>
+    <label class="pr wide"><span>Date</span><input type="date" data-meta="date"></label>
+    <label class="pr wide" title="${esc(Object.values(META.hardware).map(h => h.label).join("\n"))}"><span>Hardware</span><select data-meta="hardware">${Object.keys(META.hardware).map(k => `<option>${esc(k)}</option>`).join("")}</select></label>
+    <label class="pr wide"><span>Outcome</span><select data-meta="outcome">${Object.entries(META.outcomes).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select></label>
+    <div class="sec">Operating point <span style="text-transform:none;letter-spacing:0;font-weight:400">steady-state means</span></div>
+    ${["pc_bar", "ox_flow_kg_s", "fuel_flow_kg_s", "thrust_N", "duration_s", "p_amb_bar"].map(fld).join("")}
+    <label class="chk" title="Ticked: the ambient pressure is added to every pressure. The E2 template of Hopper Test Lab reports gauge pressures."><input type="checkbox" data-meta="pressures_gauge"> Pressures are gauge</label>
+    <div class="sec">Injector and propellant</div>
+    ${["p_ox_inj_bar", "p_fuel_inj_bar", "ox_temp_C", "throat_d_mm"].map(fld).join("")}
+    <div class="sec">Water jacket</div>
+    ${["water_flow_kg_s", "water_T_in_C", "water_T_out_C", "water_p_in_bar", "water_p_out_bar"].map(fld).join("")}
+    <div class="sec">Notes</div>
+    <textarea data-meta="notes" placeholder="What happened, what to change next"></textarea>
+    <div class="cap" id="srcnote"></div>`;
+  $("#inputs").addEventListener("input", onInput);
+  $("#inputs").addEventListener("change", onInput);
+}
+function fillInputs() {
   for (const el of $$("[data-in]")) {
     const f = META.fields.find(f => f.key === el.dataset.in), v = S.test.inputs[f.key];
     el.value = has(v) ? String(Number(Number(v).toFixed(Math.max(f.decimals, 4)))) : ""; el.classList.remove("bad");
   }
   for (const el of $$("[data-meta]")) { const k = el.dataset.meta; if (el.type === "checkbox") el.checked = !!S.test[k]; else el.value = S.test[k] ?? ""; }
+  markSources();
+}
+function markSources() {
+  for (const el of $$("[data-src]")) { const s = S.sources[el.dataset.src]; el.textContent = s ? "HTL" : ""; el.title = s ? `Pulled from Hopper Test Lab: ${s}` : ""; }
+  $("#srcnote").textContent = Object.keys(S.sources).length ? "HTL marks a value pulled from Hopper Test Lab; hover it for the source. Editing a value removes the mark." : "";
 }
 let debounce;
-function onFormInput(ev) {
+function onInput(ev) {
   const el = ev.target;
-  if (el.dataset.in) { const v = num(el.value); el.classList.toggle("bad", Number.isNaN(v)); S.test.inputs[el.dataset.in] = Number.isNaN(v) ? null : v; }
+  if (el.dataset.in) { const v = num(el.value); el.classList.toggle("bad", Number.isNaN(v)); S.test.inputs[el.dataset.in] = Number.isNaN(v) ? null : v;
+    if (S.sources[el.dataset.in]) { delete S.sources[el.dataset.in]; markSources(); } }
   else if (el.dataset.meta) { S.test[el.dataset.meta] = el.type === "checkbox" ? el.checked : el.value; }
   else return;
-  localStorage.setItem("e2x_draft", JSON.stringify(S.test));
+  saveDraft(); renderHeader();
   clearTimeout(debounce); debounce = setTimeout(analyse, 90);
-  renderSaveInfo();
 }
-function renderOpen() {
-  const ids = S.pool.map(p => p.test.test_id).reverse();
-  $("#open").innerHTML = `<option value="">Open a test (${S.pool.filter(p => p.saved).length} saved)</option>` + ids.map(i => `<option>${esc(i)}</option>`).join("");
-}
-function renderSaveInfo() {
-  const saved = S.pool.some(p => p.saved && p.test.test_id === S.test.test_id);
-  $("#save").disabled = !S.A || isDemo() || !S.test.test_id.trim();
-  $("#del").disabled = !saved;
-  $("#saveinfo").textContent = isDemo() ? "Demo points are not saved. Give the test its own ID to save it." :
-    !S.test.test_id.trim() ? "Give the test an ID to save it." : saved ? (dirty() ? "Unsaved changes." : "Saved in hotfire_tests/.") : "Not saved yet.";
-}
-function loadTest(t, saved) {
-  S.test = JSON.parse(JSON.stringify(t)); delete S.test.demo; delete S.test.saved;
-  for (const f of META.fields) if (!(f.key in S.test.inputs)) S.test.inputs[f.key] = null;
-  S.savedJson = saved ? recJson(S.test) : null; S.W = null; S.A = null;
-  if (META.htl) { $("#pullinfo").textContent = ""; $("#pullinfo").title = ""; }
-  localStorage.setItem("e2x_draft", JSON.stringify(S.test));
-  fillForm(); $("#open").value = ""; analyse();
-}
-function openTest(id) {
-  const p = S.pool.find(p => p.test.test_id === id);
-  if (!p || !confirmLeave()) { $("#open").value = ""; return; }
-  loadTest(p.test, p.saved); setView("test");
+
+// ------------------------------------------------------------------------------------ test header and actions
+function renderHeader() {
+  const t = S.test, saved = isSaved(), id = t.test_id.trim();
+  const state = isDemo() ? ["Demo data, not saved", ""] : !id ? ["No test ID", ""] : saved ? (dirty() ? ["Unsaved changes", "var(--warn)"] : ["Saved", "var(--good)"]) : ["Not saved", "var(--warn)"];
+  $("#thead").innerHTML = `<div class="thead"><h2>${esc(id || "New test")}</h2>
+    <span class="tag" style="${state[1] ? `border-color:${state[1]}` : ""}">${state[0]}</span>
+    <span class="meta">${esc(t.date)} · ${esc(t.hardware)} · ${esc(META.outcomes[t.outcome])}${S.origin === "htl" ? " · pulled from Hopper Test Lab" : ""}</span><span class="grow"></span>
+    <button class="btn quiet" id="copy" ${S.A ? "" : "disabled"} title="Copy a text summary for the test channel or the log book">Copy summary</button>
+    <button class="btn quiet" id="del" ${saved ? "" : "disabled"}>Delete</button>
+    <button class="btn primary" id="save" ${!S.A || isDemo() || !id || (saved && !dirty()) ? "disabled" : ""} title="Writes hotfire_tests/${esc(id)}.yaml (Ctrl+S)">Save test</button></div>`;
+  $("#save").onclick = save; $("#del").onclick = del;
+  $("#copy").onclick = () => navigator.clipboard.writeText(summaryText()).then(() => toast("Summary copied"), () => toast("Copy failed; use the All results tab and select the text"));
 }
 async function save() {
   if ($("#save").disabled) return;
   try {
     const r = await api("/api/save", {test: S.test});
-    S.savedJson = recJson(S.test); toast(`${r.updated ? "Updated" : "Saved"} ${r.file}`);
-    await loadPool(); renderSaveInfo();
+    S.savedJson = recJson(S.test);
+    toast(`${r.updated ? "Updated" : "Saved"} hotfire_tests/${r.file}`);
+    await loadPool(); renderHeader(); loadRuns(false);
   } catch (e) { toast(e.message); }
 }
 async function del() {
   if (!confirm(`Delete ${S.test.test_id} from hotfire_tests/?`)) return;
   await api("/api/delete", {test_id: S.test.test_id}); S.savedJson = null; toast(`Deleted ${S.test.test_id}`);
-  await loadPool(); renderSaveInfo();
+  await loadPool(); renderHeader(); loadRuns(false);
 }
 
 // ------------------------------------------------------------------------------------ model calls
@@ -469,12 +573,12 @@ async function ensureLine() {
   if (key === S.lineKey) return;
   S.lineKey = key; S.line = null; const my = ++seqL;
   try { const d = await api("/api/line", body); if (my !== seqL) return; S.line = d.line; } catch (e) { return; }
-  if (S.view === "test" && S.tab === "Engine map") renderTab();
+  if (S.view === "test" && S.tab === "performance") renderTab();
 }
 async function loadPool(reload) {
   const d = await api(`/api/tests?demo=${S.demo ? 1 : 0}&eta_c=${S.eta_c}&eta_f=${S.eta_f}${reload ? "&reload=1" : ""}`);
   S.pool = d.tests; S.nextId = d.next_id;
-  renderOpen();
+  renderRail();
   if (S.view === "campaign") renderCampaign();
   fillQratio();
 }
@@ -489,148 +593,180 @@ async function fillQratio() {       // jacket heat measured / model for the camp
     }).catch(() => {});
   }
 }
-// tests of the pool on the same hardware, other than the one in the form
+// tests of the pool on the same hardware, other than the one that is open
 const peers = () => S.pool.filter(p => p.row && p.test.test_id !== S.test.test_id && p.test.hardware === S.test.hardware);
 
 // ------------------------------------------------------------------------------------ results
 function render() {
-  renderSaveInfo();
+  renderHeader(); renderRail();
   if (S.view === "test") renderResults();
   if (S.view === "campaign") renderCampaign();
 }
-function tile(label, val, unit, sub, st, prev) {
-  const s = STATUS[st];
-  return `<div class="tile" style="${s ? `--st:var(${s[0]})` : ""}"><div class="l"><span>${label}</span>${s ? `<b><i class="dot"></i>${s[1]}</b>` : ""}</div>
-    <div class="v">${val}<span>${unit}</span></div><div class="s">${sub}</div>${prev ? `<div class="p">${prev}</div>` : ""}</div>`;
+function kpi(label, val, unit, sub, lv, prev) {
+  return `<div class="kpi"><div class="l"><span>${label}</span>${STATUS[lv] ? `<i class="dot" style="${st(lv)}" title="${STATUS[lv][1]}"></i>` : ""}</div>
+    <div class="v">${val}<span>${unit}</span></div><div class="s">${sub}</div><div class="p">${prev || "&nbsp;"}</div></div>`;
 }
 function renderResults() {
-  const el = $("#results"), t = S.test;
-  if (!S.A) {
-    el.innerHTML = `<div class="card empty">${S.err ? `Enter the chamber pressure, the oxidiser flow and the fuel flow to see the results.<div class="cap">${esc(S.err)}</div>` : "Computing."}</div>`;
-    return;
-  }
-  const R = S.A.R, W = S.W, obs = (W && W.obs) || S.A.obs, last = S.A.last;
+  const el = $("#results");
+  if (!S.A) { el.innerHTML = guide(); return; }
+  const R = S.A.R, obs = findings(), last = S.A.last;
   const lvl = start => (obs.find(o => o[1].startsWith(start)) || [null])[0];
-  const vs = (k, nd = 3, pct = false) => {
-    if (!last || !has(last["r_" + k]) || !has(R[k])) return "";
-    const d = R[k] - last["r_" + k];
-    return `vs ${esc(last.test_id)}: ` + (pct ? fx(100 * d / last["r_" + k], 1, true) + " %" : fx(d, nd, true));
-  };
-  const tiles = [
-    tile("&eta; c*", fx(R.eta_cstar, 3), "", `model ${fx(S.eta_c, 3)} · c* ${fx(R.cstar_meas_m_s, 0)} / ${fx(R.cstar_ideal_m_s, 0)} m/s`, lvl("η c*"), vs("eta_cstar")),
-    tile("Chamber pressure", fx(R.pc_abs_bar, 2), "bar abs", `model ${fx(R.pc_model_bar, 2)} · ${fx(R.pc_dev_pct, 1, true)} %`, lvl("η c*"), vs("pc_abs_bar", 2)),
+  const vs = (k, nd = 3) => (!last || !has(last["r_" + k]) || !has(R[k])) ? "" : `${fx(R[k] - last["r_" + k], nd, true)} vs ${esc(last.test_id)}`;
+  const act = obs.filter(o => o[0] === "crit" || o[0] === "warn").sort((a, b) => ORDER[a[0]] - ORDER[b[0]]);
+  const rest = obs.filter(o => o[0] === "good" || o[0] === "info").sort((a, b) => ORDER[a[0]] - ORDER[b[0]]);
+  const nOk = rest.filter(o => o[0] === "good").length, nNote = rest.length - nOk, level = worst(obs);
+  const head = level === "crit" ? `${plural(act.length, "finding needs", "findings need")} attention` : level === "warn" ? `${plural(act.length, "finding", "findings")} to check` : "All checks OK";
+  const li = ([lv, tx, area]) => `<li style="${st(lv)}"><i class="dot"></i><b>${STATUS[lv][1]}</b><span>${esc(tx)}</span><button data-go="${area}">${AREA[area]}</button></li>`;
+  const k = [
+    kpi("&eta; c*", fx(R.eta_cstar, 3), "", `model ${fx(S.eta_c, 3)} · ${fx(100 * (R.eta_cstar - S.eta_c), 1, true)} pts`, lvl("η c*"), vs("eta_cstar")),
+    kpi("Chamber pressure", fx(R.pc_abs_bar, 2), "bar abs", `model ${fx(R.pc_model_bar, 2)} · ${fx(R.pc_dev_pct, 1, true)} %`, lvl("η c*"), vs("pc_abs_bar", 2)),
+    has(R.thrust_N) ? kpi("Thrust", fx(R.thrust_N, 0), "N", `model ${fx(R.thrust_model_N, 0)} · ${fx(R.thrust_dev_pct, 1, true)} %`, lvl("η Cf"), vs("thrust_N", 0))
+                    : kpi("Thrust (model)", fx(R.thrust_model_N, 0), "N", "no load cell value", null, ""),
+    has(R.thrust_N) ? kpi("Isp (sea level)", fx(R.isp_meas_s, 1), "s", `model ${fx(R.isp_model_s, 1)} · &eta; Cf,vac ${fx(R.eta_cf_vac, 3)}`, lvl("η Cf"), vs("isp_meas_s", 1)) : "",
+    kpi("O/F", fx(R.OF, 2), "", `${fx(R.throttle_pct, 0)} % rated · flow ${fx(R.mdot_kg_s, 3)} kg/s`, null, vs("OF", 2)),
   ];
-  if (has(R.thrust_N)) tiles.push(
-    tile("Thrust", fx(R.thrust_N, 0), "N", `model ${fx(R.thrust_model_N, 0)} · ${fx(R.thrust_dev_pct, 1, true)} % · ${fx(R.throttle_pct, 0)} % rated`, lvl("η Cf"), vs("thrust_N", 0)),
-    tile("Isp (sea level)", fx(R.isp_meas_s, 1), "s", `model ${fx(R.isp_model_s, 1)} · ideal ${fx(R.isp_ideal_s, 1)}`, lvl("η Cf"), vs("isp_meas_s", 1)),
-    tile("&eta; Cf,vac", fx(R.eta_cf_vac, 3), "", `model ${fx(S.eta_f, 3)} · Cf ${fx(R.cf_meas, 3)} / ${fx(R.cf_ideal, 3)}`, lvl("η Cf"), vs("eta_cf_vac")));
-  else tiles.push(tile("Thrust (model)", fx(R.thrust_model_N, 0), "N", `${fx(R.throttle_pct, 0)} % rated · no load cell value`, "info"));
-  tiles.push(tile("O/F", fx(R.OF, 2), "", `flow ${fx(R.mdot_kg_s, 3)} kg/s · Tc ${fx(R.Tc_K, 0)} K`, null, vs("OF", 2)));
-  const sep = R.summerfield_sep || has(R.x_sep_mm);
-  tiles.push(tile("Nozzle pe / pa", fx(R.pe_over_pa, 2), "", has(R.x_sep_mm) ? `separated at x ${fx(R.x_sep_mm, 0)} mm` : R.summerfield_sep ? "separated (Summerfield)" : `attached · pe ${fx(R.pe_bar, 2)} bar`, sep ? "warn" : "good"));
-  if (has(R.stiff_ox_pct) || has(R.stiff_fuel_pct)) {
-    const worst = Math.min(...[R.stiff_ox_pct, R.stiff_fuel_pct].filter(has));
-    const cda = [["CdA_ox_mm2", "ox"], ["CdA_fuel_mm2", "fuel"]].filter(([k]) => has(R[k])).map(([k, n]) => `${n} CdA ${fx(R[k], 2)}`).join(" · ");
-    tiles.push(tile("Injector stiffness", fx(worst, 0), "% pc (min)", [has(R.stiff_ox_pct) ? `ox ${fx(R.stiff_ox_pct, 0)} %` : "", has(R.stiff_fuel_pct) ? `fuel ${fx(R.stiff_fuel_pct, 0)} %` : ""].filter(Boolean).join(" · "),
-      worst >= META.stiffness_min_pct ? "good" : "warn", (cda ? cda + " mm²" : "") + (vs("CdA_ox_mm2") ? ` · ox ${vs("CdA_ox_mm2", 3, true)}` : "")));
-  }
-  if (has(R.Q_meas_kW)) tiles.push(W
-    ? tile("Jacket heat", fx(R.Q_meas_kW, 0), "kW", `model ${fx(W.Q_model_kW, 0)} · Bartz fit ×${fx(W.bartz_fit, 2)}`, "info", `hot wall ${fx(W.Twg_max_fit_K, 0)} K (limit ${fx(META.T_wg_limit_K, 0)})`)
-    : tile("Jacket heat", fx(R.Q_meas_kW, 0), "kW", S.Wpending ? "jacket model running" : `${fx(R.q_per_ox_kJ_kg, 0)} kJ per kg N2O`, "info"));
-  const sorted = [...obs].sort((a, b) => ORDER[a[0]] - ORDER[b[0]]);
-  const tabs = ["Engine map", "Nozzle", "Jacket", "Injector", "Summary"];
+  const areaLv = a => { const o = obs.filter(x => x[2] === a && (x[0] === "crit" || x[0] === "warn")); return o.length ? worst(o) : null; };
+  const tabs = [["performance", "Performance"], ["nozzle", "Nozzle"], ["injector", "Injector"], ["jacket", "Jacket"], ["all", "All results"]];
   el.innerHTML = `
-    <div class="res-head"><h2>${esc(t.test_id || "Unnamed test")}</h2>
-      <span class="muted">${esc(t.date)} · ${esc(t.hardware)} · throat ${fx(R.throat_d_mm, 2)} mm · &epsilon; ${fx(R.eps, 2)} · ${esc(META.outcomes[t.outcome])}</span>
-      ${isDemo() ? `<span class="tag">Demo data</span>` : ""}</div>
-    <div class="tiles">${tiles.join("")}</div>
-    <div class="card" style="padding:6px 12px;margin-bottom:10px"><ul class="findings">${sorted.map(([lv, tx]) =>
-      `<li style="--st:var(${STATUS[lv][0]})"><i class="dot"></i><b>${STATUS[lv][1]}</b><span>${esc(tx)}</span></li>`).join("")}</ul></div>
-    <div class="card"><div class="tabs">${tabs.map(n => `<button aria-selected="${n === S.tab}" data-tab="${n}">${n}</button>`).join("")}</div><div id="tab"></div></div>`;
+    <div class="card verdict" style="${st(level)}">
+      <div class="vh"><b>${head}</b><span class="muted">${[nOk ? `${nOk} OK` : "", nNote ? plural(nNote, "note", "notes") : ""].filter(Boolean).join(" · ")}</span></div>
+      ${act.length ? `<ul class="find">${act.map(li).join("")}</ul>` : ""}
+      ${act.length && S.test.outcome === "pass" ? `<div class="cap">The outcome is still Nominal. Change it under Test if these findings stand.</div>` : ""}
+      ${S.pullNote ? `<div class="cap">${esc(S.pullNote)}</div>` : ""}
+      ${rest.length ? `<details ${act.length ? "" : "open"}><summary>${act.length ? "Show the checks that passed and the notes" : "Checks and notes"}</summary><ul class="find">${rest.map(li).join("")}</ul></details>` : ""}
+    </div>
+    <div class="kpis">${k.join("")}</div>
+    <div class="card"><div class="tabs">${tabs.map(([key, n]) => `<button aria-selected="${key === S.tab}" data-tab="${key}">${n}${AREA[key] && areaLv(key) ? `<i class="dot" style="${st(areaLv(key))}"></i>` : ""}</button>`).join("")}</div><div id="tab"></div></div>`;
   $$("[data-tab]", el).forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderResults(); });
+  $$("[data-go]", el).forEach(b => b.onclick = () => { S.tab = b.dataset.go; renderResults(); $("#tab").scrollIntoView({behavior: "smooth", block: "nearest"}); });
   renderTab();
+}
+function guide() {
+  const need = META.fields.filter(f => f.required && !has(S.test.inputs[f.key])).map(f => f.label.toLowerCase());
+  const rows = META.fields.filter(f => f.htl).map(f => `<tr><td class="t">${esc(f.label)}<i>${esc(f.unit)}</i></td><td class="t ink2">${esc(f.htl)}</td></tr>`).join("");
+  return `<div class="card" style="max-width:760px"><h3 style="font-size:15px">${need.length ? "Waiting for the " + esc(need.join(", ").replace(/, ([^,]*)$/, " and $1")) : "This test cannot be analysed"}</h3>
+    ${S.err && !need.length ? `<div class="cap" style="color:var(--crit)">${esc(S.err)}</div>` : ""}
+    <ol class="steps">
+      <li>Analyse the hot fire in Hopper Test Lab and save it to its campaign.</li>
+      <li>${META.htl ? "It then appears at the left under <b>New in Hopper Test Lab</b>. Click it to pull its steady-state means." : "Type its steady-state means in the column at the left. To pull them instead, set up the connection (see the note at the bottom left)."}</li>
+      <li>Read the findings, set the outcome and save. The test joins the campaign.</li>
+    </ol>
+    <details style="margin-top:10px"><summary>Typing by hand: where each value is in Hopper Test Lab</summary>
+      <table class="stat" style="margin-top:6px"><thead><tr><th class="t">Input</th><th class="t">Result of the template E2 engine hot fire</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="cap">That template reports gauge pressures: tick <i>Pressures are gauge</i>. A decimal comma is accepted.</div></details></div>`;
 }
 function renderTab() {
   const el = $("#tab"); if (!el || !S.A) return;
-  ({"Engine map": tabMap, "Nozzle": tabNozzle, "Jacket": tabJacket, "Injector": tabInjector, "Summary": tabSummary})[S.tab](el);
+  ({performance: tabPerformance, nozzle: tabNozzle, injector: tabInjector, jacket: tabJacket, all: tabAll})[S.tab](el);
 }
 const YMAP = {pc: ["Chamber pressure", "pc_abs_bar", "pc [bar]"], thrust: ["Thrust", "thrust_N", "thrust [N]"], cstar: ["c*", "cstar_meas_m_s", "c* [m/s]"], isp: ["Isp", "isp_meas_s", "Isp sea level [s]"]};
-function tabMap(el) {
-  const R = S.A.R, [name, rk, ylab] = YMAP[S.ymap];
-  el.innerHTML = `<div class="seg">${Object.entries(YMAP).map(([k, v]) => `<button aria-selected="${k === S.ymap}" data-y="${k}">${v[0]}</button>`).join("")}</div><div id="map"></div>
-    <div class="cap">Lines: the hardware at the measured fuel flow, oxidiser throttled. Other tests at a different fuel flow sit off these lines.${S.line ? "" : " Throttle line running."}</div>`;
-  $$("[data-y]", el).forEach(b => b.onclick = () => { S.ymap = b.dataset.y; tabMap(el); });
-  const ps = peers().filter(p => has(p.row["r_" + rk])), series = [];
+function tabPerformance(el) {
+  const R = S.A.R, L = S.A.last, lr = (k, nd) => L && has(L["r_" + k]) ? fx(L["r_" + k], nd) : "–";
+  const dp = (a, b) => has(a) && has(b) && b ? fx(100 * (a / b - 1), 1, true) + " %" : "–", pts = (a, b) => has(a) ? fx(100 * (a - b), 1, true) + " pts" : "–";
+  const cm = S.eta_c * R.cstar_ideal_m_s, F = has(R.thrust_N);
+  el.innerHTML = `<div class="split wide"><div>${statTable(["", "Measured", "Model", "Δ", "CEA ideal", L ? L.test_id : "Previous"], [
+      ["Chamber pressure", "bar abs", fx(R.pc_abs_bar, 2), fx(R.pc_model_bar, 2), fx(R.pc_dev_pct, 1, true) + " %", "", lr("pc_abs_bar", 2)],
+      ["Thrust", "N", fx(R.thrust_N, 0), fx(R.thrust_model_N, 0), F ? fx(R.thrust_dev_pct, 1, true) + " %" : "–", "", lr("thrust_N", 0)],
+      ["Isp, sea level", "s", fx(R.isp_meas_s, 1), fx(R.isp_model_s, 1), dp(R.isp_meas_s, R.isp_model_s), fx(R.isp_ideal_s, 1), lr("isp_meas_s", 1)],
+      ["c*", "m/s", fx(R.cstar_meas_m_s, 0), fx(cm, 0), dp(R.cstar_meas_m_s, cm), fx(R.cstar_ideal_m_s, 0), lr("cstar_meas_m_s", 0)],
+      ["&eta; c*", "", fx(R.eta_cstar, 3), fx(S.eta_c, 3), pts(R.eta_cstar, S.eta_c), "", lr("eta_cstar", 3)],
+      ["&eta; Cf,vac", "", fx(R.eta_cf_vac, 3), fx(S.eta_f, 3), pts(R.eta_cf_vac, S.eta_f), "", lr("eta_cf_vac", 3)],
+      ["Cf, sea level", "", fx(R.cf_meas, 3), "", "", fx(R.cf_ideal, 3), lr("cf_meas", 3)],
+      ["O/F", "", fx(R.OF, 2), "", "", "", lr("OF", 2)],
+      ["Total flow", "kg/s", fx(R.mdot_kg_s, 3), "", "", "", lr("mdot_kg_s", 3)],
+      ["Throttle", "% rated", fx(R.throttle_pct, 0), "", "", "", lr("throttle_pct", 0)],
+      ["Flame temperature", "K", "", "", "", fx(R.Tc_K, 0), lr("Tc_K", 0)],
+    ])}<div class="cap">Model: the hardware at the measured flows with the assumed efficiencies (&eta; c* ${fx(S.eta_c, 3)}, &eta; Cf,vac ${fx(S.eta_f, 3)}). Pressures are absolute${S.test.pressures_gauge ? "; the gauge inputs had the ambient pressure added" : ""}.</div></div>
+    <div><div class="seg">${Object.entries(YMAP).map(([k, v]) => `<button aria-selected="${k === S.ymap}" data-y="${k}">${v[0]}</button>`).join("")}</div><div id="map"></div>
+      <div class="cap">Lines: the hardware at the measured fuel flow, oxidiser throttled. Tests at a different fuel flow sit off these lines.${S.line ? "" : " Throttle line running."}</div></div></div>`;
+  $$("[data-y]", el).forEach(b => b.onclick = () => { S.ymap = b.dataset.y; tabPerformance(el); });
+  const [name, rk, ylab] = YMAP[S.ymap], ps = peers().filter(p => has(p.row["r_" + rk])), series = [];
   if (S.line) series.push(
     {name: "CEA ideal", x: S.line.map(r => r.OF), y: S.line.map(r => r[S.ymap + "_ideal"]), color: "var(--s3)", dash: true},
     {name: `model (η c* ${fx(S.eta_c, 3)})`, x: S.line.map(r => r.OF), y: S.line.map(r => r[S.ymap + "_model"]), color: "var(--s2)"});
   if (ps.length) series.push({name: "other tests", points: true, x: ps.map(p => p.row.r_OF), y: ps.map(p => p.row["r_" + rk]), labels: ps.map(p => p.test.test_id), color: "var(--other)", r: 5});
   if (has(R[rk])) series.push({name: S.test.test_id || "this test", points: true, tag: true, x: [R.OF], y: [R[rk]], labels: [S.test.test_id || "this test"], color: "var(--s1)", r: 7});
-  chart($("#map"), {title: `${name} along the throttle line (fuel ${fx(S.test.inputs.fuel_flow_kg_s, 3)} kg/s)`, xLabel: "O/F", yLabel: ylab, height: 380, series, forceLegend: true});
+  chart($("#map"), {title: `${name} along the throttle line (fuel ${fx(S.test.inputs.fuel_flow_kg_s, 3)} kg/s)`, xLabel: "O/F", yLabel: ylab, height: 370, series, forceLegend: true});
 }
 function tabNozzle(el) {
-  const R = S.A.R, nz = R.nozzle, c = S.A.contour || META.hardware[S.test.hardware].contour;
-  el.innerHTML = `<div id="nz1"></div><div id="nz2" style="margin-top:8px"></div>
-    <div class="cap">pe ${fx(R.pe_bar, 3)} bar at &epsilon; ${fx(R.eps, 2)}. Summerfield (pe &lt; 0.4 pa): ${R.summerfield_sep ? "separated" : "attached"}. Schmucker: ${has(nz.x_sep_mm) ? "separated at x " + fx(nz.x_sep_mm, 0) + " mm" : "attached"}. Wall pressure from the 1D area ratio with a constant &gamma; (${fx(nz.gamma, 3)}) that matches the CEA exit pressure.</div>`;
-  const Mmax = Math.max(...nz.M), ramp = ["--m0", "--m1", "--m2", "--m3"].map(cssv);
+  const R = S.A.R, nz = R.nozzle, c = S.A.contour || META.hardware[S.test.hardware].contour, Mmax = Math.max(...nz.M);
+  const sepS = R.summerfield_sep, sepK = has(nz.x_sep_mm), flag = (bad, t) => `<i class="dot" style="${st(bad ? "warn" : "good")};margin-right:6px"></i>${t}`;
+  el.innerHTML = `<div class="split"><div>${statTable(["", ""], [
+      ["Exit pressure", "bar", fx(R.pe_bar, 3)], ["Ambient pressure", "bar", fx(R.pa_bar, 3)], ["pe / pa", "", fx(R.pe_over_pa, 2)],
+      ["Summerfield", "pe < 0.4 pa", flag(sepS, sepS ? "separated" : "attached")],
+      ["Schmucker", "", flag(sepK, sepK ? `separated at x ${fx(nz.x_sep_mm, 0)} mm` : "attached")],
+      ["Exit Mach number", "", fx(Mmax, 2)], ["Area ratio", "", fx(R.eps, 2)], ["Throat diameter", "mm", fx(R.throat_d_mm, 2)],
+      ["Nozzle exit at x", "mm", fx(nz.x_exit_mm, 0)], ["&gamma; of the wall pressure", "", fx(nz.gamma, 3)],
+    ])}<div class="cap">Wall pressure from the 1D area ratio with a constant &gamma; that matches the CEA exit pressure. A separated nozzle makes thrust and Cf unrepresentative of attached flow.</div></div>
+    <div><div id="nz1"></div><div id="nz2" style="margin-top:10px"></div></div></div>`;
+  const ramp = ["--m0", "--m1", "--m2", "--m3"].map(cssv);
   const mix = (a, b, f) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return "rgb(" + A.map((v, i) => Math.round(v + (B[i] - v) * f)).join(",") + ")"; };
   const col = M => { const f = Math.max(0, Math.min(0.999, M / Mmax)) * 3, i = Math.floor(f); return mix(ramp[i], ramp[i + 1], f - i); };
   const rmax = Math.max(...c.r_mm);
-  chart($("#nz1"), {title: `Divergent Mach number (1D), up to M ${fx(Mmax, 2)} at the exit`, aspect: true, xShort: "x", yShort: "r", legend: false,
+  chart($("#nz1"), {title: `Mach number in the divergent part (1D), M ${fx(Mmax, 2)} at the exit`, aspect: true, xShort: "x", yShort: "r", legend: false,
     yRange: [-rmax * 1.08, rmax * 1.08], xRange: [Math.min(...c.x_mm), Math.max(...c.x_mm)],
-    series: [{name: "wall", x: c.x_mm, y: c.r_mm, color: "var(--ink2)"}, {name: "", x: c.x_mm, y: c.r_mm.map(v => -v), color: "var(--ink2)"}],
-    vlines: has(nz.x_sep_mm) ? [{x: nz.x_sep_mm, label: "separation", color: "var(--warn)", dash: false}] : [],
+    series: [{name: "wall r", x: c.x_mm, y: c.r_mm, color: "var(--ink2)"}, {x: c.x_mm, y: c.r_mm.map(v => -v), color: "var(--ink2)"}],
+    vlines: sepK ? [{x: nz.x_sep_mm, label: "separation", color: "var(--warn)", dash: false}] : [],
     under: (sx, sy) => { let g = ""; for (let i = 0; i < nz.x_mm.length - 1; i++) {
-      const x = nz.x_mm[i], r = interp(c.x_mm, c.r_mm, x), sepd = has(nz.x_sep_mm) && x > nz.x_sep_mm, rr = sepd ? 0.55 * r : r;
+      const x = nz.x_mm[i], r = interp(c.x_mm, c.r_mm, x), rr = sepK && x > nz.x_sep_mm ? 0.55 * r : r;
       g += `<rect x="${sx(x)}" width="${Math.max(1, sx(nz.x_mm[i + 1]) - sx(x) + 0.6)}" y="${sy(rr)}" height="${sy(-rr) - sy(rr)}" fill="${col(nz.M[i])}"/>`; } return g; }});
-  chart($("#nz2"), {title: "Wall pressure against the Schmucker separation pressure", xLabel: "x from injector face [mm]", yLabel: "pressure [bar]", xShort: "x", height: 250,
+  chart($("#nz2"), {title: "Wall pressure against the Schmucker separation pressure", xLabel: "x from injector face [mm]", yLabel: "pressure [bar]", xShort: "x", height: 240,
     yRange: [0, Math.max(Math.max(...nz.p_wall_bar.slice(Math.floor(nz.p_wall_bar.length / 3))) * 1.6, R.pa_bar * 1.3)],
     series: [{name: "wall pressure", x: nz.x_mm, y: nz.p_wall_bar, color: "var(--s1)"}, {name: "separation pressure (Schmucker)", x: nz.x_mm, y: nz.p_sep_bar, color: "var(--s2)", dash: true}],
-    hlines: [{y: R.pa_bar, label: `ambient ${fx(R.pa_bar, 3)} bar`}], vlines: has(nz.x_sep_mm) ? [{x: nz.x_sep_mm, label: "separation", color: "var(--warn)", dash: false}] : []});
-}
-function interp(xs, ys, x) { let i = 1; while (i < xs.length - 1 && xs[i] < x) i++; const f = (x - xs[i - 1]) / ((xs[i] - xs[i - 1]) || 1); return ys[i - 1] + (ys[i] - ys[i - 1]) * Math.max(0, Math.min(1, f)); }
-function tabJacket(el) {
-  const R = S.A.R, W = S.W;
-  if (!W) { el.innerHTML = `<div class="empty">${S.Wpending ? "Marching the water jacket and fitting the Bartz factor (about 1.5 s)." : !has(R.Q_meas_kW) ? "Enter the water flow and the inlet and outlet temperatures for the calorimetric heat and the model comparison." : "The jacket model applies to E2-REG-1 only."}</div>`; return; }
-  const m = W.model, f = W.fit, xt = META.hardware[S.test.hardware].contour.xt_mm;
-  el.innerHTML = `<div id="j1"></div><div id="j2" style="margin-top:8px"></div><div class="scroll" style="margin-top:8px"><table><thead><tr><th class="t"></th><th>measured</th><th>model ×1.00</th><th>model ×${fx(W.bartz_fit, 2)}</th></tr></thead><tbody>
-    <tr><td class="t">Jacket heat [kW]</td><td>${fx(R.Q_meas_kW, 1)}</td><td>${fx(W.Q_model_kW, 1)}</td><td>${fx(W.Q_fit_kW, 1)}</td></tr>
-    <tr><td class="t">Water outlet [°C]</td><td>${fx(S.test.inputs.water_T_out_C, 1)}</td><td>${fx(m.T_out_C, 1)}</td><td>${fx(f && f.T_out_C, 1)}</td></tr>
-    <tr><td class="t">Jacket dp [bar]</td><td>${fx(R.dp_jacket_meas_bar, 2)}</td><td>${fx(m.dp_bar, 2)}</td><td>${fx(f && f.dp_bar, 2)}</td></tr>
-    <tr><td class="t">Hot wall max [K]</td><td>–</td><td>${fx(W.Twg_max_K, 0)}</td><td>${fx(W.Twg_max_fit_K, 0)}</td></tr></tbody></table></div>
-    <div class="cap">regen.march (Bartz with CEA transport, Gnielinski, 200 stations) at the measured pc, O/F and &eta; c*. The fitted factor is the BARTZ_FACTOR in config.py that reproduces the calorimetric heat; manifold losses and heat to the injector face are not in the model.</div>`;
-  const s1 = [], s2 = [];
-  if (f) { s1.push({name: `hot wall, Bartz ×${fx(W.bartz_fit, 2)} (fit)`, x: m.x_mm, y: f.Twg_K, color: "var(--s2)"}, {name: "coolant-side wall (fit)", x: m.x_mm, y: f.Twc_K, color: "var(--s1)"});
-           s2.push({name: `Bartz ×${fx(W.bartz_fit, 2)} (fit)`, x: m.x_mm, y: f.q_MW_m2, color: "var(--s2)"}); }
-  s1.push({name: "hot wall, Bartz ×1.00", x: m.x_mm, y: m.Twg_K, color: "var(--s2)", dash: true, width: 1.5});
-  s2.push({name: "Bartz ×1.00", x: m.x_mm, y: m.q_MW_m2, color: "var(--s2)", dash: true, width: 1.5});
-  chart($("#j1"), {title: "Wall temperature", yLabel: "temperature [K]", xShort: "x", height: 270, series: s1,
-    hlines: [{y: META.T_wg_limit_K, label: `IN718 limit ${fx(META.T_wg_limit_K, 0)} K`, color: "var(--crit)"}], vlines: [{x: xt, label: "throat"}]});
-  chart($("#j2"), {title: "Heat flux", xLabel: "x from injector face [mm]", yLabel: "heat flux [MW/m²]", xShort: "x", height: 220, series: s2, vlines: [{x: xt, label: "throat"}]});
+    hlines: [{y: R.pa_bar, label: `ambient ${fx(R.pa_bar, 3)} bar`}], vlines: sepK ? [{x: nz.x_sep_mm, label: "separation", color: "var(--warn)", dash: false}] : []});
 }
 function tabInjector(el) {
-  const R = S.A.R;
+  const R = S.A.R, L = S.A.last;
   if (!has(R.dp_ox_bar) && !has(R.dp_fuel_bar)) { el.innerHTML = `<div class="empty">Enter the ox and fuel injector inlet pressures for the pressure drop, stiffness and CdA.</div>`; return; }
-  const rows = [["ox", "Ox"], ["fuel", "Fuel"]].filter(([c]) => has(R[`dp_${c}_bar`]));
-  const smax = Math.max(40, ...rows.map(([c]) => R[`stiff_${c}_pct`])) * 1.15, lim = META.stiffness_min_pct;
-  el.innerHTML = `<div class="ch-title">Stiffness dp / pc</div>` + rows.map(([c, n]) => { const s = R[`stiff_${c}_pct`], ok = s >= lim;
-      return `<div class="row" style="margin:6px 0"><span style="width:38px">${n}</span><div class="grow" style="position:relative;height:16px;background:var(--wash);border-radius:0 4px 4px 0">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:${Math.max(0, 100 * s / smax)}%;background:var(${ok ? "--good" : "--warn"});border-radius:0 4px 4px 0"></div>
-        <div style="position:absolute;left:${100 * lim / smax}%;top:-3px;bottom:-3px;border-left:2px solid var(--ink2)"></div></div>
-        <span style="width:230px">${fx(s, 0)} % · dp ${fx(R[`dp_${c}_bar`], 2)} bar · ${ok ? "OK" : "below " + fx(lim, 0) + " %"}</span></div>`; }).join("") +
-    `<div class="cap" style="margin-bottom:12px">Marker: ${fx(lim, 0)} % rule of thumb against chugging.</div><div class="grid2"><div id="i1"></div><div id="i2"></div></div>
-     <div class="cap">CdA = flow / &radic;(2 &rho; dp) with liquid density (N2O below saturation: saturated liquid). A CdA shift between tests points at a blocked or eroded element or a sensor problem.</div>`;
+  const lim = META.stiffness_min_pct, two = f => [f("ox"), f("fuel")];
+  const smax = Math.max(40, ...["ox", "fuel"].map(c => R[`stiff_${c}_pct`] || 0)) * 1.15;
+  const bar = c => { const s = R[`stiff_${c}_pct`]; if (!has(s)) return "–";
+    return `<div class="row"><div class="bar grow"><i style="width:${Math.max(0, Math.min(100, 100 * s / smax))}%;background:var(${s >= lim ? "--good" : "--warn"})"></i><u style="left:${100 * lim / smax}%"></u></div><span style="width:38px">${fx(s, 0)} %</span></div>`; };
+  const dCdA = c => { const k = `CdA_${c}_mm2`; return L && has(L["r_" + k]) && has(R[k]) ? fx(100 * (R[k] / L["r_" + k] - 1), 1, true) + " %" : "–"; };
+  el.innerHTML = `<div class="split"><div>${statTable(["", "Ox", "Fuel"], [
+      ["Inlet pressure", "bar abs", ...two(c => has(R[`dp_${c}_bar`]) ? fx(R.pc_abs_bar + R[`dp_${c}_bar`], 2) : "–")],
+      ["Pressure drop", "bar", ...two(c => fx(R[`dp_${c}_bar`], 2))],
+      ["Stiffness dp / pc", "", ...two(bar)],
+      ["CdA", "mm²", ...two(c => fx(R[`CdA_${c}_mm2`], 2))],
+      [`CdA against ${L ? esc(L.test_id) : "the previous test"}`, "", ...two(dCdA)],
+      ["Liquid density", "kg/m³", fx(R.rho_ox, 0), fx(R.rho_fuel, 0)],
+      ["N2O at the inlet", "", has(R.ox_liquid_at_inlet) ? (R.ox_liquid_at_inlet ? "liquid" : "below saturation") : "–", ""],
+    ])}<div class="cap">The mark on the bars is the ${fx(lim, 0)} % rule of thumb against chugging. CdA = flow / &radic;(2 &rho; dp) with liquid density (N2O below saturation: saturated liquid). A CdA shift between tests points at a blocked or eroded element or a sensor problem.</div></div>
+    <div><div id="i1"></div><div id="i2" style="margin-top:10px"></div></div></div>`;
   const hist = [...peers().map(p => ({id: p.test.test_id, date: p.test.date, row: p.row})), {id: S.test.test_id || "this test", date: S.test.date, row: S.A.row, cur: true}]
     .sort((a, b) => (a.date + a.id).localeCompare(b.date + b.id));
   [["CdA_ox_mm2", "Ox CdA", "#i1"], ["CdA_fuel_mm2", "Fuel CdA", "#i2"]].forEach(([k, n, sel]) => {
     const h = hist.filter(x => has(x.row["r_" + k]));
     if (!h.length) { $(sel).innerHTML = ""; return; }
-    chart($(sel), {title: `${n} by test`, yLabel: "CdA [mm²]", yShort: "CdA", height: 240, cats: h.map(x => x.id), legend: false,
+    chart($(sel), {title: `${n} by test`, yLabel: "CdA [mm²]", yShort: "CdA", height: 215, cats: h.map(x => x.id), legend: false,
       series: [{name: n, points: true, line: true, width: 1.4, x: h.map((_, i) => i), y: h.map(x => x.row["r_" + k]), labels: h.map(x => x.id), colors: h.map(x => x.cur ? "var(--s1)" : "var(--other)"), rs: h.map(x => x.cur ? 7 : 5)}]});
   });
 }
+function tabJacket(el) {
+  const R = S.A.R, W = S.W;
+  if (!W) { el.innerHTML = `<div class="empty">${S.Wpending ? "Marching the water jacket and fitting the Bartz factor (about 1.5 s)." : !has(R.Q_meas_kW) ? "Enter the water flow and the inlet and outlet temperatures for the calorimetric heat and the model comparison." : "The jacket model applies to E2-REG-1 only."}</div>`; return; }
+  const m = W.model, f = W.fit, xt = META.hardware[S.test.hardware].contour.xt_mm, lim = META.T_wg_limit_K, hot = W.Twg_max_fit_K;
+  el.innerHTML = `<div class="split"><div>${statTable(["", "Measured", "Model ×1.00", `Model ×${fx(W.bartz_fit, 2)}`], [
+      ["Jacket heat", "kW", fx(R.Q_meas_kW, 1), fx(W.Q_model_kW, 1), fx(W.Q_fit_kW, 1)],
+      ["Water outlet", "°C", fx(S.test.inputs.water_T_out_C, 1), fx(m.T_out_C, 1), fx(f && f.T_out_C, 1)],
+      ["Jacket dp", "bar", fx(R.dp_jacket_meas_bar, 2), fx(m.dp_bar, 2), fx(f && f.dp_bar, 2)],
+      ["Hot wall maximum", "K", "", fx(W.Twg_max_K, 0), fx(hot, 0)],
+      ["Margin to the IN718 limit", "K", "", fx(lim - W.Twg_max_K, 0), fx(lim - hot, 0)],
+      ["Heat per kg N2O", "kJ/kg", fx(R.q_per_ox_kJ_kg, 0), "", ""],
+      ["Bartz factor that matches", "", fx(W.bartz_fit, 2), "", ""],
+    ])}<div class="cap">regen.march (Bartz with CEA transport, Gnielinski, 200 stations) at the measured pc, O/F and &eta; c*. The fitted factor is the BARTZ_FACTOR in config.py that reproduces the calorimetric heat; manifold losses and heat to the injector face are not in the model.</div></div>
+    <div><div id="j1"></div><div id="j2" style="margin-top:10px"></div></div></div>`;
+  const s1 = [], s2 = [];
+  if (f) { s1.push({name: `hot wall, Bartz ×${fx(W.bartz_fit, 2)} (fit)`, x: m.x_mm, y: f.Twg_K, color: "var(--s2)"}, {name: "coolant-side wall (fit)", x: m.x_mm, y: f.Twc_K, color: "var(--s1)"});
+           s2.push({name: `Bartz ×${fx(W.bartz_fit, 2)} (fit)`, x: m.x_mm, y: f.q_MW_m2, color: "var(--s2)"}); }
+  s1.push({name: "hot wall, Bartz ×1.00", x: m.x_mm, y: m.Twg_K, color: "var(--s2)", dash: true, width: 1.5});
+  s2.push({name: "Bartz ×1.00", x: m.x_mm, y: m.q_MW_m2, color: "var(--s2)", dash: true, width: 1.5});
+  chart($("#j1"), {title: "Wall temperature", yLabel: "temperature [K]", xShort: "x", height: 255, series: s1,
+    hlines: [{y: lim, label: `IN718 limit ${fx(lim, 0)} K`, color: "var(--crit)"}], vlines: [{x: xt, label: "throat"}]});
+  chart($("#j2"), {title: "Heat flux", xLabel: "x from injector face [mm]", yLabel: "heat flux [MW/m²]", xShort: "x", height: 215, series: s2, vlines: [{x: xt, label: "throat"}]});
+}
 function summaryText() {
-  const t = S.test, R = S.A.R, W = S.W, obs = (W && W.obs) || S.A.obs;
+  const t = S.test, R = S.A.R, W = S.W, obs = findings();
   const L = [`${t.test_id} (${t.date}, ${t.hardware}): ${META.outcomes[t.outcome]}`,
     `pc ${fx(R.pc_abs_bar, 2)} bar abs (${fx(R.pc_dev_pct, 1, true)} % vs model) · O/F ${fx(R.OF, 2)} · flow ${fx(R.mdot_kg_s, 3)} kg/s`,
     `η c* ${fx(R.eta_cstar, 3)} (model ${fx(S.eta_c, 3)}) · c* ${fx(R.cstar_meas_m_s, 0)} m/s`];
@@ -642,14 +778,13 @@ function summaryText() {
   if (t.notes) L.push(`Notes: ${t.notes}`);
   return L.join("\n");
 }
-function tabSummary(el) {
+function tabAll(el) {
   const R = S.A.R, W = S.W || {};
   const rows = Object.entries(META.results).map(([k, m]) => [m, has(R[k]) ? R[k] : W[k]]).filter(([, v]) => has(v) && typeof v === "number");
-  el.innerHTML = `<div class="row" style="margin-bottom:8px"><span class="grow muted">For the test channel or the log book.</span><button class="btn" id="copy">Copy</button></div>
-    <pre class="sum">${esc(summaryText())}</pre>
-    <div class="scroll" style="max-height:520px"><table><thead><tr><th class="t">Result</th><th>Value</th><th class="t">Unit</th></tr></thead><tbody>${rows.map(([m, v]) =>
-      `<tr><td class="t">${esc(m.label)}</td><td>${fx(v, m.decimals, m.signed)}</td><td class="t muted">${esc(m.unit)}</td></tr>`).join("")}</tbody></table></div>`;
-  $("#copy").onclick = () => navigator.clipboard.writeText(summaryText()).then(() => toast("Summary copied"), () => toast("Copy failed; select the text instead"));
+  el.innerHTML = `<div class="split"><div><div class="sec" style="margin-bottom:6px">Summary for the test channel</div><pre class="sum">${esc(summaryText())}</pre>
+      <div class="cap">Copy summary at the top right puts this text on the clipboard.${S.test.source ? " Source: " + esc(S.test.source) + "." : ""}</div></div>
+    <div><table class="stat"><thead><tr><th class="t">Result</th><th>Value</th><th class="t">Unit</th></tr></thead><tbody>${rows.map(([m, v]) =>
+      `<tr><td class="t">${esc(m.label)}</td><td class="strong">${fx(v, m.decimals, m.signed)}</td><td class="t muted">${esc(m.unit)}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
 
 // ------------------------------------------------------------------------------------ campaign
@@ -664,39 +799,48 @@ const COLS = [["r_throttle_pct", "thr %", 0], ["r_pc_abs_bar", "pc bar", 2], ["r
   ["r_isp_meas_s", "Isp s", 1], ["r_pc_dev_pct", "pc Δ%", 1, true], ["r_thrust_dev_pct", "F Δ%", 1, true], ["r_CdA_ox_mm2", "CdA ox", 2], ["r_CdA_fuel_mm2", "CdA fu", 2], ["r_Q_ratio", "Q meas/mod", 2]];
 function campaignRows() {
   const rows = S.pool.filter(p => p.row && !(S.A && S.test.test_id && p.test.test_id === S.test.test_id))
-    .map(p => ({...p.row, r_Q_ratio: S.qratio[inputsKey(p.test)] ?? null, saved: p.saved, current: false}));
-  if (S.A && S.test.test_id) rows.push({...S.A.row, r_Q_ratio: S.W ? S.W.Q_ratio : null, current: true, saved: S.pool.some(p => p.saved && p.test.test_id === S.test.test_id)});
+    .map(p => ({...p.row, r_Q_ratio: S.qratio[inputsKey(p.test)] ?? null, saved: p.saved, current: false, level: p.level}));
+  if (S.A && S.test.test_id) rows.push({...S.A.row, r_Q_ratio: S.W ? S.W.Q_ratio : null, current: true, saved: isSaved() && !dirty(), level: worst(findings()), demo: isDemo()});
   return rows;
 }
 function renderCampaign() {
-  const el = $("#view-campaign"), all = campaignRows();
-  if (!all.length) { el.innerHTML = `<div class="card empty">No tests yet. Save a test on the Test page, or switch on the demo campaign in the header.</div>`; return; }
+  const el = $("#campaign"), all = campaignRows();
+  if (!all.length) { el.innerHTML = `<div class="card empty">No tests yet. Save a test on the Tests page, or tick <i>Show demo tests</i> there.</div>`; return; }
   const hws = [...new Set(all.map(r => r.hardware))].sort(), outs = Object.values(META.outcomes);
   if (!S.fHw) S.fHw = new Set(hws); hws.forEach(h => { if (!S.fHwSeen || !S.fHwSeen.has(h)) S.fHw.add(h); }); S.fHwSeen = new Set(hws);
   if (!S.fOut) S.fOut = new Set(outs.filter(o => o !== "Invalid"));
   const sk = S.sort.k, rows = all.filter(r => S.fHw.has(r.hardware) && S.fOut.has(r.outcome))
-    .sort((a, b) => { const A = a[sk], B = b[sk]; return S.sort.d * (!has(A) ? 1 : !has(B) ? -1 : typeof A === "number" ? A - B : String(A).localeCompare(String(B))) || a.test_id.localeCompare(b.test_id); });
+    .sort((a, b) => { const A = a[sk], B = b[sk]; return S.sort.d * (!has(A) ? 1 : !has(B) ? -1 : typeof A === "number" ? A - B : String(A).localeCompare(String(B))) || S.sort.d * a.test_id.localeCompare(b.test_id); });
   const chron = [...rows].sort((a, b) => (a.date + a.test_id).localeCompare(b.date + b.test_id));
   const avail = Object.keys(METRICS).filter(k => rows.some(r => has(r[k])));
   for (const k of ["trend", "sx", "sy"]) if (!avail.includes(S[k])) S[k] = avail[0];
   const opt = sel => avail.map(k => `<option value="${k}" ${k === sel ? "selected" : ""}>${esc(METRICS[k][0])}</option>`).join("");
   const th = (k, lab, cls = "") => `<th class="sort ${cls}" data-sort="${k}">${esc(lab)}${sk === k ? (S.sort.d > 0 ? " ↑" : " ↓") : ""}</th>`;
   const picked = chron.filter(r => S.picked.has(r.test_id));
+  const ms = k => { const v = rows.map(r => r[k]).filter(has); if (!v.length) return null; const mu = v.reduce((a, b) => a + b, 0) / v.length;
+    return {mu, sd: v.length > 1 ? Math.sqrt(v.reduce((a, b) => a + (b - mu) ** 2, 0) / (v.length - 1)) : null, n: v.length}; };
+  const nAtt = rows.filter(r => r.level === "crit" || r.level === "warn").length, lastRow = chron[chron.length - 1];
+  const meanKpi = (label, k, ref) => { const m = ms(k); return m ? kpi(label, fx(m.mu, 3), "", `${has(m.sd) ? "± " + fx(m.sd, 3) + " (1σ) · " : ""}model ${fx(ref, 3)}`, null, plural(m.n, "test", "tests")) : kpi(label, "–", "", "no data", null, ""); };
   el.innerHTML = `
-    <div class="filters">${hws.map(h => `<label><input type="checkbox" data-fhw="${esc(h)}" ${S.fHw.has(h) ? "checked" : ""}>${esc(h)}</label>`).join("")}
+    <div class="filters"><span class="sec">Show</span>${hws.map(h => `<label><input type="checkbox" data-fhw="${esc(h)}" ${S.fHw.has(h) ? "checked" : ""}>${esc(h)}</label>`).join("")}
       <span class="muted">|</span>${outs.map(o => `<label><input type="checkbox" data-fout="${esc(o)}" ${S.fOut.has(o) ? "checked" : ""}>${esc(o)}</label>`).join("")}
-      <span class="muted" style="margin-left:auto">${rows.length} tests, recomputed with the current model (&eta; c* ${fx(S.eta_c, 3)}, &eta; Cf,vac ${fx(S.eta_f, 3)})</span>
-      <button class="btn" id="reload" title="Re-read hotfire_tests/ (after a git pull)">Reload files</button><button class="btn" id="csv">Export CSV</button></div>
-    <div class="card" style="padding:0"><div class="scroll"><table><thead><tr><th></th>${th("test_id", "test", "t")}${th("date", "date", "t")}${th("hardware", "hardware", "t")}${th("outcome", "outcome", "t")}
+      <span class="grow"></span><button class="btn" id="csv">Export CSV</button></div>
+    <div class="kpis">
+      ${kpi("Tests", rows.length, "", lastRow ? `latest ${esc(lastRow.test_id)}` : "", null, lastRow ? esc(lastRow.date) : "")}
+      ${kpi("With findings to check", nAtt, "", `of ${rows.length}`, nAtt ? "warn" : rows.length ? "good" : null, "")}
+      ${meanKpi("&eta; c* mean", "r_eta_cstar", S.eta_c)}
+      ${meanKpi("&eta; Cf,vac mean", "r_eta_cf_vac", S.eta_f)}
+    </div>
+    <div class="card" style="padding:0"><div class="scroll"><table class="hover"><thead><tr><th></th>${th("test_id", "test", "t")}${th("date", "date", "t")}${th("hardware", "hardware", "t")}${th("outcome", "outcome", "t")}
       ${COLS.map(([k, l]) => th(k, l)).join("")}<th class="t">notes</th></tr></thead><tbody>${rows.map(r => `<tr class="${r.current ? "cur" : ""}">
-      <td><input type="checkbox" data-pick="${esc(r.test_id)}" ${S.picked.has(r.test_id) ? "checked" : ""}></td>
-      <td class="t"><a class="lnk" data-open="${esc(r.test_id)}">${esc(r.test_id)}</a>${r.current ? ` <span class="tag">open</span>` : ""}${r.demo ? ` <span class="tag">demo</span>` : !r.saved ? ` <span class="tag">unsaved</span>` : ""}</td>
+      <td><input type="checkbox" data-pick="${esc(r.test_id)}" ${S.picked.has(r.test_id) ? "checked" : ""} aria-label="Compare ${esc(r.test_id)}"></td>
+      <td class="t"><i class="dot" style="${st(r.level)};margin-right:7px" title="${STATUS[r.level] ? STATUS[r.level][1] : ""}"></i><a class="lnk" data-open="${esc(r.test_id)}">${esc(r.test_id)}</a>${r.demo ? ` <span class="tag">demo</span>` : !r.saved ? ` <span class="tag">unsaved</span>` : ""}</td>
       <td class="t">${esc(r.date)}</td><td class="t">${esc(r.hardware)}</td><td class="t">${esc(r.outcome)}</td>
       ${COLS.map(([k, , nd, sg]) => `<td>${fx(r[k], nd, sg)}</td>`).join("")}<td class="notes">${esc(r.notes)}</td></tr>`).join("")}</tbody></table></div></div>
-    <div class="cap">Tick tests to highlight them in the plots and compare them side by side. Click a test ID to open it.</div>
-    <div class="grid2" style="margin-top:12px">
-      <div class="card"><div class="row" style="margin-bottom:6px"><span class="muted">Trend</span><select id="trend" style="max-width:240px">${opt(S.trend)}</select></div><div id="c1"></div></div>
-      <div class="card"><div class="row" style="margin-bottom:6px"><span class="muted">y</span><select id="sy" style="max-width:200px">${opt(S.sy)}</select><span class="muted">against x</span><select id="sx" style="max-width:200px">${opt(S.sx)}</select></div><div id="c2"></div></div>
+    <div class="cap">All results are recomputed with the current model. The dot is the worst finding of the test. Tick tests to highlight them in the plots and compare them side by side; click a test ID to open it.</div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card"><div class="row" style="margin-bottom:6px"><span class="sec">Trend</span><select id="trend" style="max-width:240px">${opt(S.trend)}</select></div><div id="c1"></div></div>
+      <div class="card"><div class="row" style="margin-bottom:6px"><span class="sec">Scatter</span><select id="sy" style="max-width:200px">${opt(S.sy)}</select><span class="muted">against</span><select id="sx" style="max-width:200px">${opt(S.sx)}</select></div><div id="c2"></div></div>
     </div><div id="sbs"></div>`;
   $$("[data-sort]", el).forEach(h => h.onclick = () => { const k = h.dataset.sort; S.sort = {k, d: S.sort.k === k ? -S.sort.d : 1}; renderCampaign(); });
   $$("[data-pick]", el).forEach(c => c.onchange = () => { c.checked ? S.picked.add(c.dataset.pick) : S.picked.delete(c.dataset.pick); renderCampaign(); });
@@ -704,62 +848,68 @@ function renderCampaign() {
   $$("[data-fhw]", el).forEach(c => c.onchange = () => { c.checked ? S.fHw.add(c.dataset.fhw) : S.fHw.delete(c.dataset.fhw); renderCampaign(); });
   $$("[data-fout]", el).forEach(c => c.onchange = () => { c.checked ? S.fOut.add(c.dataset.fout) : S.fOut.delete(c.dataset.fout); renderCampaign(); });
   for (const k of ["trend", "sx", "sy"]) $("#" + k).onchange = e => { S[k] = e.target.value; renderCampaign(); };
-  $("#reload").onclick = () => loadPool(true).then(() => toast("Files re-read"));
   $("#csv").onclick = () => exportCsv(chron);
   if (!rows.length) return;
   const colr = r => S.picked.has(r.test_id) ? "var(--s7)" : r.current ? "var(--s1)" : "var(--other)";
   const [tn, , tref] = METRICS[S.trend], d = chron.filter(r => has(r[S.trend])), vals = d.map(r => r[S.trend]);
-  const o = {title: `${tn} by test`, yLabel: tn, yShort: tn, height: 330, cats: d.map(r => r.test_id), legend: false, hlines: [], bands: [],
+  const o = {title: `${tn} by test`, yLabel: tn, yShort: tn, height: 320, cats: d.map(r => r.test_id), legend: false, hlines: [], bands: [],
     series: [{name: tn, points: true, line: true, width: 1.4, x: d.map((_, i) => i), y: vals, labels: d.map(r => r.test_id), extra: d.map(r => `${r.date} · O/F ${fx(r.r_OF, 2)}`), colors: d.map(colr), rs: d.map(r => r.current ? 7 : 5)}]};
   if (vals.length >= 3) { const mu = vals.reduce((a, b) => a + b, 0) / vals.length, sd = Math.sqrt(vals.reduce((a, b) => a + (b - mu) ** 2, 0) / (vals.length - 1));
     o.bands.push({y0: mu - 2 * sd, y1: mu + 2 * sd, color: "var(--s1)"}); o.hlines.push({y: mu, label: `mean ${sig(mu)} ± 2σ`, color: "var(--s1)"}); }
   if (tref) o.hlines.push({y: tref(), label: `model ${sig(tref())}`, color: "var(--s2)"});
   chart($("#c1"), o);
   const d2 = chron.filter(r => has(r[S.sx]) && has(r[S.sy])), [xn] = METRICS[S.sx], [yn, , yref] = METRICS[S.sy];
-  chart($("#c2"), {title: `${yn} against ${xn}`, xLabel: xn, yLabel: yn, height: 330, legend: false, hlines: yref ? [{y: yref(), label: "model", color: "var(--s2)"}] : [],
+  chart($("#c2"), {title: `${yn} against ${xn}`, xLabel: xn, yLabel: yn, height: 320, legend: false, hlines: yref ? [{y: yref(), label: "model", color: "var(--s2)"}] : [],
     series: [{name: yn, points: true, tag: true, x: d2.map(r => r[S.sx]), y: d2.map(r => r[S.sy]), labels: d2.map(r => r.test_id), colors: d2.map(colr), rs: d2.map(r => r.current ? 7 : 5)}]});
   if (picked.length >= 2) {
     const keys = ["throttle_pct", "pc_abs_bar", "OF", "mdot_kg_s", "eta_cstar", "eta_cf_vac", "isp_meas_s", "thrust_N", "pc_dev_pct", "thrust_dev_pct", "Tc_K", "pe_over_pa", "stiff_ox_pct", "stiff_fuel_pct", "CdA_ox_mm2", "CdA_fuel_mm2", "Q_meas_kW", "Q_ratio"]
       .filter(k => picked.some(r => has(r["r_" + k])));
     const base = picked[0];
-    $("#sbs").innerHTML = `<div class="sec">Side by side</div><div class="card" style="padding:0"><div class="scrollx"><table><thead><tr><th class="t">Result</th>${picked.map(r => `<th>${esc(r.test_id)}</th>`).join("")}${picked.slice(1).map(r => `<th>Δ ${esc(r.test_id)}</th>`).join("")}</tr></thead><tbody>${keys.map(k => {
+    $("#sbs").innerHTML = `<div class="sec" style="margin:16px 0 6px">Side by side</div><div class="card" style="padding:0"><div class="scrollx"><table class="hover"><thead><tr><th class="t">Result</th>${picked.map(r => `<th>${esc(r.test_id)}</th>`).join("")}${picked.slice(1).map(r => `<th>Δ ${esc(r.test_id)}</th>`).join("")}</tr></thead><tbody>${keys.map(k => {
       const m = META.results[k] || {label: "Jacket heat meas / model", unit: "-", decimals: 2}, nd = Math.max(m.decimals, 1);
-      return `<tr><td class="t">${esc(m.label)} <span class="muted">[${esc(m.unit)}]</span></td>${picked.map(r => `<td>${fx(r["r_" + k], nd)}</td>`).join("")}${picked.slice(1).map(r => `<td>${has(r["r_" + k]) && has(base["r_" + k]) ? fx(r["r_" + k] - base["r_" + k], nd + 1, true) : "–"}</td>`).join("")}</tr>`; }).join("")}</tbody></table></div></div>
+      return `<tr><td class="t">${esc(m.label)}<i>${esc(m.unit)}</i></td>${picked.map(r => `<td>${fx(r["r_" + k], nd)}</td>`).join("")}${picked.slice(1).map(r => `<td>${has(r["r_" + k]) && has(base["r_" + k]) ? fx(r["r_" + k] - base["r_" + k], nd + 1, true) : "–"}</td>`).join("")}</tr>`; }).join("")}</tbody></table></div></div>
       <div class="cap">Δ columns: against ${esc(base.test_id)} (the earliest ticked test).</div>`;
   }
 }
 function exportCsv(rows) {
-  const keys = [...new Set(rows.flatMap(r => Object.keys(r)))].filter(k => !["current", "saved"].includes(k));
+  const keys = [...new Set(rows.flatMap(r => Object.keys(r)))].filter(k => !["current", "saved", "level"].includes(k));
   const cell = v => { v = v === null || v === undefined ? "" : String(v); return /[",\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v; };
-  const blob = new Blob(["﻿" + [keys.join(","), ...rows.map(r => keys.map(k => cell(r[k])).join(","))].join("\r\n")], {type: "text/csv"});
-  download(blob, "e2_hotfire_campaign.csv");
+  download(new Blob(["﻿" + [keys.join(","), ...rows.map(r => keys.map(k => cell(r[k])).join(","))].join("\r\n")], {type: "text/csv"}), "e2_hotfire_campaign.csv");
 }
-function download(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
 
 // ------------------------------------------------------------------------------------ model
 function renderModel() {
-  const el = $("#view-model");
+  const el = $("#model");
   if (!S.model) S.model = {hardware: S.test.hardware, mf: META.fuel_flow_kg_s, T: META.T_ox_nom_C, pa: META.p_amb_bar};
-  const M = S.model;
-  el.innerHTML = `<div class="card" style="margin-bottom:12px"><div class="row" style="flex-wrap:wrap;gap:10px 14px">
-      <label class="fld" style="width:150px"><span>Hardware</span><select id="m_hw">${Object.keys(META.hardware).map(k => `<option ${k === M.hardware ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></label>
-      <label class="fld" style="width:130px"><span>Fuel flow <i>[kg/s]</i></span><input type="text" class="num" id="m_mf" value="${M.mf}"></label>
-      <label class="fld" style="width:150px"><span>N2O temperature <i>[°C]</i></span><input type="text" class="num" id="m_T" value="${M.T}"></label>
-      <label class="fld" style="width:150px"><span>Ambient pressure <i>[bar]</i></span><input type="text" class="num" id="m_pa" value="${M.pa}"></label>
-      <span class="grow"></span><button class="btn" id="cea" title="Ideal CEA values on a pc × O/F grid for this hardware, as JSON">Download CEA map</button></div></div>
+  const M = S.model, changed = S.eta_c !== META.eta_c || S.eta_f !== META.eta_f;
+  el.innerHTML = `<div class="grid2" style="margin-bottom:14px">
+    <div class="card"><div class="sec" style="margin-bottom:8px">Assumed efficiencies, used on every page</div><div class="row" style="flex-wrap:wrap;gap:10px 14px;align-items:flex-end">
+      <label class="fld" style="width:120px" title="The model pc and thrust at the measured flows use it."><span>&eta; c*</span><input type="text" class="num" id="eta_c" inputmode="decimal" value="${S.eta_c}"></label>
+      <label class="fld" style="width:120px" title="Applied to the ideal vacuum Cf; the ambient term carries no loss."><span>&eta; Cf,vac</span><input type="text" class="num" id="eta_f" inputmode="decimal" value="${S.eta_f}"></label>
+      <button class="btn" id="eta_reset" ${changed ? "" : "disabled"}>Back to the baseline</button></div>
+      <div class="cap">Baseline rev ${esc(META.baseline.revision)} (${esc(META.baseline.date)}): &eta; c* ${META.eta_c}, &eta; Cf,vac ${META.eta_f}, rated ${fx(META.F_rated_N, 0)} N at ${fx(META.pc_rated_bar, 0)} bar, fuel ${META.fuel_flow_kg_s} kg/s. A change here is kept until the page is reloaded and is not written to the baseline.</div></div>
+    <div class="card"><div class="sec" style="margin-bottom:8px">Throttle line</div><div class="row" style="flex-wrap:wrap;gap:10px 14px;align-items:flex-end">
+      <label class="fld" style="width:130px"><span>Hardware</span><select id="m_hw">${Object.keys(META.hardware).map(k => `<option ${k === M.hardware ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></label>
+      <label class="fld" style="width:104px"><span>Fuel flow [kg/s]</span><input type="text" class="num" id="m_mf" value="${M.mf}"></label>
+      <label class="fld" style="width:104px"><span>N2O temp. [°C]</span><input type="text" class="num" id="m_T" value="${M.T}"></label>
+      <label class="fld" style="width:104px"><span>Ambient [bar]</span><input type="text" class="num" id="m_pa" value="${M.pa}"></label>
+      <span class="grow"></span><button class="btn" id="cea" title="Ideal CEA values on a pc × O/F grid for this hardware, as JSON">Download CEA map</button></div>
+      <div class="cap">${esc(META.hardware[M.hardware].label)}: throat ${fx(META.hardware[M.hardware].throat_d_mm, 2)} mm.</div></div></div>
     <div class="grid2"><div class="card" id="m1"></div><div class="card" id="m2"></div></div>
-    <details class="card" style="margin-top:12px"><summary>Throttle line table</summary><div id="mt" class="scroll"></div></details>
-    <details class="card" style="margin-top:12px"><summary>Model notes</summary><ul class="muted" style="margin:4px 0;padding-left:18px">
+    <details class="card" style="margin-top:14px"><summary>Throttle line table</summary><div id="mt" class="scroll" style="margin-top:8px"></div></details>
+    <details class="card" style="margin-top:14px"><summary>Model notes</summary><ul class="ink2" style="margin:8px 0 2px;padding-left:18px">
       <li>CEA: shifting equilibrium, real-fluid liquid N2O card at the N2O temperature and the supply pressure (${fx(META.p_tank_bar, 0)} bar; the feed throttles isenthalpically), ethanol ${fx(META.ethanol_wt, 0)} wt%. Same as the engine table.</li>
-      <li>&eta; c* = pc·At/flow / c*(CEA at pc, O/F). &eta; Cf,vac = (F + pa·Ae)/(pc·At) / Cf,vac(CEA), the split used by the baseline (&eta; c* ${META.eta_c}, &eta; Cf,vac ${META.eta_f}). A measured throat diameter changes At and &epsilon;.</li>
+      <li>&eta; c* = pc·At/flow / c*(CEA at pc, O/F). &eta; Cf,vac = (F + pa·Ae)/(pc·At) / Cf,vac(CEA), the split used by the baseline. A measured throat diameter changes At and &epsilon;.</li>
       <li>Model at the measured flows: pc from flow·&eta; c*·c*(pc)/At (fixed point), thrust from &eta; Cf,vac.</li>
       <li>Nozzle: wall pressure from the 1D area ratio with a constant &gamma; that matches the CEA exit pressure; Schmucker separation criterion; Summerfield pe &lt; 0.4 pa as in run_engine_table.py.</li>
       <li>Jacket: regen.march for the E2-REG-1 as built (water, liquid-only), Bartz factor fitted to the calorimetric heat.</li>
       <li>Injector CdA with liquid density; for N2O below its saturation pressure the saturated liquid density (compare between tests, not with a single-phase design value).</li></ul></details>`;
   const upd = () => { const mf = num($("#m_mf").value), T = num($("#m_T").value), pa = num($("#m_pa").value);
     if (![mf, T, pa].every(v => has(v) && !Number.isNaN(v)) || mf <= 0) return;
-    Object.assign(M, {hardware: $("#m_hw").value, mf, T, pa}); modelLine(); };
+    Object.assign(M, {hardware: $("#m_hw").value, mf, T, pa}); S.modelLine = null; renderModel(); };
   ["m_hw", "m_mf", "m_T", "m_pa"].forEach(id => $("#" + id).onchange = upd);
+  $("#eta_c").onchange = $("#eta_f").onchange = () => setEta(num($("#eta_c").value), num($("#eta_f").value));
+  $("#eta_reset").onclick = () => setEta(META.eta_c, META.eta_f);
   $("#cea").onclick = async () => { const b = $("#cea"); b.disabled = true; b.textContent = "Computing the CEA map (about 10 s)";
     try { const d = await api(`/api/cea_map?hardware=${encodeURIComponent(M.hardware)}&T_ox_K=${M.T + 273.15}&pa_bar=${M.pa}`);
       download(new Blob([JSON.stringify(d, null, 1)], {type: "application/json"}), `e2_cea_map_${M.hardware.replace(/ /g, "_")}_eps${fx(d.eps, 2)}.json`); }
@@ -779,8 +929,17 @@ function drawModel() {
   chart($("#m1"), {title: "Thrust against oxidiser flow", xLabel: "ox flow [kg/s]", yLabel: "thrust [N]", height: 330, series: two("thrust"),
     hlines: [{y: 0.5 * META.F_rated_N, label: "50 % rated", fit: false}, {y: META.F_rated_N, label: "100 % rated", fit: false}]});
   chart($("#m2"), {title: "Chamber pressure against oxidiser flow", xLabel: "ox flow [kg/s]", yLabel: "pc [bar]", height: 330, series: two("pc")});
-  $("#mt").innerHTML = `<table><thead><tr><th>throttle %</th><th>ox kg/s</th><th>O/F</th><th>pc bar</th><th>F N</th><th>Isp s</th><th>c* m/s (delivered)</th><th>Tc K</th></tr></thead><tbody>${ln.map(r =>
+  $("#mt").innerHTML = `<table class="hover"><thead><tr><th>throttle %</th><th>ox kg/s</th><th>O/F</th><th>pc bar</th><th>F N</th><th>Isp s</th><th>c* m/s (delivered)</th><th>Tc K</th></tr></thead><tbody>${ln.map(r =>
     `<tr><td>${fx(100 * r.thrust_model / META.F_rated_N, 0)}</td><td>${fx(r.ox_flow_kg_s, 3)}</td><td>${fx(r.OF, 2)}</td><td>${fx(r.pc_model, 2)}</td><td>${fx(r.thrust_model, 0)}</td><td>${fx(r.isp_model, 1)}</td><td>${fx(r.cstar_model, 0)}</td><td>${fx(r.Tc_model, 0)}</td></tr>`).join("")}</tbody></table>`;
+}
+async function setEta(c, f) {
+  if (!(c > 0.5 && c < 1.2) || !(f > 0.5 && f < 1.2)) { toast("Efficiencies must be between 0.5 and 1.2"); renderModel(); return; }
+  S.eta_c = c; S.eta_f = f; S.modelLine = null; S.W = null; S.lineKey = "";
+  renderAssume(); await loadPool(); analyse(); if (S.view === "model") renderModel();
+}
+function renderAssume() {
+  const changed = S.eta_c !== META.eta_c || S.eta_f !== META.eta_f;
+  $("#assume").innerHTML = `Model &eta; c* ${fx(S.eta_c, 3)} · &eta; Cf,vac ${fx(S.eta_f, 3)} · ${changed ? "<b>changed from the baseline</b>" : "baseline rev " + esc(META.baseline.revision)}`;
 }
 
 // ------------------------------------------------------------------------------------ shell
@@ -790,33 +949,35 @@ function setView(v) {
   $$(".view").forEach(s => s.classList.toggle("on", s.id === "view-" + v));
   if (v === "test") renderResults(); else if (v === "campaign") renderCampaign(); else renderModel();
 }
-async function etaChanged() {
-  const c = num($("#eta_c").value), f = num($("#eta_f").value);
-  if (!(c > 0.5 && c < 1.2) || !(f > 0.5 && f < 1.2)) { toast("Efficiencies must be between 0.5 and 1.2"); $("#eta_c").value = S.eta_c; $("#eta_f").value = S.eta_f; return; }
-  S.eta_c = c; S.eta_f = f; S.modelLine = null; S.W = null;
-  await loadPool(); analyse(); if (S.view === "model") renderModel();
-}
 async function init() {
   META = await api("/api/meta");
-  S.eta_c = META.eta_c; S.eta_f = META.eta_f;
-  $("#eta_c").value = S.eta_c; $("#eta_f").value = S.eta_f;
-  $("#baseline").textContent = `Baseline rev ${META.baseline.revision}`;
-  $("#baseline").title = `h2_baseline ${META.baseline.date}: rated ${META.F_rated_N} N, pc ${META.pc_rated_bar} bar, fuel ${META.fuel_flow_kg_s} kg/s`;
+  S.eta_c = META.eta_c; S.eta_f = META.eta_f; renderAssume();
   S.demo = localStorage.getItem("e2x_demo") === "1"; $("#demo").checked = S.demo;
-  buildForm();
-  await loadPool();
-  let draft = null; try { draft = JSON.parse(localStorage.getItem("e2x_draft")); } catch (e) {}
-  if (draft && draft.inputs && META.hardware[draft.hardware]) {
-    const p = S.pool.find(p => p.saved && p.test.test_id === draft.test_id);
-    loadTest(draft, false); if (p && recJson(p.test) === recJson(S.test)) S.savedJson = recJson(S.test);
-  } else loadTest(blankTest(), false);
+  buildInputs();
+  const d = await api(`/api/tests?demo=${S.demo ? 1 : 0}&eta_c=${S.eta_c}&eta_f=${S.eta_f}`);
+  S.pool = d.tests; S.nextId = d.next_id; fillQratio();
+  let draft = null; try { draft = JSON.parse(localStorage.getItem("e2x_draft2")); } catch (e) {}
+  if (draft && draft.test && draft.test.inputs && META.hardware[draft.test.hardware]) {
+    const p = S.pool.find(p => p.saved && p.test.test_id === draft.test.test_id);
+    loadTest(draft.test, false, {sources: draft.sources, origin: draft.origin, pullNote: draft.pullNote});
+    if (p) { const ref = JSON.parse(JSON.stringify(p.test)); for (const f of META.fields) if (!(f.key in ref.inputs)) ref.inputs[f.key] = null;
+      if (recJson(ref) === recJson(S.test)) { S.savedJson = recJson(S.test); renderHeader(); renderRail(); } }
+  } else {
+    const newest = S.pool.filter(p => p.saved).sort((a, b) => (b.test.date + b.test.test_id).localeCompare(a.test.date + a.test.test_id))[0];
+    newest ? loadTest(newest.test, true, {origin: "saved"}) : loadTest(blankTest(), false);
+  }
   $$("#nav button").forEach(b => b.onclick = () => setView(b.dataset.view));
-  $("#eta_c").onchange = $("#eta_f").onchange = etaChanged;
+  $("#assume").onclick = () => setView("model");
+  $("#new").onclick = () => { if (confirmLeave()) { loadTest(blankTest(S.test.hardware), false); setView("test"); const f = $('[data-in="pc_bar"]'); if (f) f.focus(); } };
+  $("#filter").oninput = e => { S.filter = e.target.value; renderRail(); };
   $("#demo").onchange = async e => { S.demo = e.target.checked; localStorage.setItem("e2x_demo", S.demo ? "1" : "0"); await loadPool(); analyse(); };
   document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); } });
   let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => setView(S.view), 150); });
+  // coming back from the Hopper Test Lab tab: a test saved there in the meantime shows up without a click
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadRuns(false); });
+  loadRuns(false);
 }
-init().catch(e => { document.querySelector("main").innerHTML = `<div class="card empty">Could not reach the model server: ${esc(e.message)}</div>`; });
+init().catch(e => { $("#work").innerHTML = `<div class="card empty">Could not reach the model server: ${esc(e.message)}</div>`; });
 </script>
 </body>
 </html>

@@ -187,6 +187,23 @@ def last_test(test, demo, eta_c, eta_f):
     return None
 
 
+# Which part of the engine a finding of hotfire.observations is about (the page groups by it)
+AREAS = (("jacket", ("Jacket", "Hot-wall")), ("nozzle", ("Nozzle", "Overexpanded")),
+         ("injector", ("Ox injector", "Fuel injector", "N2O at the injector", "Ox CdA", "Fuel CdA")))
+LEVELS = ("crit", "warn", "good", "info")
+
+
+def tagged(obs):
+    """[level, text, area] per finding; area is performance, nozzle, injector or jacket."""
+    return [[lv, tx, next((a for a, starts in AREAS if tx.startswith(starts)), "performance")] for lv, tx in obs]
+
+
+def worst(obs):
+    """The level to show for a whole test: crit, warn or good."""
+    lv = {o[0] for o in obs}
+    return "crit" if "crit" in lv else "warn" if "warn" in lv else "good"
+
+
 def result_json(R):
     out = {k: v for k, v in R.items() if k not in ("pt", "ox_card", "nozzle")}
     nz = R["nozzle"]
@@ -209,7 +226,7 @@ def api_analyse(body):
         hw = H.hardware_presets()[test["hardware"]]
         dt_mm = test["inputs"].get("throat_d_mm")
         cont = hw.contour(dt_mm) if dt_mm else None
-    out = {"R": result_json(R), "obs": obs, "row": H.flat(test, R), "last": last, "reference": ref,
+    out = {"R": result_json(R), "obs": tagged(obs), "level": worst(obs), "row": H.flat(test, R), "last": last, "reference": ref,
            "jacket": bool("Q_meas_kW" in R and hw.regen_model),
            "ms": round(1e3 * (time.perf_counter() - t0), 1)}
     if cont is not None:      # a measured throat changes the contour drawn in the nozzle view
@@ -229,6 +246,7 @@ def api_tests(q):
         out.append({"test": {k: v for k, v in t.items() if not k.startswith("_")},
                     "saved": t["test_id"] in saved_ids and not t.get("demo"),
                     "row": H.flat(t, R) if R else None, "error": err,
+                    "level": worst(H.observations(R, None, eta_c, eta_f)) if R else None,
                     "jacket": bool(R and "Q_meas_kW" in R and hw and hw.regen_model)})
     return {"tests": out, "next_id": next_id([t["test_id"] for t in saved])}
 
@@ -329,7 +347,8 @@ def job_jacket(test, eta_c, eta_f, fit, n, reference):
         out["model"] = profile(W["model"])
         if W.get("fit") is not None:
             out["fit"] = profile(W["fit"])
-        out["obs"] = H.observations(R, W, eta_c, eta_f, reference=reference)
+        out["obs"] = tagged(H.observations(R, W, eta_c, eta_f, reference=reference))
+        out["level"] = worst(out["obs"])
     return clean(out, 5)
 
 
