@@ -27,3 +27,6 @@ mission_analysis/mission_profile_*.png
 
 # Injector test log written by the Streamlit app (local only)
 swirl_injector_analysis/test_log.csv
+
+# Connection of the E2 Test Explorer to hopper-test-lab (holds the team password)
+h2cea/hopper_test_lab.yaml

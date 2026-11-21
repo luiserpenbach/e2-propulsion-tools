@@ -314,10 +314,12 @@ function buildForm() {
   $("#form").innerHTML = `
     <ol class="steps">
       <li>Analyse the test in Hopper Test Lab.</li>
-      <li>Type its steady-state means here. An empty field names the result to copy. The E2 template reports gauge pressures: tick the gauge box.</li>
+      <li>${META.htl ? "Pull it here, or type its steady-state means." : "Type its steady-state means here."} An empty field names the result to copy. The E2 template reports gauge pressures: tick the gauge box when typing.</li>
       <li>Read the findings, set the outcome, save.</li>
     </ol>
     <div class="row"><select id="open" class="grow" title="Open a saved test"></select><button class="btn" id="new">New</button></div>
+    ${META.htl ? `<div class="row" style="margin-top:6px"><select id="pull" class="grow" title="Engine tests saved in Hopper Test Lab, newest first"><option value="">Pull from Hopper Test Lab</option></select><button class="btn" id="pullreload" title="Read the list of tests again">Refresh</button></div>` : ""}
+    <div class="cap" id="pullinfo">${META.htl ? "" : `Pull from Hopper Test Lab is not set up: copy hopper_test_lab.example.yaml to ${esc(META.htl_config)} in h2cea/ and restart.`}</div>
     <div class="sec">Test</div>
     <div class="g2">
       <label class="fld"><span>Test ID</span><input type="text" data-meta="test_id" placeholder="as in Hopper Test Lab"></label>
@@ -345,6 +347,30 @@ function buildForm() {
   $("#new").onclick = () => { if (confirmLeave()) loadTest(blankTest(S.test.hardware), false); };
   $("#save").onclick = save;
   $("#del").onclick = del;
+  if (META.htl) {
+    $("#pull").onchange = e => { const id = e.target.value; e.target.value = ""; if (id) pull(id); };
+    $("#pullreload").onclick = () => loadRuns(true);
+    loadRuns(false);
+  }
+}
+async function loadRuns(reload) {
+  const sel = $("#pull"), info = $("#pullinfo");
+  try {
+    const d = await api("/api/htl/runs" + (reload ? "?reload=1" : ""));
+    sel.innerHTML = `<option value="">Pull from Hopper Test Lab (${d.runs.length} engine tests)</option>` + d.runs.map(r =>
+      `<option value="${esc(r.id)}">${esc(r.id)} · ${esc(r.date)} · ${esc(META.outcomes[r.outcome] || r.outcome)}${r.saved ? " · saved here" : ""}</option>`).join("");
+    if (reload) info.textContent = "Test list read again.";
+  } catch (e) { info.textContent = e.message; }
+}
+async function pull(id) {
+  if (!confirmLeave()) return;
+  const info = $("#pullinfo"); info.textContent = `Pulling ${id}.`;
+  try {
+    const d = await api("/api/htl/test?id=" + encodeURIComponent(id));
+    loadTest(d.test, false); setView("test");
+    info.textContent = [`Pulled ${d.pulled.length} values of ${id}.`, d.missing.length ? `Not in the test: ${d.missing.join(", ")}.` : "", ...d.notes].filter(Boolean).join(" ");
+    info.title = d.pulled.map(([l, src, v]) => `${l}: ${v}  (${src})`).join("\n");
+  } catch (e) { info.textContent = e.message; }
 }
 function confirmLeave() { return !dirty() || !S.A || isDemo() || confirm(`Discard the unsaved changes to ${S.test.test_id || "this test"}?`); }
 function fillForm() {
@@ -379,6 +405,7 @@ function loadTest(t, saved) {
   S.test = JSON.parse(JSON.stringify(t)); delete S.test.demo; delete S.test.saved;
   for (const f of META.fields) if (!(f.key in S.test.inputs)) S.test.inputs[f.key] = null;
   S.savedJson = saved ? recJson(S.test) : null; S.W = null; S.A = null;
+  if (META.htl) { $("#pullinfo").textContent = ""; $("#pullinfo").title = ""; }
   localStorage.setItem("e2x_draft", JSON.stringify(S.test));
   fillForm(); $("#open").value = ""; analyse();
 }

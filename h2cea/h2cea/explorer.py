@@ -31,12 +31,13 @@ import numpy as np
 
 from . import config as C
 from . import hotfire as H
+from . import htl
 
 PAGE = Path(__file__).resolve().parent / "templates" / "test_explorer.html"
 
 # Where each input is found in a test analysed with the "E2 engine hot fire" template of
 # hopper-test-lab (src/lib/template-presets.ts). Shown next to the inputs for the manual
-# transfer, and the mapping for pulling an analysed test over its API later.
+# transfer; htl.py pulls the same values over the hopper-test-lab API.
 HTL_SOURCE = {
     "pc_bar": "pc_mean (gauge in the E2 template)",
     "ox_flow_kg_s": "mdot_ox_mean",
@@ -52,6 +53,7 @@ _LOCK = threading.RLock()          # every CEA / CoolProp call of this process
 _CACHE: dict = {}                  # (test key, eta_c, eta_f) -> (R, error)
 _JOBS: dict = {}                   # worker results, by (kind, arguments)
 _POOL: ProcessPoolExecutor | None = None
+_HTL: htl.Client | None = None
 _SAVED: list | None = None
 _DEMO: list | None = None
 
@@ -254,7 +256,7 @@ def api_meta():
         "fuel_flow_kg_s": C.MDOT_FUEL, "T_ox_nom_C": C.T_OX_NOM - 273.15, "p_amb_bar": C.P_AMB,
         "p_tank_bar": C.P_TANK, "ethanol_wt": C.ETHANOL_WT,
         "baseline": {"revision": bl.get("revision"), "date": str(bl.get("date"))},
-        "test_dir": str(H.TEST_DIR),
+        "test_dir": str(H.TEST_DIR), "htl": bool(htl.config()), "htl_config": htl.CONFIG.name,
     }
 
 
@@ -277,6 +279,32 @@ def api_delete(body):
         H.delete_test(str(body.get("test_id") or ""), H.TEST_DIR)
         saved_tests(reload=True)
     return {"ok": True}
+
+
+# ----------------------------------------------------------------------------------------
+# hopper-test-lab (read-only; the mapping is in htl.py)
+# ----------------------------------------------------------------------------------------
+def htl_client():
+    global _HTL
+    cfg = htl.config()
+    if cfg is None:
+        raise ValueError(f"Hopper Test Lab is not set up: copy hopper_test_lab.example.yaml to {htl.CONFIG.name} "
+                         "in h2cea/ and fill in the url and the password.")
+    with _LOCK:
+        if _HTL is None or (_HTL.url, _HTL.password) != (cfg["url"], cfg["password"]):
+            _HTL = htl.Client(cfg["url"], cfg["password"])
+        return _HTL
+
+
+def api_htl_runs(q):
+    saved = {t["test_id"] for t in saved_tests()}
+    return {"runs": [dict(r, saved=r["id"] in saved) for r in htl_client().runs(0 if q.get("reload") == "1" else 20)]}
+
+
+def api_htl_test(q):
+    out = htl_client().test(q.get("id", ""))
+    out["test"] = normalise(out["test"])
+    return out
 
 
 # ----------------------------------------------------------------------------------------
@@ -355,7 +383,8 @@ def api_cea_map(q):
 # ----------------------------------------------------------------------------------------
 # HTTP
 # ----------------------------------------------------------------------------------------
-GET = {"/api/meta": lambda q: api_meta(), "/api/tests": api_tests, "/api/cea_map": api_cea_map}
+GET = {"/api/meta": lambda q: api_meta(), "/api/tests": api_tests, "/api/cea_map": api_cea_map,
+       "/api/htl/runs": api_htl_runs, "/api/htl/test": api_htl_test}
 POST = {"/api/analyse": api_analyse, "/api/jacket": api_jacket, "/api/line": api_line,
         "/api/save": api_save, "/api/delete": api_delete}
 

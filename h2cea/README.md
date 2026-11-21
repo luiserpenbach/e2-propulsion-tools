@@ -36,7 +36,8 @@ talks to it: a changed input is analysed in about 50 ms, and the slow parts (jac
 march with the Bartz fit about 1.5 s, throttle line about 1 s) run in worker processes
 and are filled in when they arrive. Follows the light or dark setting of the system.
 
-- **Test.** The inputs are the steady-state means; an empty field names the result of
+- **Test.** The inputs are the steady-state means, pulled from hopper-test-lab (below)
+  or typed; an empty field names the result of
   the hopper-test-lab template *E2 engine hot fire* to copy (`pc_mean`, `mdot_ox_mean`,
   …). That template reports gauge pressures: tick *Pressures are gauge*. A decimal comma
   is accepted. Results: η c\*, η Cf,vac, Isp, pc and thrust against the model at the
@@ -65,13 +66,27 @@ the injector pressure (often below saturation) would be wrong. A measured throat
 diameter changes At and ε. The jacket model is the E2-REG-1 as built with water.
 
 **hopper-test-lab.** hopper-test-lab stays generic (traces, phases, formulas, campaigns);
-everything that needs the E2 model is here. Today the steady-state means are typed by
-hand. `HTL_SOURCE` in `explorer.py` lists where each input is found in a test analysed
-with the E2 template; it is the mapping for pulling an analysed test over the
-hopper-test-lab API (`GET /api/runs/<id>`) as the next step. `hotfire.py` keeps the
-outcome values (`pass` / `anomaly` / `fail` / `void`) of hopper-test-lab. The CEA map
-(`hotfire.cea_map`, ideal values on a pc × O/F grid) remains for a derived channel there
-that wants the same η c\* by bilinear interpolation.
+everything that needs the E2 model is here. The explorer pulls an analysed test over the
+hopper-test-lab API and only reads there. Set the connection up once per machine:
+
+    cp hopper_test_lab.example.yaml hopper_test_lab.yaml     # url and the shared team password; not committed
+
+(or the environment variables `HTL_URL` and `HTL_PASSWORD`). The Test page then lists the
+engine tests of all campaigns under *Pull from Hopper Test Lab*; choosing one fills the
+form and shows the results. The line under the list says how many values came over and
+what the test does not hold; hover it for each value and its source. The mapping is in
+`h2cea/htl.py` (tests in `tests/test_htl.py`) and follows the template *E2 engine hot
+fire*: `pc_mean`, `mdot_ox_mean`, `mdot_fu_mean`, `thrust_mean`, the injector inlets from
+`pc_mean + dp_ox_inj_mean` / `dp_fu_inj_mean`, the steady-state duration, the condition
+*N2O temperature*, and from the derived channels the constants `pa` (above zero: the
+pressures are gauge) and `d_throat`. Water calorimetry is not in that template; a test
+whose template has `mdot_w_mean` [kg/s], `T_w_in_mean`, `T_w_out_mean` [°C] and
+optionally `p_w_in_mean`, `p_w_out_mean` [bar] gets it pulled too. Renaming those
+formulas in a hopper-test-lab template breaks the pull for the renamed value only; it is
+then reported as not in the test. Typing the values by hand works as before.
+`hotfire.py` keeps the outcome values (`pass` / `anomaly` / `fail` / `void`) of
+hopper-test-lab. The CEA map (`hotfire.cea_map`, ideal values on a pc × O/F grid) remains
+for a derived channel there that wants the same η c\* by bilinear interpolation.
 
 ## thrust_chamber_design.ipynb (design notebook)
 
