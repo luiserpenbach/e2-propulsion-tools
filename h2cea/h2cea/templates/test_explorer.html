@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E2 Test Explorer</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10); --wash: rgba(11,11,11,.04);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s7: #6250d6; --other: #a9a79f;
+  --good: #0ca30c; --warn: #fab219; --crit: #d03b3b; --info: #2a78d6;
+  --m0: #cde2fb; --m1: #86b6ef; --m2: #3987e5; --m3: #184f95;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10); --wash: rgba(255,255,255,.05);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s7: #9085e9; --other: #5d5c58;
+    --info: #3987e5;
+    --m0: #0d366b; --m1: #1c5cab; --m2: #3987e5; --m3: #b7d3f6;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--page); color: var(--ink);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+header { display: flex; align-items: center; gap: 18px; padding: 0 16px; height: 44px; background: var(--surface);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
+header h1 { font-size: 14px; font-weight: 650; margin: 0; white-space: nowrap; }
+nav { display: flex; gap: 2px; }
+nav button { border: 0; background: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--ink2); }
+nav button:hover { background: var(--wash); }
+nav button[aria-selected=true] { background: var(--wash); color: var(--ink); font-weight: 600; }
+.hd-right { margin-left: auto; display: flex; align-items: center; gap: 14px; color: var(--ink2); font-size: 12px; white-space: nowrap; }
+.hd-right label { display: flex; align-items: center; gap: 6px; }
+.hd-right input[type=text] { width: 62px; }
+#status { min-width: 120px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+main { padding: 14px 16px 40px; max-width: 1560px; margin: 0 auto; }
+.view { display: none; }
+.view.on { display: block; }
+#view-test.on { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { #view-test.on { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+.sec { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+.sec:first-child { margin-top: 0; }
+.steps { margin: 0 0 10px; padding: 0 0 10px 18px; color: var(--ink2); font-size: 12px; border-bottom: 1px solid var(--border); }
+.steps li { margin: 1px 0; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; align-items: end; }
+.fld { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fld > span { font-size: 11.5px; color: var(--ink2); }
+.fld > span i { font-style: normal; color: var(--muted); }
+input[type=text], input[type=date], select, textarea { width: 100%; background: var(--page); border: 1px solid var(--border);
+  border-radius: 5px; padding: 4px 7px; height: 28px; }
+textarea { height: 64px; resize: vertical; }
+input.num { text-align: right; font-variant-numeric: tabular-nums; }
+input::placeholder { color: var(--muted); font-size: 10.5px; opacity: .85; }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--s1); outline-offset: -1px; }
+input.bad { border-color: var(--crit); }
+input.req:placeholder-shown { border-color: var(--s1); }
+.chk { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: var(--ink2); }
+.btn { border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 5px 11px; cursor: pointer; height: 28px; white-space: nowrap; }
+.btn:hover { background: var(--wash); }
+.btn.primary { background: var(--s1); border-color: var(--s1); color: #fff; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .45; cursor: default; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row > .grow { flex: 1; min-width: 0; }
+.muted { color: var(--muted); } .small { font-size: 11.5px; }
+.res-head { display: flex; align-items: baseline; gap: 10px; margin: 0 0 10px; }
+.res-head h2 { font-size: 16px; margin: 0; font-weight: 650; }
+.tag { font-size: 11px; padding: 1px 7px; border-radius: 4px; border: 1px solid var(--border); color: var(--ink2); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--st, var(--axis)); border-radius: 6px; padding: 8px 11px; min-width: 0; }
+.tile .l { display: flex; justify-content: space-between; gap: 6px; font-size: 11.5px; color: var(--ink2); }
+.tile .l b { font-weight: 600; font-size: 10.5px; color: var(--ink2); display: flex; align-items: center; gap: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--st, var(--axis)); display: inline-block; flex: none; }
+.tile .v { font-size: 22px; font-weight: 600; line-height: 1.25; }
+.tile .v span { font-size: 12px; font-weight: 400; color: var(--ink2); margin-left: 3px; }
+.tile .s, .tile .p { font-size: 11.5px; color: var(--ink2); overflow-wrap: anywhere; }
+.tile .p { color: var(--muted); }
+.findings { margin: 0 0 10px; padding: 0; list-style: none; }
+.findings li { display: grid; grid-template-columns: 10px 62px 1fr; gap: 8px; align-items: baseline; padding: 5px 2px; border-top: 1px solid var(--border); }
+.findings li:first-child { border-top: 0; }
+.findings b { font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--ink2); }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 10px; flex-wrap: wrap; }
+.tabs button { border: 0; background: none; padding: 6px 11px; cursor: pointer; color: var(--ink2); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button[aria-selected=true] { color: var(--ink); border-bottom-color: var(--s1); font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+.seg button { border: 0; background: none; padding: 3px 10px; cursor: pointer; color: var(--ink2); }
+.seg button[aria-selected=true] { background: var(--wash); color: var(--ink); font-weight: 600; }
+.ch-title { font-weight: 600; margin: 2px 0 2px; }
+.ch-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--ink2); margin-bottom: 2px; min-height: 16px; }
+.ch-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.ch-legend i { width: 14px; height: 0; border-top: 2px solid; display: inline-block; }
+.ch-legend i.pt { width: 8px; height: 8px; border: 0; border-radius: 50%; }
+.ch-plot { position: relative; }
+.ch-plot svg { display: block; width: 100%; }
+.ch-plot text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.ch-plot text.lab { fill: var(--ink2); }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  padding: 5px 8px; font-size: 11.5px; box-shadow: 0 2px 10px rgba(0,0,0,.18); white-space: nowrap; display: none; z-index: 3; }
+.tip div { display: flex; align-items: center; gap: 6px; }
+.tip b { font-weight: 600; }
+.cap { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { font-weight: 600; font-size: 11.5px; color: var(--ink2); position: sticky; top: 0; background: var(--surface); }
+th.sort { cursor: pointer; } th.sort:hover { color: var(--ink); }
+td.t, th.t { text-align: left; }
+td.notes { white-space: normal; min-width: 220px; color: var(--ink2); text-align: left; }
+tr.cur td { background: var(--wash); }
+tbody tr:hover td { background: var(--wash); }
+a.lnk { color: var(--s1); cursor: pointer; text-decoration: none; } a.lnk:hover { text-decoration: underline; }
+.scroll { overflow: auto; max-height: 420px; }
+.scrollx { overflow-x: auto; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 1000px) { .grid2 { grid-template-columns: 1fr; } }
+pre.sum { background: var(--page); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; white-space: pre-wrap; margin: 0 0 10px; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+.empty { padding: 26px 10px; color: var(--ink2); text-align: center; }
+details summary { cursor: pointer; color: var(--ink2); margin: 8px 0; }
+#toast { position: fixed; right: 16px; bottom: 16px; background: var(--ink); color: var(--page); padding: 8px 12px; border-radius: 6px; display: none; z-index: 9; max-width: 420px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-bottom: 10px; color: var(--ink2); }
+.filters label { display: inline-flex; align-items: center; gap: 5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>E2 Test Explorer</h1>
+  <nav id="nav">
+    <button data-view="test" aria-selected="true">Test</button>
+    <button data-view="campaign">Campaign</button>
+    <button data-view="model">Model</button>
+  </nav>
+  <div class="hd-right">
+    <label title="Baseline value. The model pc and thrust at the measured flows use it.">Model &eta; c* <input type="text" class="num" id="eta_c" inputmode="decimal"></label>
+    <label title="Applied to the ideal vacuum Cf; the ambient term carries no loss.">&eta; Cf,vac <input type="text" class="num" id="eta_f" inputmode="decimal"></label>
+    <label title="Six synthetic test points built from the model, to try the tool. Never saved."><input type="checkbox" id="demo"> Demo campaign</label>
+    <span id="baseline"></span>
+    <span id="status"></span>
+  </div>
+</header>
+<main>
+  <section class="view on" id="view-test">
+    <aside class="card" id="form"></aside>
+    <div id="results"></div>
+  </section>
+  <section class="view" id="view-campaign"></section>
+  <section class="view" id="view-model"></section>
+</main>
+<div id="toast"></div>
+<script>
+"use strict";
+// ------------------------------------------------------------------------------------ helpers
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const has = v => v !== null && v !== undefined && !(typeof v === "number" && !isFinite(v));
+const fx = (v, nd = 2, sign = false) => !has(v) ? "–" : (sign && v > 0 ? "+" : "") + Number(v).toFixed(nd);
+const num = s => { if (s === null || s === undefined) return null; s = String(s).trim().replace(",", "."); if (s === "") return null; const v = Number(s); return isFinite(v) ? v : NaN; };
+const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const STATUS = {good: ["--good", "OK"], warn: ["--warn", "Check"], crit: ["--crit", "Off"], info: ["--info", "Note"]};
+const ORDER = {crit: 0, warn: 1, good: 2, info: 3};
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || r.statusText);
+  return d;
+}
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = "none", 3200); }
+function status(msg) { $("#status").textContent = msg; }
+
+// ------------------------------------------------------------------------------------ state
+let META = null;
+const S = {
+  view: "test", tab: "Engine map", ymap: "pc", test: null, savedJson: null, eta_c: 0, eta_f: 0, demo: false,
+  A: null, err: null, W: null, Wpending: false, line: null, lineKey: "", pool: [], nextId: "E2-HF-001",
+  qratio: {}, picked: new Set(), sort: {k: "date", d: 1}, trend: "r_eta_cstar", sx: "r_OF", sy: "r_eta_cstar",
+  fHw: null, fOut: null, model: null, modelLine: null,
+};
+let seqA = 0, seqW = 0, seqL = 0, seqM = 0;
+
+const today = () => new Date().toISOString().slice(0, 10);
+function blankTest(hw) {
+  const t = {test_id: S.nextId, date: today(), hardware: hw || "E2-REG-1", outcome: "pass", pressures_gauge: false, notes: "", source: "", inputs: {}};
+  for (const f of META.fields) t.inputs[f.key] = f.default;
+  return t;
+}
+const inputsKey = t => JSON.stringify([t.hardware, t.pressures_gauge, t.inputs, S.eta_c, S.eta_f]);
+const recJson = t => JSON.stringify([t.test_id, t.date, t.hardware, t.outcome, t.pressures_gauge, t.notes, t.inputs]);
+const dirty = () => S.savedJson !== recJson(S.test);
+const isDemo = () => S.test.test_id.toUpperCase().startsWith("DEMO");
+
+// ------------------------------------------------------------------------------------ charts (SVG)
+function ticks(lo, hi, n = 6) {
+  if (!(hi > lo)) { hi = lo + 1; }
+  const raw = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  const step = (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p;
+  const out = [];
+  for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return {vals: out, nd: Math.max(0, -Math.floor(Math.log10(step) + 1e-9))};
+}
+const sig = v => !has(v) ? "–" : Math.abs(v) >= 1000 ? v.toFixed(0) : Math.abs(v) >= 100 ? v.toFixed(1) : Math.abs(v) >= 10 ? v.toFixed(2) : v.toFixed(3);
+
+/* chart(el, {title, xLabel, yLabel, height, series: [{name, x, y, color, width, dash, points, labels, r, colors, tag}],
+              hlines: [{y, label, color, dash}], vlines: [{x, label, color, dash}], bands: [{y0, y1, color}],
+              cats, yRange, xRange, aspect, under(sx, sy), legend}) */
+function chart(el, o) {
+  const series = (o.series || []).filter(s => s && s.x && s.x.length);
+  const named = series.filter(s => s.name);
+  el.innerHTML = (o.title ? `<div class="ch-title">${esc(o.title)}</div>` : "") +
+    `<div class="ch-legend">${(o.legend === false || named.length < 2 && !o.forceLegend) ? "" : named.map(s =>
+      `<span><i class="${s.points ? "pt" : ""}" style="${s.points ? "background" : "border-color"}:${s.color};${s.dash ? "border-top-style:dashed" : ""}"></i>${esc(s.name)}</span>`).join("")}</div>` +
+    `<div class="ch-plot"><svg></svg><div class="tip"></div></div>`;
+  const svg = $("svg", el), tip = $(".tip", el), W = Math.max(280, el.clientWidth);
+  const m = {l: 56, r: 18, t: 10, b: o.xLabel ? 42 : 26};
+  const rot = o.cats && Math.max(...o.cats.map(c => String(c).length)) * 6.6 > (W - 74) / o.cats.length;
+  if (rot) m.b += 40;
+  let xs = [], ys = [];
+  for (const s of series) for (let i = 0; i < s.x.length; i++) { if (has(s.x[i])) xs.push(s.x[i]); if (has(s.y[i])) ys.push(s.y[i]); }
+  for (const h of o.hlines || []) if (has(h.y) && h.fit !== false) ys.push(h.y);
+  for (const b of o.bands || []) ys.push(b.y0, b.y1);
+  if (!xs.length || !ys.length) { el.innerHTML += `<div class="empty">No data to plot.</div>`; return; }
+  let [x0, x1] = o.xRange || [Math.min(...xs), Math.max(...xs)], [y0, y1] = o.yRange || [Math.min(...ys), Math.max(...ys)];
+  if (o.cats) { x0 = -0.5; x1 = o.cats.length - 0.5; }
+  else if (!o.xRange) { const p = (x1 - x0) * 0.04 || Math.abs(x0) * 0.05 || 1; x0 -= p; x1 += p; }
+  if (!o.yRange) { const p = (y1 - y0) * 0.1 || Math.abs(y0) * 0.02 || 1; y0 -= p; y1 += p; }
+  let H = o.height || 320;
+  if (o.aspect) H = Math.min(330, m.t + m.b + (W - m.l - m.r) * (y1 - y0) / (x1 - x0));
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const sx = v => m.l + (v - x0) / (x1 - x0) * pw, sy = v => m.t + ph - (v - y0) / (y1 - y0) * ph;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H);
+  let g = "";
+  const ty = ticks(y0, y1, Math.max(3, Math.round(ph / 55)));
+  for (const v of ty.vals) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(v)}" y2="${sy(v)}" stroke="var(--grid)"/><text x="${m.l - 7}" y="${sy(v) + 4}" text-anchor="end">${v.toFixed(ty.nd)}</text>`;
+  if (o.cats) {
+    const every = Math.ceil(o.cats.length / Math.max(1, Math.floor(pw / 26)));
+    o.cats.forEach((c, i) => { if (i % every) return;
+      g += rot ? `<text transform="translate(${sx(i) + 4},${m.t + ph + 12}) rotate(40)">${esc(c)}</text>` : `<text x="${sx(i)}" y="${m.t + ph + 16}" text-anchor="middle">${esc(c)}</text>`; });
+  } else {
+    const tx = ticks(x0, x1, Math.max(3, Math.round(pw / 90)));
+    for (const v of tx.vals) g += `<line x1="${sx(v)}" x2="${sx(v)}" y1="${m.t}" y2="${m.t + ph}" stroke="var(--grid)"/><text x="${sx(v)}" y="${m.t + ph + 16}" text-anchor="middle">${v.toFixed(tx.nd)}</text>`;
+  }
+  g += `<line x1="${m.l}" x2="${W - m.r}" y1="${m.t + ph}" y2="${m.t + ph}" stroke="var(--axis)"/>`;
+  if (o.xLabel) g += `<text class="lab" x="${m.l + pw / 2}" y="${H - 6}" text-anchor="middle">${esc(o.xLabel)}</text>`;
+  if (o.yLabel) g += `<text class="lab" transform="translate(13,${m.t + ph / 2}) rotate(-90)" text-anchor="middle">${esc(o.yLabel)}</text>`;
+  const cid = "c" + Math.random().toString(36).slice(2);
+  g += `<clipPath id="${cid}"><rect x="${m.l}" y="${m.t}" width="${pw}" height="${ph}"/></clipPath><g clip-path="url(#${cid})">`;
+  if (o.under) g += o.under(sx, sy);
+  for (const b of o.bands || []) g += `<rect x="${m.l}" width="${pw}" y="${sy(b.y1)}" height="${Math.abs(sy(b.y0) - sy(b.y1))}" fill="${b.color}" opacity=".10"/>`;
+  for (const h of o.hlines || []) if (has(h.y)) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(h.y)}" y2="${sy(h.y)}" stroke="${h.color || "var(--muted)"}" stroke-width="1.3" stroke-dasharray="${h.dash === false ? "" : "5 4"}"/>`;
+  for (const v of o.vlines || []) if (has(v.x)) g += `<line x1="${sx(v.x)}" x2="${sx(v.x)}" y1="${m.t}" y2="${m.t + ph}" stroke="${v.color || "var(--muted)"}" stroke-width="1.3" stroke-dasharray="${v.dash === false ? "" : "2 4"}"/>`;
+  for (const s of series) {
+    if (!s.points || s.line) {
+      let d = "", pen = false;
+      for (let i = 0; i < s.x.length; i++) { if (!has(s.y[i]) || !has(s.x[i])) { pen = false; continue; } d += (pen ? "L" : "M") + sx(s.x[i]).toFixed(1) + " " + sy(s.y[i]).toFixed(1); pen = true; }
+      g += `<path d="${d}" fill="none" stroke="${s.points ? "var(--other)" : s.color}" stroke-width="${s.width || 2}" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="${s.dash ? "6 5" : ""}"/>`;
+    }
+  }
+  g += "</g>";
+  for (const h of o.hlines || []) if (has(h.y) && h.label) g += `<text x="${W - m.r - 4}" y="${sy(h.y) - 4}" text-anchor="end">${esc(h.label)}</text>`;
+  for (const v of o.vlines || []) if (has(v.x) && v.label) g += `<text x="${sx(v.x) + 4}" y="${m.t + 11}">${esc(v.label)}</text>`;
+  for (const s of series) if (s.points) for (let i = 0; i < s.x.length; i++) {
+    if (!has(s.y[i]) || !has(s.x[i])) continue;
+    const r = (s.rs && s.rs[i]) || s.r || 5, c = (s.colors && s.colors[i]) || s.color;
+    g += `<circle cx="${sx(s.x[i])}" cy="${sy(s.y[i])}" r="${r}" fill="${c}" stroke="var(--surface)" stroke-width="2"/>`;
+    if (s.tag && s.labels && s.x.length <= (s.tagMax || 14)) g += `<text class="lab" x="${sx(s.x[i])}" y="${sy(s.y[i]) - r - 5}" text-anchor="middle">${esc(s.labels[i])}</text>`;
+  }
+  g += `<line class="xh" y1="${m.t}" y2="${m.t + ph}" stroke="var(--axis)" style="display:none"/>`;
+  svg.innerHTML = g;
+  const xh = $(".xh", svg), box = $(".ch-plot", el);
+  const xname = v => o.cats ? esc(o.cats[Math.round(v)] ?? "") : `${esc(o.xShort || o.xLabel || "x")} ${sig(v)}`;
+  svg.onmousemove = ev => {
+    const r = svg.getBoundingClientRect(), px = ev.clientX - r.left, py = ev.clientY - r.top;
+    let best = null;
+    for (const s of series) if (s.points) for (let i = 0; i < s.x.length; i++) {
+      if (!has(s.y[i]) || !has(s.x[i])) continue;
+      const d = Math.hypot(sx(s.x[i]) - px, sy(s.y[i]) - py);
+      if (d < 22 && (!best || d < best.d)) best = {d, s, i};
+    }
+    let html = "";
+    if (best) {
+      const {s, i} = best;
+      html = `<div><b>${esc(s.labels ? s.labels[i] : s.name)}</b></div><div>${xname(s.x[i])}</div><div>${esc(o.yShort || o.yLabel || "y")} ${sig(s.y[i])}</div>` + (s.extra ? `<div>${esc(s.extra[i])}</div>` : "");
+      xh.style.display = "none";
+    } else if (px >= m.l && px <= W - m.r && series.some(s => !s.points)) {
+      const xv = x0 + (px - m.l) / pw * (x1 - x0);
+      html = `<div><b>${xname(xv)}</b></div>`;
+      for (const s of series) if (!s.points) {
+        let bi = -1, bd = Infinity;
+        for (let i = 0; i < s.x.length; i++) { const d = Math.abs(s.x[i] - xv); if (has(s.y[i]) && d < bd) { bd = d; bi = i; } }
+        if (bi >= 0 && bd <= (x1 - x0) * 0.05) html += `<div><i class="dot" style="background:${s.color}"></i>${esc(s.name || "")} ${sig(s.y[bi])}</div>`;
+      }
+      xh.setAttribute("x1", px); xh.setAttribute("x2", px); xh.style.display = "";
+    }
+    if (!html) { tip.style.display = "none"; return; }
+    tip.innerHTML = html; tip.style.display = "block";
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.min(px + 14, box.clientWidth - tw - 4) + "px"; tip.style.top = Math.max(0, py - 10) + "px";
+  };
+  svg.onmouseleave = () => { tip.style.display = "none"; xh.style.display = "none"; };
+}
+
+// ------------------------------------------------------------------------------------ form
+function buildForm() {
+  const fld = f => `<label class="fld" title="${esc([f.help, f.htl ? "Hopper Test Lab: " + f.htl : ""].filter(Boolean).join(" "))}">
+      <span>${esc(f.label)} <i>[${esc(f.unit)}]</i></span>
+      <input type="text" inputmode="decimal" class="num${f.required ? " req" : ""}" data-in="${f.key}" placeholder="${esc(f.htl ? f.htl.split(" (")[0] : f.required ? "required" : "optional")}"></label>`;
+  const grp = keys => `<div class="g2">${keys.map(k => fld(META.fields.find(f => f.key === k))).join("")}</div>`;
+  $("#form").innerHTML = `
+    <ol class="steps">
+      <li>Analyse the test in Hopper Test Lab.</li>
+      <li>${META.htl ? "Pull it here, or type its steady-state means." : "Type its steady-state means here."} An empty field names the result to copy. The E2 template reports gauge pressures: tick the gauge box when typing.</li>
+      <li>Read the findings, set the outcome, save.</li>
+    </ol>
+    <div class="row"><select id="open" class="grow" title="Open a saved test"></select><button class="btn" id="new">New</button></div>
+    ${META.htl ? `<div class="row" style="margin-top:6px"><select id="pull" class="grow" title="Engine tests saved in Hopper Test Lab, newest first"><option value="">Pull from Hopper Test Lab</option></select><button class="btn" id="pullreload" title="Read the list of tests again">Refresh</button></div>` : ""}
+    <div class="cap" id="pullinfo">${META.htl ? "" : `Pull from Hopper Test Lab is not set up: copy hopper_test_lab.example.yaml to ${esc(META.htl_config)} in h2cea/ and restart.`}</div>
+    <div class="sec">Test</div>
+    <div class="g2">
+      <label class="fld"><span>Test ID</span><input type="text" data-meta="test_id" placeholder="as in Hopper Test Lab"></label>
+      <label class="fld"><span>Date</span><input type="date" data-meta="date"></label>
+      <label class="fld" title="${esc(Object.values(META.hardware).map(h => h.label).join("\n"))}"><span>Hardware</span><select data-meta="hardware">${Object.keys(META.hardware).map(k => `<option>${esc(k)}</option>`).join("")}</select></label>
+      <label class="fld"><span>Outcome</span><select data-meta="outcome">${Object.entries(META.outcomes).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select></label>
+    </div>
+    <div class="sec">Operating point (steady state)</div>
+    ${grp(["pc_bar", "thrust_N", "ox_flow_kg_s", "fuel_flow_kg_s", "duration_s", "p_amb_bar"])}
+    <label class="chk" title="The E2 template of Hopper Test Lab reports gauge pressures."><input type="checkbox" data-meta="pressures_gauge"> Pressures are gauge (ambient is added)</label>
+    <div class="sec">Injector, propellant, throat</div>
+    ${grp(["p_ox_inj_bar", "p_fuel_inj_bar", "ox_temp_C", "throat_d_mm"])}
+    <div class="sec">Water jacket (calorimetry)</div>
+    ${grp(["water_flow_kg_s", "water_p_in_bar", "water_T_in_C", "water_p_out_bar", "water_T_out_C"])}
+    <div class="sec">Notes</div>
+    <textarea data-meta="notes" placeholder="What happened, what to change next"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary grow" id="save" title="Writes hotfire_tests/<test id>.yaml (Ctrl+S)">Save test</button>
+      <button class="btn" id="del">Delete</button>
+    </div>
+    <div class="cap" id="saveinfo"></div>`;
+  $("#form").addEventListener("input", onFormInput);
+  $("#form").addEventListener("change", onFormInput);
+  $("#open").onchange = e => { const id = e.target.value; if (id) openTest(id); };
+  $("#new").onclick = () => { if (confirmLeave()) loadTest(blankTest(S.test.hardware), false); };
+  $("#save").onclick = save;
+  $("#del").onclick = del;
+  if (META.htl) {
+    $("#pull").onchange = e => { const id = e.target.value; e.target.value = ""; if (id) pull(id); };
+    $("#pullreload").onclick = () => loadRuns(true);
+    loadRuns(false);
+  }
+}
+async function loadRuns(reload) {
+  const sel = $("#pull"), info = $("#pullinfo");
+  try {
+    const d = await api("/api/htl/runs" + (reload ? "?reload=1" : ""));
+    sel.innerHTML = `<option value="">Pull from Hopper Test Lab (${d.runs.length} engine tests)</option>` + d.runs.map(r =>
+      `<option value="${esc(r.id)}">${esc(r.id)} · ${esc(r.date)} · ${esc(META.outcomes[r.outcome] || r.outcome)}${r.saved ? " · saved here" : ""}</option>`).join("");
+    if (reload) info.textContent = "Test list read again.";
+  } catch (e) { info.textContent = e.message; }
+}
+async function pull(id) {
+  if (!confirmLeave()) return;
+  const info = $("#pullinfo"); info.textContent = `Pulling ${id}.`;
+  try {
+    const d = await api("/api/htl/test?id=" + encodeURIComponent(id));
+    loadTest(d.test, false); setView("test");
+    info.textContent = [`Pulled ${d.pulled.length} values of ${id}.`, d.missing.length ? `Not in the test: ${d.missing.join(", ")}.` : "", ...d.notes].filter(Boolean).join(" ");
+    info.title = d.pulled.map(([l, src, v]) => `${l}: ${v}  (${src})`).join("\n");
+  } catch (e) { info.textContent = e.message; }
+}
+function confirmLeave() { return !dirty() || !S.A || isDemo() || confirm(`Discard the unsaved changes to ${S.test.test_id || "this test"}?`); }
+function fillForm() {
+  for (const el of $$("[data-in]")) {
+    const f = META.fields.find(f => f.key === el.dataset.in), v = S.test.inputs[f.key];
+    el.value = has(v) ? String(Number(Number(v).toFixed(Math.max(f.decimals, 4)))) : ""; el.classList.remove("bad");
+  }
+  for (const el of $$("[data-meta]")) { const k = el.dataset.meta; if (el.type === "checkbox") el.checked = !!S.test[k]; else el.value = S.test[k] ?? ""; }
+}
+let debounce;
+function onFormInput(ev) {
+  const el = ev.target;
+  if (el.dataset.in) { const v = num(el.value); el.classList.toggle("bad", Number.isNaN(v)); S.test.inputs[el.dataset.in] = Number.isNaN(v) ? null : v; }
+  else if (el.dataset.meta) { S.test[el.dataset.meta] = el.type === "checkbox" ? el.checked : el.value; }
+  else return;
+  localStorage.setItem("e2x_draft", JSON.stringify(S.test));
+  clearTimeout(debounce); debounce = setTimeout(analyse, 90);
+  renderSaveInfo();
+}
+function renderOpen() {
+  const ids = S.pool.map(p => p.test.test_id).reverse();
+  $("#open").innerHTML = `<option value="">Open a test (${S.pool.filter(p => p.saved).length} saved)</option>` + ids.map(i => `<option>${esc(i)}</option>`).join("");
+}
+function renderSaveInfo() {
+  const saved = S.pool.some(p => p.saved && p.test.test_id === S.test.test_id);
+  $("#save").disabled = !S.A || isDemo() || !S.test.test_id.trim();
+  $("#del").disabled = !saved;
+  $("#saveinfo").textContent = isDemo() ? "Demo points are not saved. Give the test its own ID to save it." :
+    !S.test.test_id.trim() ? "Give the test an ID to save it." : saved ? (dirty() ? "Unsaved changes." : "Saved in hotfire_tests/.") : "Not saved yet.";
+}
+function loadTest(t, saved) {
+  S.test = JSON.parse(JSON.stringify(t)); delete S.test.demo; delete S.test.saved;
+  for (const f of META.fields) if (!(f.key in S.test.inputs)) S.test.inputs[f.key] = null;
+  S.savedJson = saved ? recJson(S.test) : null; S.W = null; S.A = null;
+  if (META.htl) { $("#pullinfo").textContent = ""; $("#pullinfo").title = ""; }
+  localStorage.setItem("e2x_draft", JSON.stringify(S.test));
+  fillForm(); $("#open").value = ""; analyse();
+}
+function openTest(id) {
+  const p = S.pool.find(p => p.test.test_id === id);
+  if (!p || !confirmLeave()) { $("#open").value = ""; return; }
+  loadTest(p.test, p.saved); setView("test");
+}
+async function save() {
+  if ($("#save").disabled) return;
+  try {
+    const r = await api("/api/save", {test: S.test});
+    S.savedJson = recJson(S.test); toast(`${r.updated ? "Updated" : "Saved"} ${r.file}`);
+    await loadPool(); renderSaveInfo();
+  } catch (e) { toast(e.message); }
+}
+async function del() {
+  if (!confirm(`Delete ${S.test.test_id} from hotfire_tests/?`)) return;
+  await api("/api/delete", {test_id: S.test.test_id}); S.savedJson = null; toast(`Deleted ${S.test.test_id}`);
+  await loadPool(); renderSaveInfo();
+}
+
+// ------------------------------------------------------------------------------------ model calls
+async function analyse() {
+  const my = ++seqA, t0 = performance.now(), key = inputsKey(S.test);
+  let d;
+  try { d = await api("/api/analyse", {test: S.test, eta_c: S.eta_c, eta_f: S.eta_f, demo: S.demo}); }
+  catch (e) { d = {error: e.message}; }
+  if (my !== seqA) return;
+  if (d.error) { S.A = null; S.err = d.error; S.W = null; status(""); }
+  else {
+    S.err = null;
+    if (!S.A || S.A.key !== key) S.W = null;
+    S.A = d; S.A.key = key;
+    status(`analysed in ${Math.round(performance.now() - t0)} ms`);
+    if (d.jacket && !S.W) jacket(key);
+    else if (!d.jacket) { S.W = null; S.Wpending = false; }
+    ensureLine();
+  }
+  render();
+}
+async function jacket(key) {
+  const my = ++seqW; S.Wpending = true;
+  try {
+    const d = await api("/api/jacket", {test: S.test, eta_c: S.eta_c, eta_f: S.eta_f, demo: S.demo, fit: true});
+    if (my !== seqW || !S.A || S.A.key !== key) return;
+    S.W = d.W; S.Wpending = false;
+    if (S.W) S.qratio[key] = S.W.Q_ratio;
+  } catch (e) { if (my !== seqW) return; S.W = null; S.Wpending = false; }
+  render();
+}
+function lineRange() {
+  const ofs = [S.A.R.OF, ...peers().map(p => p.row.r_OF)].filter(has);
+  return [Math.max(1.2, Math.floor((Math.min(...ofs) - 0.4) * 2) / 2), Math.min(7.5, Math.ceil((Math.max(...ofs) + 0.4) * 2) / 2)];
+}
+async function ensureLine() {
+  const R = S.A.R, [lo, hi] = lineRange();
+  const body = {hardware: S.test.hardware, fuel_flow_kg_s: S.test.inputs.fuel_flow_kg_s, T_ox_K: R.T_ox_K, pa_bar: R.pa_bar,
+                throat_d_mm: S.test.inputs.throat_d_mm, eta_c: S.eta_c, eta_f: S.eta_f, lo, hi};
+  const key = JSON.stringify(body);
+  if (key === S.lineKey) return;
+  S.lineKey = key; S.line = null; const my = ++seqL;
+  try { const d = await api("/api/line", body); if (my !== seqL) return; S.line = d.line; } catch (e) { return; }
+  if (S.view === "test" && S.tab === "Engine map") renderTab();
+}
+async function loadPool(reload) {
+  const d = await api(`/api/tests?demo=${S.demo ? 1 : 0}&eta_c=${S.eta_c}&eta_f=${S.eta_f}${reload ? "&reload=1" : ""}`);
+  S.pool = d.tests; S.nextId = d.next_id;
+  renderOpen();
+  if (S.view === "campaign") renderCampaign();
+  fillQratio();
+}
+async function fillQratio() {       // jacket heat measured / model for the campaign table, filled in as it arrives
+  for (const p of S.pool) {
+    if (!p.jacket) continue;
+    const key = inputsKey(p.test);
+    if (key in S.qratio) continue;
+    S.qratio[key] = null;
+    api("/api/jacket", {test: p.test, eta_c: S.eta_c, eta_f: S.eta_f, fit: false}).then(d => {
+      if (d.W) { S.qratio[key] = d.W.Q_ratio; if (S.view === "campaign") renderCampaign(); }
+    }).catch(() => {});
+  }
+}
+// tests of the pool on the same hardware, other than the one in the form
+const peers = () => S.pool.filter(p => p.row && p.test.test_id !== S.test.test_id && p.test.hardware === S.test.hardware);
+
+// ------------------------------------------------------------------------------------ results
+function render() {
+  renderSaveInfo();
+  if (S.view === "test") renderResults();
+  if (S.view === "campaign") renderCampaign();
+}
+function tile(label, val, unit, sub, st, prev) {
+  const s = STATUS[st];
+  return `<div class="tile" style="${s ? `--st:var(${s[0]})` : ""}"><div class="l"><span>${label}</span>${s ? `<b><i class="dot"></i>${s[1]}</b>` : ""}</div>
+    <div class="v">${val}<span>${unit}</span></div><div class="s">${sub}</div>${prev ? `<div class="p">${prev}</div>` : ""}</div>`;
+}
+function renderResults() {
+  const el = $("#results"), t = S.test;
+  if (!S.A) {
+    el.innerHTML = `<div class="card empty">${S.err ? `Enter the chamber pressure, the oxidiser flow and the fuel flow to see the results.<div class="cap">${esc(S.err)}</div>` : "Computing."}</div>`;
+    return;
+  }
+  const R = S.A.R, W = S.W, obs = (W && W.obs) || S.A.obs, last = S.A.last;
+  const lvl = start => (obs.find(o => o[1].startsWith(start)) || [null])[0];
+  const vs = (k, nd = 3, pct = false) => {
+    if (!last || !has(last["r_" + k]) || !has(R[k])) return "";
+    const d = R[k] - last["r_" + k];
+    return `vs ${esc(last.test_id)}: ` + (pct ? fx(100 * d / last["r_" + k], 1, true) + " %" : fx(d, nd, true));
+  };
+  const tiles = [
+    tile("&eta; c*", fx(R.eta_cstar, 3), "", `model ${fx(S.eta_c, 3)} · c* ${fx(R.cstar_meas_m_s, 0)} / ${fx(R.cstar_ideal_m_s, 0)} m/s`, lvl("η c*"), vs("eta_cstar")),
+    tile("Chamber pressure", fx(R.pc_abs_bar, 2), "bar abs", `model ${fx(R.pc_model_bar, 2)} · ${fx(R.pc_dev_pct, 1, true)} %`, lvl("η c*"), vs("pc_abs_bar", 2)),
+  ];
+  if (has(R.thrust_N)) tiles.push(
+    tile("Thrust", fx(R.thrust_N, 0), "N", `model ${fx(R.thrust_model_N, 0)} · ${fx(R.thrust_dev_pct, 1, true)} % · ${fx(R.throttle_pct, 0)} % rated`, lvl("η Cf"), vs("thrust_N", 0)),
+    tile("Isp (sea level)", fx(R.isp_meas_s, 1), "s", `model ${fx(R.isp_model_s, 1)} · ideal ${fx(R.isp_ideal_s, 1)}`, lvl("η Cf"), vs("isp_meas_s", 1)),
+    tile("&eta; Cf,vac", fx(R.eta_cf_vac, 3), "", `model ${fx(S.eta_f, 3)} · Cf ${fx(R.cf_meas, 3)} / ${fx(R.cf_ideal, 3)}`, lvl("η Cf"), vs("eta_cf_vac")));
+  else tiles.push(tile("Thrust (model)", fx(R.thrust_model_N, 0), "N", `${fx(R.throttle_pct, 0)} % rated · no load cell value`, "info"));
+  tiles.push(tile("O/F", fx(R.OF, 2), "", `flow ${fx(R.mdot_kg_s, 3)} kg/s · Tc ${fx(R.Tc_K, 0)} K`, null, vs("OF", 2)));
+  const sep = R.summerfield_sep || has(R.x_sep_mm);
+  tiles.push(tile("Nozzle pe / pa", fx(R.pe_over_pa, 2), "", has(R.x_sep_mm) ? `separated at x ${fx(R.x_sep_mm, 0)} mm` : R.summerfield_sep ? "separated (Summerfield)" : `attached · pe ${fx(R.pe_bar, 2)} bar`, sep ? "warn" : "good"));
+  if (has(R.stiff_ox_pct) || has(R.stiff_fuel_pct)) {
+    const worst = Math.min(...[R.stiff_ox_pct, R.stiff_fuel_pct].filter(has));
+    const cda = [["CdA_ox_mm2", "ox"], ["CdA_fuel_mm2", "fuel"]].filter(([k]) => has(R[k])).map(([k, n]) => `${n} CdA ${fx(R[k], 2)}`).join(" · ");
+    tiles.push(tile("Injector stiffness", fx(worst, 0), "% pc (min)", [has(R.stiff_ox_pct) ? `ox ${fx(R.stiff_ox_pct, 0)} %` : "", has(R.stiff_fuel_pct) ? `fuel ${fx(R.stiff_fuel_pct, 0)} %` : ""].filter(Boolean).join(" · "),
+      worst >= META.stiffness_min_pct ? "good" : "warn", (cda ? cda + " mm²" : "") + (vs("CdA_ox_mm2") ? ` · ox ${vs("CdA_ox_mm2", 3, true)}` : "")));
+  }
+  if (has(R.Q_meas_kW)) tiles.push(W
+    ? tile("Jacket heat", fx(R.Q_meas_kW, 0), "kW", `model ${fx(W.Q_model_kW, 0)} · Bartz fit ×${fx(W.bartz_fit, 2)}`, "info", `hot wall ${fx(W.Twg_max_fit_K, 0)} K (limit ${fx(META.T_wg_limit_K, 0)})`)
+    : tile("Jacket heat", fx(R.Q_meas_kW, 0), "kW", S.Wpending ? "jacket model running" : `${fx(R.q_per_ox_kJ_kg, 0)} kJ per kg N2O`, "info"));
+  const sorted = [...obs].sort((a, b) => ORDER[a[0]] - ORDER[b[0]]);
+  const tabs = ["Engine map", "Nozzle", "Jacket", "Injector", "Summary"];
+  el.innerHTML = `
+    <div class="res-head"><h2>${esc(t.test_id || "Unnamed test")}</h2>
+      <span class="muted">${esc(t.date)} · ${esc(t.hardware)} · throat ${fx(R.throat_d_mm, 2)} mm · &epsilon; ${fx(R.eps, 2)} · ${esc(META.outcomes[t.outcome])}</span>
+      ${isDemo() ? `<span class="tag">Demo data</span>` : ""}</div>
+    <div class="tiles">${tiles.join("")}</div>
+    <div class="card" style="padding:6px 12px;margin-bottom:10px"><ul class="findings">${sorted.map(([lv, tx]) =>
+      `<li style="--st:var(${STATUS[lv][0]})"><i class="dot"></i><b>${STATUS[lv][1]}</b><span>${esc(tx)}</span></li>`).join("")}</ul></div>
+    <div class="card"><div class="tabs">${tabs.map(n => `<button aria-selected="${n === S.tab}" data-tab="${n}">${n}</button>`).join("")}</div><div id="tab"></div></div>`;
+  $$("[data-tab]", el).forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderResults(); });
+  renderTab();
+}
+function renderTab() {
+  const el = $("#tab"); if (!el || !S.A) return;
+  ({"Engine map": tabMap, "Nozzle": tabNozzle, "Jacket": tabJacket, "Injector": tabInjector, "Summary": tabSummary})[S.tab](el);
+}
+const YMAP = {pc: ["Chamber pressure", "pc_abs_bar", "pc [bar]"], thrust: ["Thrust", "thrust_N", "thrust [N]"], cstar: ["c*", "cstar_meas_m_s", "c* [m/s]"], isp: ["Isp", "isp_meas_s", "Isp sea level [s]"]};
+function tabMap(el) {
+  const R = S.A.R, [name, rk, ylab] = YMAP[S.ymap];
+  el.innerHTML = `<div class="seg">${Object.entries(YMAP).map(([k, v]) => `<button aria-selected="${k === S.ymap}" data-y="${k}">${v[0]}</button>`).join("")}</div><div id="map"></div>
+    <div class="cap">Lines: the hardware at the measured fuel flow, oxidiser throttled. Other tests at a different fuel flow sit off these lines.${S.line ? "" : " Throttle line running."}</div>`;
+  $$("[data-y]", el).forEach(b => b.onclick = () => { S.ymap = b.dataset.y; tabMap(el); });
+  const ps = peers().filter(p => has(p.row["r_" + rk])), series = [];
+  if (S.line) series.push(
+    {name: "CEA ideal", x: S.line.map(r => r.OF), y: S.line.map(r => r[S.ymap + "_ideal"]), color: "var(--s3)", dash: true},
+    {name: `model (η c* ${fx(S.eta_c, 3)})`, x: S.line.map(r => r.OF), y: S.line.map(r => r[S.ymap + "_model"]), color: "var(--s2)"});
+  if (ps.length) series.push({name: "other tests", points: true, x: ps.map(p => p.row.r_OF), y: ps.map(p => p.row["r_" + rk]), labels: ps.map(p => p.test.test_id), color: "var(--other)", r: 5});
+  if (has(R[rk])) series.push({name: S.test.test_id || "this test", points: true, tag: true, x: [R.OF], y: [R[rk]], labels: [S.test.test_id || "this test"], color: "var(--s1)", r: 7});
+  chart($("#map"), {title: `${name} along the throttle line (fuel ${fx(S.test.inputs.fuel_flow_kg_s, 3)} kg/s)`, xLabel: "O/F", yLabel: ylab, height: 380, series, forceLegend: true});
+}
+function tabNozzle(el) {
+  const R = S.A.R, nz = R.nozzle, c = S.A.contour || META.hardware[S.test.hardware].contour;
+  el.innerHTML = `<div id="nz1"></div><div id="nz2" style="margin-top:8px"></div>
+    <div class="cap">pe ${fx(R.pe_bar, 3)} bar at &epsilon; ${fx(R.eps, 2)}. Summerfield (pe &lt; 0.4 pa): ${R.summerfield_sep ? "separated" : "attached"}. Schmucker: ${has(nz.x_sep_mm) ? "separated at x " + fx(nz.x_sep_mm, 0) + " mm" : "attached"}. Wall pressure from the 1D area ratio with a constant &gamma; (${fx(nz.gamma, 3)}) that matches the CEA exit pressure.</div>`;
+  const Mmax = Math.max(...nz.M), ramp = ["--m0", "--m1", "--m2", "--m3"].map(cssv);
+  const mix = (a, b, f) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return "rgb(" + A.map((v, i) => Math.round(v + (B[i] - v) * f)).join(",") + ")"; };
+  const col = M => { const f = Math.max(0, Math.min(0.999, M / Mmax)) * 3, i = Math.floor(f); return mix(ramp[i], ramp[i + 1], f - i); };
+  const rmax = Math.max(...c.r_mm);
+  chart($("#nz1"), {title: `Divergent Mach number (1D), up to M ${fx(Mmax, 2)} at the exit`, aspect: true, xShort: "x", yShort: "r", legend: false,
+    yRange: [-rmax * 1.08, rmax * 1.08], xRange: [Math.min(...c.x_mm), Math.max(...c.x_mm)],
+    series: [{name: "wall", x: c.x_mm, y: c.r_mm, color: "var(--ink2)"}, {name: "", x: c.x_mm, y: c.r_mm.map(v => -v), color: "var(--ink2)"}],
+    vlines: has(nz.x_sep_mm) ? [{x: nz.x_sep_mm, label: "separation", color: "var(--warn)", dash: false}] : [],
+    under: (sx, sy) => { let g = ""; for (let i = 0; i < nz.x_mm.length - 1; i++) {
+      const x = nz.x_mm[i], r = interp(c.x_mm, c.r_mm, x), sepd = has(nz.x_sep_mm) && x > nz.x_sep_mm, rr = sepd ? 0.55 * r : r;
+      g += `<rect x="${sx(x)}" width="${Math.max(1, sx(nz.x_mm[i + 1]) - sx(x) + 0.6)}" y="${sy(rr)}" height="${sy(-rr) - sy(rr)}" fill="${col(nz.M[i])}"/>`; } return g; }});
+  chart($("#nz2"), {title: "Wall pressure against the Schmucker separation pressure", xLabel: "x from injector face [mm]", yLabel: "pressure [bar]", xShort: "x", height: 250,
+    yRange: [0, Math.max(Math.max(...nz.p_wall_bar.slice(Math.floor(nz.p_wall_bar.length / 3))) * 1.6, R.pa_bar * 1.3)],
+    series: [{name: "wall pressure", x: nz.x_mm, y: nz.p_wall_bar, color: "var(--s1)"}, {name: "separation pressure (Schmucker)", x: nz.x_mm, y: nz.p_sep_bar, color: "var(--s2)", dash: true}],
+    hlines: [{y: R.pa_bar, label: `ambient ${fx(R.pa_bar, 3)} bar`}], vlines: has(nz.x_sep_mm) ? [{x: nz.x_sep_mm, label: "separation", color: "var(--warn)", dash: false}] : []});
+}
+function interp(xs, ys, x) { let i = 1; while (i < xs.length - 1 && xs[i] < x) i++; const f = (x - xs[i - 1]) / ((xs[i] - xs[i - 1]) || 1); return ys[i - 1] + (ys[i] - ys[i - 1]) * Math.max(0, Math.min(1, f)); }
+function tabJacket(el) {
+  const R = S.A.R, W = S.W;
+  if (!W) { el.innerHTML = `<div class="empty">${S.Wpending ? "Marching the water jacket and fitting the Bartz factor (about 1.5 s)." : !has(R.Q_meas_kW) ? "Enter the water flow and the inlet and outlet temperatures for the calorimetric heat and the model comparison." : "The jacket model applies to E2-REG-1 only."}</div>`; return; }
+  const m = W.model, f = W.fit, xt = META.hardware[S.test.hardware].contour.xt_mm;
+  el.innerHTML = `<div id="j1"></div><div id="j2" style="margin-top:8px"></div><div class="scroll" style="margin-top:8px"><table><thead><tr><th class="t"></th><th>measured</th><th>model ×1.00</th><th>model ×${fx(W.bartz_fit, 2)}</th></tr></thead><tbody>
+    <tr><td class="t">Jacket heat [kW]</td><td>${fx(R.Q_meas_kW, 1)}</td><td>${fx(W.Q_model_kW, 1)}</td><td>${fx(W.Q_fit_kW, 1)}</td></tr>
+    <tr><td class="t">Water outlet [°C]</td><td>${fx(S.test.inputs.water_T_out_C, 1)}</td><td>${fx(m.T_out_C, 1)}</td><td>${fx(f && f.T_out_C, 1)}</td></tr>
+    <tr><td class="t">Jacket dp [bar]</td><td>${fx(R.dp_jacket_meas_bar, 2)}</td><td>${fx(m.dp_bar, 2)}</td><td>${fx(f && f.dp_bar, 2)}</td></tr>
+    <tr><td class="t">Hot wall max [K]</td><td>–</td><td>${fx(W.Twg_max_K, 0)}</td><td>${fx(W.Twg_max_fit_K, 0)}</td></tr></tbody></table></div>
+    <div class="cap">regen.march (Bartz with CEA transport, Gnielinski, 200 stations) at the measured pc, O/F and &eta; c*. The fitted factor is the BARTZ_FACTOR in config.py that reproduces the calorimetric heat; manifold losses and heat to the injector face are not in the model.</div>`;
+  const s1 = [], s2 = [];
+  if (f) { s1.push({name: `hot wall, Bartz ×${fx(W.bartz_fit, 2)} (fit)`, x: m.x_mm, y: f.Twg_K, color: "var(--s2)"}, {name: "coolant-side wall (fit)", x: m.x_mm, y: f.Twc_K, color: "var(--s1)"});
+           s2.push({name: `Bartz ×${fx(W.bartz_fit, 2)} (fit)`, x: m.x_mm, y: f.q_MW_m2, color: "var(--s2)"}); }
+  s1.push({name: "hot wall, Bartz ×1.00", x: m.x_mm, y: m.Twg_K, color: "var(--s2)", dash: true, width: 1.5});
+  s2.push({name: "Bartz ×1.00", x: m.x_mm, y: m.q_MW_m2, color: "var(--s2)", dash: true, width: 1.5});
+  chart($("#j1"), {title: "Wall temperature", yLabel: "temperature [K]", xShort: "x", height: 270, series: s1,
+    hlines: [{y: META.T_wg_limit_K, label: `IN718 limit ${fx(META.T_wg_limit_K, 0)} K`, color: "var(--crit)"}], vlines: [{x: xt, label: "throat"}]});
+  chart($("#j2"), {title: "Heat flux", xLabel: "x from injector face [mm]", yLabel: "heat flux [MW/m²]", xShort: "x", height: 220, series: s2, vlines: [{x: xt, label: "throat"}]});
+}
+function tabInjector(el) {
+  const R = S.A.R;
+  if (!has(R.dp_ox_bar) && !has(R.dp_fuel_bar)) { el.innerHTML = `<div class="empty">Enter the ox and fuel injector inlet pressures for the pressure drop, stiffness and CdA.</div>`; return; }
+  const rows = [["ox", "Ox"], ["fuel", "Fuel"]].filter(([c]) => has(R[`dp_${c}_bar`]));
+  const smax = Math.max(40, ...rows.map(([c]) => R[`stiff_${c}_pct`])) * 1.15, lim = META.stiffness_min_pct;
+  el.innerHTML = `<div class="ch-title">Stiffness dp / pc</div>` + rows.map(([c, n]) => { const s = R[`stiff_${c}_pct`], ok = s >= lim;
+      return `<div class="row" style="margin:6px 0"><span style="width:38px">${n}</span><div class="grow" style="position:relative;height:16px;background:var(--wash);border-radius:0 4px 4px 0">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:${Math.max(0, 100 * s / smax)}%;background:var(${ok ? "--good" : "--warn"});border-radius:0 4px 4px 0"></div>
+        <div style="position:absolute;left:${100 * lim / smax}%;top:-3px;bottom:-3px;border-left:2px solid var(--ink2)"></div></div>
+        <span style="width:230px">${fx(s, 0)} % · dp ${fx(R[`dp_${c}_bar`], 2)} bar · ${ok ? "OK" : "below " + fx(lim, 0) + " %"}</span></div>`; }).join("") +
+    `<div class="cap" style="margin-bottom:12px">Marker: ${fx(lim, 0)} % rule of thumb against chugging.</div><div class="grid2"><div id="i1"></div><div id="i2"></div></div>
+     <div class="cap">CdA = flow / &radic;(2 &rho; dp) with liquid density (N2O below saturation: saturated liquid). A CdA shift between tests points at a blocked or eroded element or a sensor problem.</div>`;
+  const hist = [...peers().map(p => ({id: p.test.test_id, date: p.test.date, row: p.row})), {id: S.test.test_id || "this test", date: S.test.date, row: S.A.row, cur: true}]
+    .sort((a, b) => (a.date + a.id).localeCompare(b.date + b.id));
+  [["CdA_ox_mm2", "Ox CdA", "#i1"], ["CdA_fuel_mm2", "Fuel CdA", "#i2"]].forEach(([k, n, sel]) => {
+    const h = hist.filter(x => has(x.row["r_" + k]));
+    if (!h.length) { $(sel).innerHTML = ""; return; }
+    chart($(sel), {title: `${n} by test`, yLabel: "CdA [mm²]", yShort: "CdA", height: 240, cats: h.map(x => x.id), legend: false,
+      series: [{name: n, points: true, line: true, width: 1.4, x: h.map((_, i) => i), y: h.map(x => x.row["r_" + k]), labels: h.map(x => x.id), colors: h.map(x => x.cur ? "var(--s1)" : "var(--other)"), rs: h.map(x => x.cur ? 7 : 5)}]});
+  });
+}
+function summaryText() {
+  const t = S.test, R = S.A.R, W = S.W, obs = (W && W.obs) || S.A.obs;
+  const L = [`${t.test_id} (${t.date}, ${t.hardware}): ${META.outcomes[t.outcome]}`,
+    `pc ${fx(R.pc_abs_bar, 2)} bar abs (${fx(R.pc_dev_pct, 1, true)} % vs model) · O/F ${fx(R.OF, 2)} · flow ${fx(R.mdot_kg_s, 3)} kg/s`,
+    `η c* ${fx(R.eta_cstar, 3)} (model ${fx(S.eta_c, 3)}) · c* ${fx(R.cstar_meas_m_s, 0)} m/s`];
+  if (has(R.thrust_N)) L.push(`F ${fx(R.thrust_N, 0)} N (${fx(R.throttle_pct, 0)} %, ${fx(R.thrust_dev_pct, 1, true)} % vs model) · Isp ${fx(R.isp_meas_s, 1)} s · η Cf,vac ${fx(R.eta_cf_vac, 3)}`);
+  const inj = [["ox", "ox"], ["fuel", "fuel"]].filter(([c]) => has(R[`dp_${c}_bar`])).map(([c, n]) => `${n} dp ${fx(R[`dp_${c}_bar`], 1)} bar (${fx(R[`stiff_${c}_pct`], 0)} %), CdA ${fx(R[`CdA_${c}_mm2`], 2)} mm²`);
+  if (inj.length) L.push("Injector: " + inj.join(" · "));
+  if (W) L.push(`Jacket: ${fx(R.Q_meas_kW, 0)} kW measured / ${fx(W.Q_model_kW, 0)} kW model, Bartz fit ×${fx(W.bartz_fit, 2)}, hot wall ${fx(W.Twg_max_fit_K, 0)} K`);
+  for (const [lv, tx] of obs) if (lv === "warn" || lv === "crit") L.push(`[${STATUS[lv][1]}] ${tx}`);
+  if (t.notes) L.push(`Notes: ${t.notes}`);
+  return L.join("\n");
+}
+function tabSummary(el) {
+  const R = S.A.R, W = S.W || {};
+  const rows = Object.entries(META.results).map(([k, m]) => [m, has(R[k]) ? R[k] : W[k]]).filter(([, v]) => has(v) && typeof v === "number");
+  el.innerHTML = `<div class="row" style="margin-bottom:8px"><span class="grow muted">For the test channel or the log book.</span><button class="btn" id="copy">Copy</button></div>
+    <pre class="sum">${esc(summaryText())}</pre>
+    <div class="scroll" style="max-height:520px"><table><thead><tr><th class="t">Result</th><th>Value</th><th class="t">Unit</th></tr></thead><tbody>${rows.map(([m, v]) =>
+      `<tr><td class="t">${esc(m.label)}</td><td>${fx(v, m.decimals, m.signed)}</td><td class="t muted">${esc(m.unit)}</td></tr>`).join("")}</tbody></table></div>`;
+  $("#copy").onclick = () => navigator.clipboard.writeText(summaryText()).then(() => toast("Summary copied"), () => toast("Copy failed; select the text instead"));
+}
+
+// ------------------------------------------------------------------------------------ campaign
+const METRICS = {
+  r_eta_cstar: ["η c*", 3, () => S.eta_c], r_eta_cf_vac: ["η Cf,vac", 3, () => S.eta_f], r_pc_dev_pct: ["pc vs model [%]", 1, () => 0],
+  r_thrust_dev_pct: ["Thrust vs model [%]", 1, () => 0], r_isp_meas_s: ["Isp [s]", 1], r_cstar_meas_m_s: ["c* [m/s]", 0], r_OF: ["O/F", 2],
+  r_pc_abs_bar: ["pc [bar]", 2], r_thrust_N: ["Thrust [N]", 0], r_CdA_ox_mm2: ["Ox CdA [mm²]", 2], r_CdA_fuel_mm2: ["Fuel CdA [mm²]", 2],
+  r_stiff_ox_pct: ["Ox stiffness [%]", 0, () => META.stiffness_min_pct], r_stiff_fuel_pct: ["Fuel stiffness [%]", 0, () => META.stiffness_min_pct],
+  r_Q_meas_kW: ["Jacket heat [kW]", 1], r_Q_ratio: ["Jacket heat meas / model", 2, () => 1], r_throttle_pct: ["Throttle [%]", 0],
+};
+const COLS = [["r_throttle_pct", "thr %", 0], ["r_pc_abs_bar", "pc bar", 2], ["r_OF", "O/F", 2], ["r_eta_cstar", "η c*", 3], ["r_eta_cf_vac", "η Cf,vac", 3],
+  ["r_isp_meas_s", "Isp s", 1], ["r_pc_dev_pct", "pc Δ%", 1, true], ["r_thrust_dev_pct", "F Δ%", 1, true], ["r_CdA_ox_mm2", "CdA ox", 2], ["r_CdA_fuel_mm2", "CdA fu", 2], ["r_Q_ratio", "Q meas/mod", 2]];
+function campaignRows() {
+  const rows = S.pool.filter(p => p.row && !(S.A && S.test.test_id && p.test.test_id === S.test.test_id))
+    .map(p => ({...p.row, r_Q_ratio: S.qratio[inputsKey(p.test)] ?? null, saved: p.saved, current: false}));
+  if (S.A && S.test.test_id) rows.push({...S.A.row, r_Q_ratio: S.W ? S.W.Q_ratio : null, current: true, saved: S.pool.some(p => p.saved && p.test.test_id === S.test.test_id)});
+  return rows;
+}
+function renderCampaign() {
+  const el = $("#view-campaign"), all = campaignRows();
+  if (!all.length) { el.innerHTML = `<div class="card empty">No tests yet. Save a test on the Test page, or switch on the demo campaign in the header.</div>`; return; }
+  const hws = [...new Set(all.map(r => r.hardware))].sort(), outs = Object.values(META.outcomes);
+  if (!S.fHw) S.fHw = new Set(hws); hws.forEach(h => { if (!S.fHwSeen || !S.fHwSeen.has(h)) S.fHw.add(h); }); S.fHwSeen = new Set(hws);
+  if (!S.fOut) S.fOut = new Set(outs.filter(o => o !== "Invalid"));
+  const sk = S.sort.k, rows = all.filter(r => S.fHw.has(r.hardware) && S.fOut.has(r.outcome))
+    .sort((a, b) => { const A = a[sk], B = b[sk]; return S.sort.d * (!has(A) ? 1 : !has(B) ? -1 : typeof A === "number" ? A - B : String(A).localeCompare(String(B))) || a.test_id.localeCompare(b.test_id); });
+  const chron = [...rows].sort((a, b) => (a.date + a.test_id).localeCompare(b.date + b.test_id));
+  const avail = Object.keys(METRICS).filter(k => rows.some(r => has(r[k])));
+  for (const k of ["trend", "sx", "sy"]) if (!avail.includes(S[k])) S[k] = avail[0];
+  const opt = sel => avail.map(k => `<option value="${k}" ${k === sel ? "selected" : ""}>${esc(METRICS[k][0])}</option>`).join("");
+  const th = (k, lab, cls = "") => `<th class="sort ${cls}" data-sort="${k}">${esc(lab)}${sk === k ? (S.sort.d > 0 ? " ↑" : " ↓") : ""}</th>`;
+  const picked = chron.filter(r => S.picked.has(r.test_id));
+  el.innerHTML = `
+    <div class="filters">${hws.map(h => `<label><input type="checkbox" data-fhw="${esc(h)}" ${S.fHw.has(h) ? "checked" : ""}>${esc(h)}</label>`).join("")}
+      <span class="muted">|</span>${outs.map(o => `<label><input type="checkbox" data-fout="${esc(o)}" ${S.fOut.has(o) ? "checked" : ""}>${esc(o)}</label>`).join("")}
+      <span class="muted" style="margin-left:auto">${rows.length} tests, recomputed with the current model (&eta; c* ${fx(S.eta_c, 3)}, &eta; Cf,vac ${fx(S.eta_f, 3)})</span>
+      <button class="btn" id="reload" title="Re-read hotfire_tests/ (after a git pull)">Reload files</button><button class="btn" id="csv">Export CSV</button></div>
+    <div class="card" style="padding:0"><div class="scroll"><table><thead><tr><th></th>${th("test_id", "test", "t")}${th("date", "date", "t")}${th("hardware", "hardware", "t")}${th("outcome", "outcome", "t")}
+      ${COLS.map(([k, l]) => th(k, l)).join("")}<th class="t">notes</th></tr></thead><tbody>${rows.map(r => `<tr class="${r.current ? "cur" : ""}">
+      <td><input type="checkbox" data-pick="${esc(r.test_id)}" ${S.picked.has(r.test_id) ? "checked" : ""}></td>
+      <td class="t"><a class="lnk" data-open="${esc(r.test_id)}">${esc(r.test_id)}</a>${r.current ? ` <span class="tag">open</span>` : ""}${r.demo ? ` <span class="tag">demo</span>` : !r.saved ? ` <span class="tag">unsaved</span>` : ""}</td>
+      <td class="t">${esc(r.date)}</td><td class="t">${esc(r.hardware)}</td><td class="t">${esc(r.outcome)}</td>
+      ${COLS.map(([k, , nd, sg]) => `<td>${fx(r[k], nd, sg)}</td>`).join("")}<td class="notes">${esc(r.notes)}</td></tr>`).join("")}</tbody></table></div></div>
+    <div class="cap">Tick tests to highlight them in the plots and compare them side by side. Click a test ID to open it.</div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="card"><div class="row" style="margin-bottom:6px"><span class="muted">Trend</span><select id="trend" style="max-width:240px">${opt(S.trend)}</select></div><div id="c1"></div></div>
+      <div class="card"><div class="row" style="margin-bottom:6px"><span class="muted">y</span><select id="sy" style="max-width:200px">${opt(S.sy)}</select><span class="muted">against x</span><select id="sx" style="max-width:200px">${opt(S.sx)}</select></div><div id="c2"></div></div>
+    </div><div id="sbs"></div>`;
+  $$("[data-sort]", el).forEach(h => h.onclick = () => { const k = h.dataset.sort; S.sort = {k, d: S.sort.k === k ? -S.sort.d : 1}; renderCampaign(); });
+  $$("[data-pick]", el).forEach(c => c.onchange = () => { c.checked ? S.picked.add(c.dataset.pick) : S.picked.delete(c.dataset.pick); renderCampaign(); });
+  $$("[data-open]", el).forEach(a => a.onclick = () => a.dataset.open === S.test.test_id ? setView("test") : openTest(a.dataset.open));
+  $$("[data-fhw]", el).forEach(c => c.onchange = () => { c.checked ? S.fHw.add(c.dataset.fhw) : S.fHw.delete(c.dataset.fhw); renderCampaign(); });
+  $$("[data-fout]", el).forEach(c => c.onchange = () => { c.checked ? S.fOut.add(c.dataset.fout) : S.fOut.delete(c.dataset.fout); renderCampaign(); });
+  for (const k of ["trend", "sx", "sy"]) $("#" + k).onchange = e => { S[k] = e.target.value; renderCampaign(); };
+  $("#reload").onclick = () => loadPool(true).then(() => toast("Files re-read"));
+  $("#csv").onclick = () => exportCsv(chron);
+  if (!rows.length) return;
+  const colr = r => S.picked.has(r.test_id) ? "var(--s7)" : r.current ? "var(--s1)" : "var(--other)";
+  const [tn, , tref] = METRICS[S.trend], d = chron.filter(r => has(r[S.trend])), vals = d.map(r => r[S.trend]);
+  const o = {title: `${tn} by test`, yLabel: tn, yShort: tn, height: 330, cats: d.map(r => r.test_id), legend: false, hlines: [], bands: [],
+    series: [{name: tn, points: true, line: true, width: 1.4, x: d.map((_, i) => i), y: vals, labels: d.map(r => r.test_id), extra: d.map(r => `${r.date} · O/F ${fx(r.r_OF, 2)}`), colors: d.map(colr), rs: d.map(r => r.current ? 7 : 5)}]};
+  if (vals.length >= 3) { const mu = vals.reduce((a, b) => a + b, 0) / vals.length, sd = Math.sqrt(vals.reduce((a, b) => a + (b - mu) ** 2, 0) / (vals.length - 1));
+    o.bands.push({y0: mu - 2 * sd, y1: mu + 2 * sd, color: "var(--s1)"}); o.hlines.push({y: mu, label: `mean ${sig(mu)} ± 2σ`, color: "var(--s1)"}); }
+  if (tref) o.hlines.push({y: tref(), label: `model ${sig(tref())}`, color: "var(--s2)"});
+  chart($("#c1"), o);
+  const d2 = chron.filter(r => has(r[S.sx]) && has(r[S.sy])), [xn] = METRICS[S.sx], [yn, , yref] = METRICS[S.sy];
+  chart($("#c2"), {title: `${yn} against ${xn}`, xLabel: xn, yLabel: yn, height: 330, legend: false, hlines: yref ? [{y: yref(), label: "model", color: "var(--s2)"}] : [],
+    series: [{name: yn, points: true, tag: true, x: d2.map(r => r[S.sx]), y: d2.map(r => r[S.sy]), labels: d2.map(r => r.test_id), colors: d2.map(colr), rs: d2.map(r => r.current ? 7 : 5)}]});
+  if (picked.length >= 2) {
+    const keys = ["throttle_pct", "pc_abs_bar", "OF", "mdot_kg_s", "eta_cstar", "eta_cf_vac", "isp_meas_s", "thrust_N", "pc_dev_pct", "thrust_dev_pct", "Tc_K", "pe_over_pa", "stiff_ox_pct", "stiff_fuel_pct", "CdA_ox_mm2", "CdA_fuel_mm2", "Q_meas_kW", "Q_ratio"]
+      .filter(k => picked.some(r => has(r["r_" + k])));
+    const base = picked[0];
+    $("#sbs").innerHTML = `<div class="sec">Side by side</div><div class="card" style="padding:0"><div class="scrollx"><table><thead><tr><th class="t">Result</th>${picked.map(r => `<th>${esc(r.test_id)}</th>`).join("")}${picked.slice(1).map(r => `<th>Δ ${esc(r.test_id)}</th>`).join("")}</tr></thead><tbody>${keys.map(k => {
+      const m = META.results[k] || {label: "Jacket heat meas / model", unit: "-", decimals: 2}, nd = Math.max(m.decimals, 1);
+      return `<tr><td class="t">${esc(m.label)} <span class="muted">[${esc(m.unit)}]</span></td>${picked.map(r => `<td>${fx(r["r_" + k], nd)}</td>`).join("")}${picked.slice(1).map(r => `<td>${has(r["r_" + k]) && has(base["r_" + k]) ? fx(r["r_" + k] - base["r_" + k], nd + 1, true) : "–"}</td>`).join("")}</tr>`; }).join("")}</tbody></table></div></div>
+      <div class="cap">Δ columns: against ${esc(base.test_id)} (the earliest ticked test).</div>`;
+  }
+}
+function exportCsv(rows) {
+  const keys = [...new Set(rows.flatMap(r => Object.keys(r)))].filter(k => !["current", "saved"].includes(k));
+  const cell = v => { v = v === null || v === undefined ? "" : String(v); return /[",\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v; };
+  const blob = new Blob(["﻿" + [keys.join(","), ...rows.map(r => keys.map(k => cell(r[k])).join(","))].join("\r\n")], {type: "text/csv"});
+  download(blob, "e2_hotfire_campaign.csv");
+}
+function download(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+
+// ------------------------------------------------------------------------------------ model
+function renderModel() {
+  const el = $("#view-model");
+  if (!S.model) S.model = {hardware: S.test.hardware, mf: META.fuel_flow_kg_s, T: META.T_ox_nom_C, pa: META.p_amb_bar};
+  const M = S.model;
+  el.innerHTML = `<div class="card" style="margin-bottom:12px"><div class="row" style="flex-wrap:wrap;gap:10px 14px">
+      <label class="fld" style="width:150px"><span>Hardware</span><select id="m_hw">${Object.keys(META.hardware).map(k => `<option ${k === M.hardware ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></label>
+      <label class="fld" style="width:130px"><span>Fuel flow <i>[kg/s]</i></span><input type="text" class="num" id="m_mf" value="${M.mf}"></label>
+      <label class="fld" style="width:150px"><span>N2O temperature <i>[°C]</i></span><input type="text" class="num" id="m_T" value="${M.T}"></label>
+      <label class="fld" style="width:150px"><span>Ambient pressure <i>[bar]</i></span><input type="text" class="num" id="m_pa" value="${M.pa}"></label>
+      <span class="grow"></span><button class="btn" id="cea" title="Ideal CEA values on a pc × O/F grid for this hardware, as JSON">Download CEA map</button></div></div>
+    <div class="grid2"><div class="card" id="m1"></div><div class="card" id="m2"></div></div>
+    <details class="card" style="margin-top:12px"><summary>Throttle line table</summary><div id="mt" class="scroll"></div></details>
+    <details class="card" style="margin-top:12px"><summary>Model notes</summary><ul class="muted" style="margin:4px 0;padding-left:18px">
+      <li>CEA: shifting equilibrium, real-fluid liquid N2O card at the N2O temperature and the supply pressure (${fx(META.p_tank_bar, 0)} bar; the feed throttles isenthalpically), ethanol ${fx(META.ethanol_wt, 0)} wt%. Same as the engine table.</li>
+      <li>&eta; c* = pc·At/flow / c*(CEA at pc, O/F). &eta; Cf,vac = (F + pa·Ae)/(pc·At) / Cf,vac(CEA), the split used by the baseline (&eta; c* ${META.eta_c}, &eta; Cf,vac ${META.eta_f}). A measured throat diameter changes At and &epsilon;.</li>
+      <li>Model at the measured flows: pc from flow·&eta; c*·c*(pc)/At (fixed point), thrust from &eta; Cf,vac.</li>
+      <li>Nozzle: wall pressure from the 1D area ratio with a constant &gamma; that matches the CEA exit pressure; Schmucker separation criterion; Summerfield pe &lt; 0.4 pa as in run_engine_table.py.</li>
+      <li>Jacket: regen.march for the E2-REG-1 as built (water, liquid-only), Bartz factor fitted to the calorimetric heat.</li>
+      <li>Injector CdA with liquid density; for N2O below its saturation pressure the saturated liquid density (compare between tests, not with a single-phase design value).</li></ul></details>`;
+  const upd = () => { const mf = num($("#m_mf").value), T = num($("#m_T").value), pa = num($("#m_pa").value);
+    if (![mf, T, pa].every(v => has(v) && !Number.isNaN(v)) || mf <= 0) return;
+    Object.assign(M, {hardware: $("#m_hw").value, mf, T, pa}); modelLine(); };
+  ["m_hw", "m_mf", "m_T", "m_pa"].forEach(id => $("#" + id).onchange = upd);
+  $("#cea").onclick = async () => { const b = $("#cea"); b.disabled = true; b.textContent = "Computing the CEA map (about 10 s)";
+    try { const d = await api(`/api/cea_map?hardware=${encodeURIComponent(M.hardware)}&T_ox_K=${M.T + 273.15}&pa_bar=${M.pa}`);
+      download(new Blob([JSON.stringify(d, null, 1)], {type: "application/json"}), `e2_cea_map_${M.hardware.replace(/ /g, "_")}_eps${fx(d.eps, 2)}.json`); }
+    catch (e) { toast(e.message); } b.disabled = false; b.textContent = "Download CEA map"; };
+  S.modelLine ? drawModel() : modelLine();
+}
+async function modelLine() {
+  const M = S.model, my = ++seqM;
+  $("#m1").innerHTML = $("#m2").innerHTML = `<div class="empty">Throttle line running.</div>`;
+  try { const d = await api("/api/line", {hardware: M.hardware, fuel_flow_kg_s: M.mf, T_ox_K: M.T + 273.15, pa_bar: M.pa, eta_c: S.eta_c, eta_f: S.eta_f, lo: 1.6, hi: 5.4});
+    if (my !== seqM) return; S.modelLine = d.line; if (S.view === "model") drawModel(); }
+  catch (e) { $("#m1").innerHTML = `<div class="empty">${esc(e.message)}</div>`; $("#m2").innerHTML = ""; }
+}
+function drawModel() {
+  const ln = S.modelLine, x = ln.map(r => r.ox_flow_kg_s);
+  const two = k => [{name: "CEA ideal", x, y: ln.map(r => r[k + "_ideal"]), color: "var(--s3)", dash: true}, {name: "model", x, y: ln.map(r => r[k + "_model"]), color: "var(--s2)"}];
+  chart($("#m1"), {title: "Thrust against oxidiser flow", xLabel: "ox flow [kg/s]", yLabel: "thrust [N]", height: 330, series: two("thrust"),
+    hlines: [{y: 0.5 * META.F_rated_N, label: "50 % rated", fit: false}, {y: META.F_rated_N, label: "100 % rated", fit: false}]});
+  chart($("#m2"), {title: "Chamber pressure against oxidiser flow", xLabel: "ox flow [kg/s]", yLabel: "pc [bar]", height: 330, series: two("pc")});
+  $("#mt").innerHTML = `<table><thead><tr><th>throttle %</th><th>ox kg/s</th><th>O/F</th><th>pc bar</th><th>F N</th><th>Isp s</th><th>c* m/s (delivered)</th><th>Tc K</th></tr></thead><tbody>${ln.map(r =>
+    `<tr><td>${fx(100 * r.thrust_model / META.F_rated_N, 0)}</td><td>${fx(r.ox_flow_kg_s, 3)}</td><td>${fx(r.OF, 2)}</td><td>${fx(r.pc_model, 2)}</td><td>${fx(r.thrust_model, 0)}</td><td>${fx(r.isp_model, 1)}</td><td>${fx(r.cstar_model, 0)}</td><td>${fx(r.Tc_model, 0)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+// ------------------------------------------------------------------------------------ shell
+function setView(v) {
+  S.view = v;
+  $$("#nav button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === v));
+  $$(".view").forEach(s => s.classList.toggle("on", s.id === "view-" + v));
+  if (v === "test") renderResults(); else if (v === "campaign") renderCampaign(); else renderModel();
+}
+async function etaChanged() {
+  const c = num($("#eta_c").value), f = num($("#eta_f").value);
+  if (!(c > 0.5 && c < 1.2) || !(f > 0.5 && f < 1.2)) { toast("Efficiencies must be between 0.5 and 1.2"); $("#eta_c").value = S.eta_c; $("#eta_f").value = S.eta_f; return; }
+  S.eta_c = c; S.eta_f = f; S.modelLine = null; S.W = null;
+  await loadPool(); analyse(); if (S.view === "model") renderModel();
+}
+async function init() {
+  META = await api("/api/meta");
+  S.eta_c = META.eta_c; S.eta_f = META.eta_f;
+  $("#eta_c").value = S.eta_c; $("#eta_f").value = S.eta_f;
+  $("#baseline").textContent = `Baseline rev ${META.baseline.revision}`;
+  $("#baseline").title = `h2_baseline ${META.baseline.date}: rated ${META.F_rated_N} N, pc ${META.pc_rated_bar} bar, fuel ${META.fuel_flow_kg_s} kg/s`;
+  S.demo = localStorage.getItem("e2x_demo") === "1"; $("#demo").checked = S.demo;
+  buildForm();
+  await loadPool();
+  let draft = null; try { draft = JSON.parse(localStorage.getItem("e2x_draft")); } catch (e) {}
+  if (draft && draft.inputs && META.hardware[draft.hardware]) {
+    const p = S.pool.find(p => p.saved && p.test.test_id === draft.test_id);
+    loadTest(draft, false); if (p && recJson(p.test) === recJson(S.test)) S.savedJson = recJson(S.test);
+  } else loadTest(blankTest(), false);
+  $$("#nav button").forEach(b => b.onclick = () => setView(b.dataset.view));
+  $("#eta_c").onchange = $("#eta_f").onchange = etaChanged;
+  $("#demo").onchange = async e => { S.demo = e.target.checked; localStorage.setItem("e2x_demo", S.demo ? "1" : "0"); await loadPool(); analyse(); };
+  document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); } });
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => setView(S.view), 150); });
+}
+init().catch(e => { document.querySelector("main").innerHTML = `<div class="card empty">Could not reach the model server: ${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>

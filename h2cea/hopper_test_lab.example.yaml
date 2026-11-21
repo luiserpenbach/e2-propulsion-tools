@@ -1,0 +1,4 @@
+# Connection of the E2 Test Explorer to hopper-test-lab, for "Pull from Hopper Test Lab".
+# Copy to hopper_test_lab.yaml (not committed) and fill in. The explorer only reads tests.
+url: https://your-hopper-test-lab.example
+password: the-shared-team-password
